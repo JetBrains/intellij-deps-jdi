@@ -1,0 +1,7 @@
+com.jetbrains.jdi.SunCommandLineLauncher
+com.jetbrains.jdi.RawCommandLineLauncher
+com.jetbrains.jdi.SocketAttachingConnector
+com.jetbrains.jdi.SocketListeningConnector
+com.jetbrains.jdi.ProcessAttachingConnector
+com.jetbrains.jdi.SharedMemoryListeningConnector
+com.jetbrains.jdi.SharedMemoryAttachingConnector

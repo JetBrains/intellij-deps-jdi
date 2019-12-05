@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="jdwpgen" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="build.tools.jdwpgen.Main" />
+    <module name="jdwpgen.main" />
+    <option name="PROGRAM_PARAMETERS" value="jdwp.spec -jdi ..\src\main\java\com\jetbrains\jdi\JDWP.java" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/jdwpgen" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

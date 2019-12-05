@@ -1,0 +1,6 @@
+/out
+.gradle/
+build/
+gradle.properties
+.idea/shelf
+.idea/workspace.xml
