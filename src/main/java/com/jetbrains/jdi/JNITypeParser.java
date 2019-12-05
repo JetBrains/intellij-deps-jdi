@@ -56,7 +56,7 @@ public class JNITypeParser {
         this.signature = signature;
     }
 
-    static String typeNameToSignature(String signature) {
+    public static String typeNameToSignature(String signature) {
         StringBuilder sb = new StringBuilder();
         int firstIndex = signature.indexOf('[');
         int index = firstIndex;
