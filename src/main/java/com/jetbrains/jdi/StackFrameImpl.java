@@ -225,24 +225,18 @@ public class StackFrameImpl extends MirrorImpl
         return getValues(list).get(variable);
     }
 
-    public Map<LocalVariable, Value> getValues(List<? extends LocalVariable> variables) {
+    public Value[] getSlotsValues(List<? extends SlotLocalVariable> slotsVariables) {
         validateStackFrame();
-        validateMirrors(variables);
 
-        int count = variables.size();
         JDWP.StackFrame.GetValues.SlotInfo[] slots =
-                           new JDWP.StackFrame.GetValues.SlotInfo[count];
+                slotsVariables.stream()
+                        .map(v -> new JDWP.StackFrame.GetValues.SlotInfo(v.slot(),
+                                (byte) v.signature().charAt(0)))
+                        .toArray(JDWP.StackFrame.GetValues.SlotInfo[]::new);
+        return getSlotsValues(slots);
+    }
 
-        for (int i=0; i<count; ++i) {
-            LocalVariableImpl variable = (LocalVariableImpl)variables.get(i);
-            if (!variable.isVisible(this)) {
-                throw new IllegalArgumentException(variable.name() +
-                                 " is not valid at this frame location");
-            }
-            slots[i] = new JDWP.StackFrame.GetValues.SlotInfo(variable.slot(),
-                                      (byte)variable.signature().charAt(0));
-        }
-
+    private ValueImpl[] getSlotsValues(JDWP.StackFrame.GetValues.SlotInfo[] slots) {
         PacketStream ps;
 
         /* protect against defunct frame id */
@@ -266,16 +260,73 @@ public class StackFrameImpl extends MirrorImpl
             }
         }
 
-        if (count != values.length) {
+        if (slots.length != values.length) {
             throw new InternalException(
-                      "Wrong number of values returned from target VM");
+                    "Wrong number of values returned from target VM");
         }
+        return values;
+    }
+
+    public Map<LocalVariable, Value> getValues(List<? extends LocalVariable> variables) {
+        validateStackFrame();
+        validateMirrors(variables);
+
+        int count = variables.size();
+        JDWP.StackFrame.GetValues.SlotInfo[] slots =
+                new JDWP.StackFrame.GetValues.SlotInfo[count];
+
+        for (int i = 0; i < count; ++i) {
+            LocalVariableImpl variable = (LocalVariableImpl) variables.get(i);
+            if (!variable.isVisible(this)) {
+                throw new IllegalArgumentException(variable.name() +
+                        " is not valid at this frame location");
+            }
+            slots[i] = new JDWP.StackFrame.GetValues.SlotInfo(variable.slot(),
+                    (byte) variable.signature().charAt(0));
+        }
+
+        ValueImpl[] values = getSlotsValues(slots);
+
         Map<LocalVariable, Value> map = new HashMap<>(count);
         for (int i = 0; i < count; ++i) {
             LocalVariableImpl variable = (LocalVariableImpl)variables.get(i);
             map.put(variable, values[i]);
         }
         return map;
+    }
+
+    public void setSlotValue(SlotLocalVariable variable, Value value) {
+        validateStackFrame();
+        validateMirrorOrNull(value);
+
+        JDWP.StackFrame.SetValues.SlotInfo[] slotVals = new JDWP.StackFrame.SetValues.SlotInfo[1];
+        slotVals[0] = new JDWP.StackFrame.SetValues.SlotInfo(variable.slot(), (ValueImpl) value);
+
+        setSlotsValues(slotVals);
+    }
+
+    private void setSlotsValues(JDWP.StackFrame.SetValues.SlotInfo[] slotVals) {
+        PacketStream ps;
+
+        /* protect against defunct frame id */
+        synchronized (vm.state()) {
+            validateStackFrame();
+            ps = JDWP.StackFrame.SetValues.enqueueCommand(vm, thread, id, slotVals);
+        }
+
+        /* actually set it, now that order is guaranteed */
+        try {
+            JDWP.StackFrame.SetValues.waitForReply(vm, ps);
+        } catch (JDWPException exc) {
+            switch (exc.errorCode()) {
+                case JDWP.Error.INVALID_FRAMEID:
+                case JDWP.Error.THREAD_NOT_SUSPENDED:
+                case JDWP.Error.INVALID_THREAD:
+                    throw new InvalidStackFrameException();
+                default:
+                    throw exc.toJDIException();
+            }
+        }
     }
 
     public void setValue(LocalVariable variableIntf, Value valueIntf)
@@ -302,28 +353,7 @@ public class StackFrameImpl extends MirrorImpl
             slotVals[0] = new JDWP.StackFrame.SetValues.
                                        SlotInfo(variable.slot(), value);
 
-            PacketStream ps;
-
-            /* protect against defunct frame id */
-            synchronized (vm.state()) {
-                validateStackFrame();
-                ps = JDWP.StackFrame.SetValues.
-                                     enqueueCommand(vm, thread, id, slotVals);
-            }
-
-            /* actually set it, now that order is guaranteed */
-            try {
-                JDWP.StackFrame.SetValues.waitForReply(vm, ps);
-            } catch (JDWPException exc) {
-                switch (exc.errorCode()) {
-                case JDWP.Error.INVALID_FRAMEID:
-                case JDWP.Error.THREAD_NOT_SUSPENDED:
-                case JDWP.Error.INVALID_THREAD:
-                    throw new InvalidStackFrameException();
-                default:
-                    throw exc.toJDIException();
-                }
-            }
+            setSlotsValues(slotVals);
         } catch (ClassNotLoadedException e) {
             /*
              * Since we got this exception,
