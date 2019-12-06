@@ -110,7 +110,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         genericSignatureGotten = false;
     }
 
-    void noticeRedefineClass() {
+    public void noticeRedefineClass() {
         //Invalidate information previously fetched and cached.
         //These will be refreshed later on demand.
         baseSourceName = null;
