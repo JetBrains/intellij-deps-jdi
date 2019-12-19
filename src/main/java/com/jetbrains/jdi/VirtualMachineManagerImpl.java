@@ -39,10 +39,7 @@
 package com.jetbrains.jdi;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.ResourceBundle;
+import java.util.*;
 
 import com.sun.jdi.JDIPermission;
 import com.sun.jdi.VMDisconnectedException;
@@ -104,11 +101,13 @@ public class VirtualMachineManagerImpl implements VirtualMachineManagerService {
         addConnector(new SocketAttachingConnector());
         addConnector(new SocketListeningConnector());
         addConnector(new ProcessAttachingConnector());
-        try {
-            addConnector(new SharedMemoryListeningConnector());
-            addConnector(new SharedMemoryAttachingConnector());
-        } catch (ReflectiveOperationException e) {
-            e.printStackTrace();
+        if (isWindows()) {
+            try {
+                addConnector(new SharedMemoryListeningConnector());
+                addConnector(new SharedMemoryAttachingConnector());
+            } catch (ReflectiveOperationException e) {
+                e.printStackTrace();
+            }
         }
 
         // Set the default launcher. In order to be compatible
@@ -128,6 +127,10 @@ public class VirtualMachineManagerImpl implements VirtualMachineManagerService {
         if (!found && launchers.size() > 0) {
             setDefaultConnector(launchers.get(0));
         }
+    }
+
+    private static boolean isWindows() {
+        return System.getProperty("os.name").toLowerCase(Locale.US).startsWith("windows");
     }
 
     public LaunchingConnector defaultConnector() {
