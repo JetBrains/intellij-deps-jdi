@@ -38,27 +38,11 @@
 
 package com.jetbrains.jdi;
 
+import com.sun.jdi.*;
+
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.sun.jdi.BooleanValue;
-import com.sun.jdi.ByteValue;
-import com.sun.jdi.CharValue;
-import com.sun.jdi.ClassType;
-import com.sun.jdi.DoubleValue;
-import com.sun.jdi.Field;
-import com.sun.jdi.FloatValue;
-import com.sun.jdi.IntegerValue;
-import com.sun.jdi.InterfaceType;
-import com.sun.jdi.InternalException;
-import com.sun.jdi.InvalidTypeException;
-import com.sun.jdi.Location;
-import com.sun.jdi.LongValue;
-import com.sun.jdi.ObjectReference;
-import com.sun.jdi.PrimitiveValue;
-import com.sun.jdi.ShortValue;
-import com.sun.jdi.Value;
 
 class PacketStream {
     final VirtualMachineImpl vm;
@@ -576,39 +560,39 @@ class PacketStream {
         } else {
             switch(typeKey) {
                 case JDWP.Tag.BYTE:
-                    val = new ByteValueImpl(vm, readByte());
+                    val = vm.mirrorOf(readByte());
                     break;
 
                 case JDWP.Tag.CHAR:
-                    val = new CharValueImpl(vm, readChar());
+                    val = vm.mirrorOf(readChar());
                     break;
 
                 case JDWP.Tag.FLOAT:
-                    val = new FloatValueImpl(vm, readFloat());
+                    val = vm.mirrorOf(readFloat());
                     break;
 
                 case JDWP.Tag.DOUBLE:
-                    val = new DoubleValueImpl(vm, readDouble());
+                    val = vm.mirrorOf(readDouble());
                     break;
 
                 case JDWP.Tag.INT:
-                    val = new IntegerValueImpl(vm, readInt());
+                    val = vm.mirrorOf(readInt());
                     break;
 
                 case JDWP.Tag.LONG:
-                    val = new LongValueImpl(vm, readLong());
+                    val = vm.mirrorOf(readLong());
                     break;
 
                 case JDWP.Tag.SHORT:
-                    val = new ShortValueImpl(vm, readShort());
+                    val = vm.mirrorOf(readShort());
                     break;
 
                 case JDWP.Tag.BOOLEAN:
-                    val = new BooleanValueImpl(vm, readBoolean());
+                    val = vm.mirrorOf(readBoolean());
                     break;
 
                 case JDWP.Tag.VOID:
-                    val = new VoidValueImpl(vm);
+                    val = vm.mirrorOfVoid();
                     break;
             }
         }

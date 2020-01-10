@@ -38,58 +38,21 @@
 
 package com.jetbrains.jdi;
 
-import java.lang.ref.Reference;
-import java.lang.ref.ReferenceQueue;
-import java.lang.ref.SoftReference;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
-
-import com.sun.jdi.BooleanType;
-import com.sun.jdi.BooleanValue;
-import com.sun.jdi.ByteType;
-import com.sun.jdi.ByteValue;
-import com.sun.jdi.CharType;
-import com.sun.jdi.CharValue;
-import com.sun.jdi.ClassNotLoadedException;
-import com.sun.jdi.DoubleType;
-import com.sun.jdi.DoubleValue;
-import com.sun.jdi.FloatType;
-import com.sun.jdi.FloatValue;
-import com.sun.jdi.IntegerType;
-import com.sun.jdi.IntegerValue;
-import com.sun.jdi.InternalException;
-import com.sun.jdi.LongType;
-import com.sun.jdi.LongValue;
-//import com.sun.jdi.ModuleReference;
-import com.sun.jdi.ObjectCollectedException;
-import com.sun.jdi.PathSearchingVirtualMachine;
-import com.sun.jdi.PrimitiveType;
-import com.sun.jdi.ReferenceType;
-import com.sun.jdi.ShortType;
-import com.sun.jdi.ShortValue;
-import com.sun.jdi.StringReference;
-import com.sun.jdi.ThreadGroupReference;
-import com.sun.jdi.ThreadReference;
-import com.sun.jdi.Type;
-import com.sun.jdi.VMDisconnectedException;
-import com.sun.jdi.VirtualMachine;
-import com.sun.jdi.VirtualMachineManager;
-import com.sun.jdi.VoidType;
-import com.sun.jdi.VoidValue;
+import com.sun.jdi.*;
 import com.sun.jdi.connect.spi.Connection;
 import com.sun.jdi.event.EventQueue;
 import com.sun.jdi.request.BreakpointRequest;
 import com.sun.jdi.request.EventRequest;
 import com.sun.jdi.request.EventRequestManager;
+
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.SoftReference;
+import java.text.MessageFormat;
+import java.util.*;
+import java.util.function.Consumer;
+
+//import com.sun.jdi.ModuleReference;
 
 class VirtualMachineImpl extends MirrorImpl
              implements PathSearchingVirtualMachine, ThreadListener {
@@ -160,7 +123,10 @@ class VirtualMachineImpl extends MirrorImpl
 
     private VoidType    theVoidType;
 
-    private VoidValue voidVal;
+    private final VoidValueImpl voidVal;
+    private final BooleanValueImpl trueValue;
+    private final BooleanValueImpl falseValue;
+    private final ByteValueImpl[] byteValues = new ByteValueImpl[256];
 
     // Launched debuggee process
     private Process process;
@@ -280,6 +246,10 @@ class VirtualMachineImpl extends MirrorImpl
         er = internalEventRequestManager.createClassUnloadRequest();
         er.setSuspendPolicy(EventRequest.SUSPEND_NONE);
         er.enable();
+
+        voidVal = new VoidValueImpl(this);
+        trueValue = new BooleanValueImpl(this, true);
+        falseValue = new BooleanValueImpl(this, false);
 
         /*
          * Tell other threads, notably TargetVM, that initialization
@@ -556,47 +526,54 @@ class VirtualMachineImpl extends MirrorImpl
         return eventRequestManager;
     }
 
-    public BooleanValue mirrorOf(boolean value) {
+    public BooleanValueImpl mirrorOf(boolean value) {
         validateVM();
-        return new BooleanValueImpl(this,value);
+        return value ? trueValue : falseValue;
     }
 
-    public ByteValue mirrorOf(byte value) {
+    public ByteValueImpl mirrorOf(byte value) {
         validateVM();
-        return new ByteValueImpl(this,value);
+        synchronized (byteValues) {
+            ByteValueImpl res = byteValues[value & 0xFF];
+            if (res == null) {
+                res = new ByteValueImpl(this, value);
+                byteValues[value & 0xFF] = res;
+            }
+            return res;
+        }
     }
 
-    public CharValue mirrorOf(char value) {
+    public CharValueImpl mirrorOf(char value) {
         validateVM();
         return new CharValueImpl(this,value);
     }
 
-    public ShortValue mirrorOf(short value) {
+    public ShortValueImpl mirrorOf(short value) {
         validateVM();
         return new ShortValueImpl(this,value);
     }
 
-    public IntegerValue mirrorOf(int value) {
+    public IntegerValueImpl mirrorOf(int value) {
         validateVM();
         return new IntegerValueImpl(this,value);
     }
 
-    public LongValue mirrorOf(long value) {
+    public LongValueImpl mirrorOf(long value) {
         validateVM();
         return new LongValueImpl(this,value);
     }
 
-    public FloatValue mirrorOf(float value) {
+    public FloatValueImpl mirrorOf(float value) {
         validateVM();
         return new FloatValueImpl(this,value);
     }
 
-    public DoubleValue mirrorOf(double value) {
+    public DoubleValueImpl mirrorOf(double value) {
         validateVM();
         return new DoubleValueImpl(this,value);
     }
 
-    public StringReference mirrorOf(String value) {
+    public StringReferenceImpl mirrorOf(String value) {
         validateVM();
         try {
             return JDWP.VirtualMachine.CreateString.
@@ -606,10 +583,7 @@ class VirtualMachineImpl extends MirrorImpl
         }
     }
 
-    public VoidValue mirrorOfVoid() {
-        if (voidVal == null) {
-            voidVal = new VoidValueImpl(this);
-        }
+    public VoidValueImpl mirrorOfVoid() {
         return voidVal;
     }
 
