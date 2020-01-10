@@ -63,7 +63,7 @@ import com.sun.jdi.VirtualMachine;
 public class ObjectReferenceImpl extends ValueImpl
              implements ObjectReference, VMListener
 {
-    protected long ref;
+    protected final long ref;
     private ReferenceType type = null;
     private int gcDisableCount = 0;
     boolean addedListener = false;

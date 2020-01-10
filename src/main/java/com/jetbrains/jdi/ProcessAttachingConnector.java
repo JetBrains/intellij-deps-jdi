@@ -67,7 +67,7 @@ public class ProcessAttachingConnector
     static final String ARG_TIMEOUT = "timeout";
 
     com.sun.tools.attach.VirtualMachine vm;
-    Transport transport;
+    final Transport transport;
 
     public ProcessAttachingConnector() {
         addStringArgument(

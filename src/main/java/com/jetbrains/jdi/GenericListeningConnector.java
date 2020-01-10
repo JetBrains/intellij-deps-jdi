@@ -61,8 +61,8 @@ public class GenericListeningConnector
     static final String ARG_ADDRESS = "address";
     static final String ARG_TIMEOUT = "timeout";
 
-    Map<Map<String,? extends Connector.Argument>, TransportService.ListenKey>  listenMap;
-    TransportService transportService;
+    final Map<Map<String,? extends Connector.Argument>, TransportService.ListenKey>  listenMap;
+    final TransportService transportService;
     Transport transport;
 
     /**

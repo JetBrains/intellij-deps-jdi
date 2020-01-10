@@ -53,7 +53,7 @@ class ThreadAction extends EventObject {
     /*static final int THREAD_SUSPENDED = 1;*/
     static final int THREAD_RESUMABLE = 2;
 
-    int id;
+    final int id;
 
     ThreadAction(ThreadReference thread, int id) {
         super(thread);

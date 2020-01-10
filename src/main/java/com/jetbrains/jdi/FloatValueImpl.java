@@ -45,7 +45,7 @@ import com.sun.jdi.VirtualMachine;
 
 public class FloatValueImpl extends PrimitiveValueImpl
                             implements FloatValue {
-    private float value;
+    private final float value;
 
     FloatValueImpl(VirtualMachine aVm, float aValue) {
         super(aVm);

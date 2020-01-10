@@ -44,7 +44,7 @@ import com.sun.jdi.Mirror;
 import com.sun.jdi.VMMismatchException;
 import com.sun.jdi.VirtualMachine;
 
-abstract class MirrorImpl extends Object implements Mirror {
+abstract class MirrorImpl implements Mirror {
 
     protected VirtualMachineImpl vm;
 

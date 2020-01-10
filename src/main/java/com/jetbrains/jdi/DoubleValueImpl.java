@@ -45,7 +45,7 @@ import com.sun.jdi.VirtualMachine;
 
 public class DoubleValueImpl extends PrimitiveValueImpl
                              implements DoubleValue {
-    private double value;
+    private final double value;
 
     DoubleValueImpl(VirtualMachine aVm, double aValue) {
         super(aVm);

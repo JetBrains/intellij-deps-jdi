@@ -136,11 +136,7 @@ final public class ClassTypeImpl extends InvokableTypeImpl
 
     public boolean isEnum() {
         ClassType superclass = superclass();
-        if (superclass != null &&
-            superclass.name().equals("java.lang.Enum")) {
-            return true;
-        }
-        return false;
+        return superclass != null && superclass.name().equals("java.lang.Enum");
     }
 
     public void setValue(Field field, Value value)

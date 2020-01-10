@@ -84,7 +84,7 @@ public class RawCommandLineLauncher extends AbstractLauncher {
                  InvocationTargetException |
                  IllegalAccessException |
                  NoSuchMethodException x) {
-        };
+        }
 
         if (transportService == null) {
             transportService = new SocketTransportService();

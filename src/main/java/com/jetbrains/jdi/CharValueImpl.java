@@ -46,7 +46,7 @@ import com.sun.jdi.VirtualMachine;
 public class CharValueImpl extends PrimitiveValueImpl
                            implements CharValue
 {
-    private char value;
+    private final char value;
 
     CharValueImpl(VirtualMachine aVm, char aValue) {
         super(aVm);

@@ -63,7 +63,7 @@ public class GenericAttachingConnector
     static final String ARG_ADDRESS = "address";
     static final String ARG_TIMEOUT = "timeout";
 
-    TransportService transportService;
+    final TransportService transportService;
     Transport transport;
 
     /*

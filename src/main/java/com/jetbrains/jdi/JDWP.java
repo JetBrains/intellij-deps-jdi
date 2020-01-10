@@ -182,7 +182,7 @@ class JDWP {
                 }
                 int classesCount = ps.readInt();
                 classes = new ClassInfo[classesCount];
-                for (int i = 0; i < classesCount; i++) {;
+                for (int i = 0; i < classesCount; i++) {
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "classes[i](ClassInfo): " + "");
                     }
@@ -278,7 +278,7 @@ class JDWP {
                 }
                 int classesCount = ps.readInt();
                 classes = new ClassInfo[classesCount];
-                for (int i = 0; i < classesCount; i++) {;
+                for (int i = 0; i < classesCount; i++) {
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "classes[i](ClassInfo): " + "");
                     }
@@ -335,7 +335,7 @@ class JDWP {
                 }
                 int threadsCount = ps.readInt();
                 threads = new ThreadReferenceImpl[threadsCount];
-                for (int i = 0; i < threadsCount; i++) {;
+                for (int i = 0; i < threadsCount; i++) {
                     threads[i] = ps.readThreadReference();
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "threads[i](ThreadReferenceImpl): " + (threads[i]==null?"NULL":"ref="+threads[i].ref()));
@@ -388,7 +388,7 @@ class JDWP {
                 }
                 int groupsCount = ps.readInt();
                 groups = new ThreadGroupReferenceImpl[groupsCount];
-                for (int i = 0; i < groupsCount; i++) {;
+                for (int i = 0; i < groupsCount; i++) {
                     groups[i] = ps.readThreadGroupReference();
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "groups[i](ThreadGroupReferenceImpl): " + (groups[i]==null?"NULL":"ref="+groups[i].ref()));
@@ -882,7 +882,7 @@ class JDWP {
                 }
                 int classpathsCount = ps.readInt();
                 classpaths = new String[classpathsCount];
-                for (int i = 0; i < classpathsCount; i++) {;
+                for (int i = 0; i < classpathsCount; i++) {
                     classpaths[i] = ps.readString();
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "classpaths[i](String): " + classpaths[i]);
@@ -893,7 +893,7 @@ class JDWP {
                 }
                 int bootclasspathsCount = ps.readInt();
                 bootclasspaths = new String[bootclasspathsCount];
-                for (int i = 0; i < bootclasspathsCount; i++) {;
+                for (int i = 0; i < bootclasspathsCount; i++) {
                     bootclasspaths[i] = ps.readString();
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "bootclasspaths[i](String): " + bootclasspaths[i]);
@@ -984,7 +984,7 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 requests(Request[]): " + "");
                 }
                 ps.writeInt(requests.length);
-                for (int i = 0; i < requests.length; i++) {;
+                for (int i = 0; i < requests.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     requests[i](Request): " + "");
                     }
@@ -1487,7 +1487,7 @@ class JDWP {
                         ps.vm.printTrace("Sending:                     classfile(byte[]): " + "");
                     }
                     ps.writeInt(classfile.length);
-                    for (int i = 0; i < classfile.length; i++) {;
+                    for (int i = 0; i < classfile.length; i++) {
                         if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                             ps.vm.printTrace("Sending:                         classfile[i](byte): " + classfile[i]);
                         }
@@ -1513,7 +1513,7 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 classes(ClassDef[]): " + "");
                 }
                 ps.writeInt(classes.length);
-                for (int i = 0; i < classes.length; i++) {;
+                for (int i = 0; i < classes.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     classes[i](ClassDef): " + "");
                     }
@@ -1682,7 +1682,7 @@ class JDWP {
                 }
                 int classesCount = ps.readInt();
                 classes = new ClassInfo[classesCount];
-                for (int i = 0; i < classesCount; i++) {;
+                for (int i = 0; i < classesCount; i++) {
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "classes[i](ClassInfo): " + "");
                     }
@@ -1719,7 +1719,7 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 refTypesCount(ReferenceTypeImpl[]): " + "");
                 }
                 ps.writeInt(refTypesCount.length);
-                for (int i = 0; i < refTypesCount.length; i++) {;
+                for (int i = 0; i < refTypesCount.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     refTypesCount[i](ReferenceTypeImpl): " + (refTypesCount[i]==null?"NULL":"ref="+refTypesCount[i].ref()));
                     }
@@ -1750,7 +1750,7 @@ class JDWP {
                 }
                 int countsCount = ps.readInt();
                 counts = new long[countsCount];
-                for (int i = 0; i < countsCount; i++) {;
+                for (int i = 0; i < countsCount; i++) {
                     counts[i] = ps.readLong();
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "counts[i](long): " + counts[i]);
@@ -2081,7 +2081,7 @@ class JDWP {
                 }
                 int declaredCount = ps.readInt();
                 declared = new FieldInfo[declaredCount];
-                for (int i = 0; i < declaredCount; i++) {;
+                for (int i = 0; i < declaredCount; i++) {
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "declared[i](FieldInfo): " + "");
                     }
@@ -2192,7 +2192,7 @@ class JDWP {
                 }
                 int declaredCount = ps.readInt();
                 declared = new MethodInfo[declaredCount];
-                for (int i = 0; i < declaredCount; i++) {;
+                for (int i = 0; i < declaredCount; i++) {
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "declared[i](MethodInfo): " + "");
                     }
@@ -2253,7 +2253,7 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 fields(Field[]): " + "");
                 }
                 ps.writeInt(fields.length);
-                for (int i = 0; i < fields.length; i++) {;
+                for (int i = 0; i < fields.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     fields[i](Field): " + "");
                     }
@@ -2285,7 +2285,7 @@ class JDWP {
                 }
                 int valuesCount = ps.readInt();
                 values = new ValueImpl[valuesCount];
-                for (int i = 0; i < valuesCount; i++) {;
+                for (int i = 0; i < valuesCount; i++) {
                     values[i] = ps.readValue();
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "values[i](ValueImpl): " + values[i]);
@@ -2420,7 +2420,7 @@ class JDWP {
                 }
                 int classesCount = ps.readInt();
                 classes = new TypeInfo[classesCount];
-                for (int i = 0; i < classesCount; i++) {;
+                for (int i = 0; i < classesCount; i++) {
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "classes[i](TypeInfo): " + "");
                     }
@@ -2539,7 +2539,7 @@ class JDWP {
                 }
                 int interfacesCount = ps.readInt();
                 interfaces = new InterfaceTypeImpl[interfacesCount];
-                for (int i = 0; i < interfacesCount; i++) {;
+                for (int i = 0; i < interfacesCount; i++) {
                     interfaces[i] = vm.interfaceType(ps.readClassRef());
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "interfaces[i](InterfaceTypeImpl): " + (interfaces[i]==null?"NULL":"ref="+interfaces[i].ref()));
@@ -2831,7 +2831,7 @@ class JDWP {
                 }
                 int declaredCount = ps.readInt();
                 declared = new FieldInfo[declaredCount];
-                for (int i = 0; i < declaredCount; i++) {;
+                for (int i = 0; i < declaredCount; i++) {
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "declared[i](FieldInfo): " + "");
                     }
@@ -2957,7 +2957,7 @@ class JDWP {
                 }
                 int declaredCount = ps.readInt();
                 declared = new MethodInfo[declaredCount];
-                for (int i = 0; i < declaredCount; i++) {;
+                for (int i = 0; i < declaredCount; i++) {
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "declared[i](MethodInfo): " + "");
                     }
@@ -3024,7 +3024,7 @@ class JDWP {
                 }
                 int instancesCount = ps.readInt();
                 instances = new ObjectReferenceImpl[instancesCount];
-                for (int i = 0; i < instancesCount; i++) {;
+                for (int i = 0; i < instancesCount; i++) {
                     instances[i] = ps.readTaggedObjectReference();
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "instances[i](ObjectReferenceImpl): " + (instances[i]==null?"NULL":"ref="+instances[i].ref()));
@@ -3156,7 +3156,7 @@ class JDWP {
                 }
                 int bytesCount = ps.readInt();
                 bytes = new byte[bytesCount];
-                for (int i = 0; i < bytesCount; i++) {;
+                for (int i = 0; i < bytesCount; i++) {
                     bytes[i] = ps.readByte();
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "bytes[i](byte): " + bytes[i]);
@@ -3340,7 +3340,7 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 values(FieldValue[]): " + "");
                 }
                 ps.writeInt(values.length);
-                for (int i = 0; i < values.length; i++) {;
+                for (int i = 0; i < values.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     values[i](FieldValue): " + "");
                     }
@@ -3460,7 +3460,7 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 arguments(ValueImpl[]): " + "");
                 }
                 ps.writeInt(arguments.length);
-                for (int i = 0; i < arguments.length; i++) {;
+                for (int i = 0; i < arguments.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     arguments[i](ValueImpl): " + arguments[i]);
                     }
@@ -3600,7 +3600,7 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 arguments(ValueImpl[]): " + "");
                 }
                 ps.writeInt(arguments.length);
-                for (int i = 0; i < arguments.length; i++) {;
+                for (int i = 0; i < arguments.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     arguments[i](ValueImpl): " + arguments[i]);
                     }
@@ -3808,7 +3808,7 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 arguments(ValueImpl[]): " + "");
                 }
                 ps.writeInt(arguments.length);
-                for (int i = 0; i < arguments.length; i++) {;
+                for (int i = 0; i < arguments.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     arguments[i](ValueImpl): " + arguments[i]);
                     }
@@ -3961,7 +3961,7 @@ class JDWP {
                 }
                 int linesCount = ps.readInt();
                 lines = new LineInfo[linesCount];
-                for (int i = 0; i < linesCount; i++) {;
+                for (int i = 0; i < linesCount; i++) {
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "lines[i](LineInfo): " + "");
                     }
@@ -4096,7 +4096,7 @@ class JDWP {
                 }
                 int slotsCount = ps.readInt();
                 slots = new SlotInfo[slotsCount];
-                for (int i = 0; i < slotsCount; i++) {;
+                for (int i = 0; i < slotsCount; i++) {
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "slots[i](SlotInfo): " + "");
                     }
@@ -4159,7 +4159,7 @@ class JDWP {
                 }
                 int bytesCount = ps.readInt();
                 bytes = new byte[bytesCount];
-                for (int i = 0; i < bytesCount; i++) {;
+                for (int i = 0; i < bytesCount; i++) {
                     bytes[i] = ps.readByte();
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "bytes[i](byte): " + bytes[i]);
@@ -4372,7 +4372,7 @@ class JDWP {
                 }
                 int slotsCount = ps.readInt();
                 slots = new SlotInfo[slotsCount];
-                for (int i = 0; i < slotsCount; i++) {;
+                for (int i = 0; i < slotsCount; i++) {
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "slots[i](SlotInfo): " + "");
                     }
@@ -4504,7 +4504,7 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 fields(Field[]): " + "");
                 }
                 ps.writeInt(fields.length);
-                for (int i = 0; i < fields.length; i++) {;
+                for (int i = 0; i < fields.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     fields[i](Field): " + "");
                     }
@@ -4538,7 +4538,7 @@ class JDWP {
                 }
                 int valuesCount = ps.readInt();
                 values = new ValueImpl[valuesCount];
-                for (int i = 0; i < valuesCount; i++) {;
+                for (int i = 0; i < valuesCount; i++) {
                     values[i] = ps.readValue();
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "values[i](ValueImpl): " + values[i]);
@@ -4616,7 +4616,7 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 values(FieldValue[]): " + "");
                 }
                 ps.writeInt(values.length);
-                for (int i = 0; i < values.length; i++) {;
+                for (int i = 0; i < values.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     values[i](FieldValue): " + "");
                     }
@@ -4710,7 +4710,7 @@ class JDWP {
                 }
                 int waitersCount = ps.readInt();
                 waiters = new ThreadReferenceImpl[waitersCount];
-                for (int i = 0; i < waitersCount; i++) {;
+                for (int i = 0; i < waitersCount; i++) {
                     waiters[i] = ps.readThreadReference();
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "waiters[i](ThreadReferenceImpl): " + (waiters[i]==null?"NULL":"ref="+waiters[i].ref()));
@@ -4821,7 +4821,7 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 arguments(ValueImpl[]): " + "");
                 }
                 ps.writeInt(arguments.length);
-                for (int i = 0; i < arguments.length; i++) {;
+                for (int i = 0; i < arguments.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     arguments[i](ValueImpl): " + arguments[i]);
                     }
@@ -5084,7 +5084,7 @@ class JDWP {
                 }
                 int referringObjectsCount = ps.readInt();
                 referringObjects = new ObjectReferenceImpl[referringObjectsCount];
-                for (int i = 0; i < referringObjectsCount; i++) {;
+                for (int i = 0; i < referringObjectsCount; i++) {
                     referringObjects[i] = ps.readTaggedObjectReference();
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "referringObjects[i](ObjectReferenceImpl): " + (referringObjects[i]==null?"NULL":"ref="+referringObjects[i].ref()));
@@ -5513,7 +5513,7 @@ class JDWP {
                 }
                 int framesCount = ps.readInt();
                 frames = new Frame[framesCount];
-                for (int i = 0; i < framesCount; i++) {;
+                for (int i = 0; i < framesCount; i++) {
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "frames[i](Frame): " + "");
                     }
@@ -5627,7 +5627,7 @@ class JDWP {
                 }
                 int ownedCount = ps.readInt();
                 owned = new ObjectReferenceImpl[ownedCount];
-                for (int i = 0; i < ownedCount; i++) {;
+                for (int i = 0; i < ownedCount; i++) {
                     owned[i] = ps.readTaggedObjectReference();
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "owned[i](ObjectReferenceImpl): " + (owned[i]==null?"NULL":"ref="+owned[i].ref()));
@@ -5914,7 +5914,7 @@ class JDWP {
                 }
                 int ownedCount = ps.readInt();
                 owned = new monitor[ownedCount];
-                for (int i = 0; i < ownedCount; i++) {;
+                for (int i = 0; i < ownedCount; i++) {
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "owned[i](monitor): " + "");
                     }
@@ -6175,7 +6175,7 @@ class JDWP {
                 }
                 int childThreadsCount = ps.readInt();
                 childThreads = new ThreadReferenceImpl[childThreadsCount];
-                for (int i = 0; i < childThreadsCount; i++) {;
+                for (int i = 0; i < childThreadsCount; i++) {
                     childThreads[i] = ps.readThreadReference();
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "childThreads[i](ThreadReferenceImpl): " + (childThreads[i]==null?"NULL":"ref="+childThreads[i].ref()));
@@ -6186,7 +6186,7 @@ class JDWP {
                 }
                 int childGroupsCount = ps.readInt();
                 childGroups = new ThreadGroupReferenceImpl[childGroupsCount];
-                for (int i = 0; i < childGroupsCount; i++) {;
+                for (int i = 0; i < childGroupsCount; i++) {
                     childGroups[i] = ps.readThreadGroupReference();
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "childGroups[i](ThreadGroupReferenceImpl): " + (childGroups[i]==null?"NULL":"ref="+childGroups[i].ref()));
@@ -6355,7 +6355,7 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 values(ValueImpl[]): " + "");
                 }
                 ps.writeInt(values.length);
-                for (int i = 0; i < values.length; i++) {;
+                for (int i = 0; i < values.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     values[i](ValueImpl): " + values[i]);
                     }
@@ -6470,7 +6470,7 @@ class JDWP {
                 }
                 int classesCount = ps.readInt();
                 classes = new ClassInfo[classesCount];
-                for (int i = 0; i < classesCount; i++) {;
+                for (int i = 0; i < classesCount; i++) {
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "classes[i](ClassInfo): " + "");
                     }
@@ -6504,7 +6504,7 @@ class JDWP {
                  * Modifier kind
                  */
                 final byte modKind;
-                ModifierCommon aModifierCommon;
+                final ModifierCommon aModifierCommon;
 
                 Modifier(byte modKind, ModifierCommon aModifierCommon) {
                     this.modKind = modKind;
@@ -7007,7 +7007,7 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 modifiers(Modifier[]): " + "");
                 }
                 ps.writeInt(modifiers.length);
-                for (int i = 0; i < modifiers.length; i++) {;
+                for (int i = 0; i < modifiers.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     modifiers[i](Modifier): " + "");
                     }
@@ -7203,7 +7203,7 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 slots(SlotInfo[]): " + "");
                 }
                 ps.writeInt(slots.length);
-                for (int i = 0; i < slots.length; i++) {;
+                for (int i = 0; i < slots.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     slots[i](SlotInfo): " + "");
                     }
@@ -7235,7 +7235,7 @@ class JDWP {
                 }
                 int valuesCount = ps.readInt();
                 values = new ValueImpl[valuesCount];
-                for (int i = 0; i < valuesCount; i++) {;
+                for (int i = 0; i < valuesCount; i++) {
                     values[i] = ps.readValue();
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "values[i](ValueImpl): " + values[i]);
@@ -7319,7 +7319,7 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 slotValues(SlotInfo[]): " + "");
                 }
                 ps.writeInt(slotValues.length);
-                for (int i = 0; i < slotValues.length; i++) {;
+                for (int i = 0; i < slotValues.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     slotValues[i](SlotInfo): " + "");
                     }
@@ -8805,7 +8805,7 @@ class JDWP {
                 }
                 int eventsCount = ps.readInt();
                 events = new Events[eventsCount];
-                for (int i = 0; i < eventsCount; i++) {;
+                for (int i = 0; i < eventsCount; i++) {
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "events[i](Events): " + "");
                     }

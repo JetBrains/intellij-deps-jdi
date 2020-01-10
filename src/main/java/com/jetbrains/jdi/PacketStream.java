@@ -41,6 +41,7 @@ package com.jetbrains.jdi;
 import com.sun.jdi.*;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,7 +49,7 @@ class PacketStream {
     final VirtualMachineImpl vm;
     private int inCursor = 0;
     final Packet pkt;
-    private ByteArrayOutputStream dataStream = new ByteArrayOutputStream();
+    private final ByteArrayOutputStream dataStream = new ByteArrayOutputStream();
     private boolean isCommitted = false;
 
     PacketStream(VirtualMachineImpl vm, int cmdSet, int cmd) {
@@ -204,13 +205,9 @@ class PacketStream {
     }
 
     void writeString(String string) {
-        try {
-            byte[] stringBytes = string.getBytes("UTF8");
-            writeInt(stringBytes.length);
-            writeByteArray(stringBytes);
-        } catch (java.io.UnsupportedEncodingException e) {
-            throw new InternalException("Cannot convert string to UTF8 bytes");
-        }
+        byte[] stringBytes = string.getBytes(StandardCharsets.UTF_8);
+        writeInt(stringBytes.length);
+        writeByteArray(stringBytes);
     }
 
     void writeLocation(Location location) {
@@ -423,12 +420,7 @@ class PacketStream {
         String ret;
         int len = readInt();
 
-        try {
-            ret = new String(pkt.data, inCursor, len, "UTF8");
-        } catch(java.io.UnsupportedEncodingException e) {
-            System.err.println(e);
-            ret = "Conversion error!";
-        }
+        ret = new String(pkt.data, inCursor, len, StandardCharsets.UTF_8);
         inCursor += len;
         return ret;
     }

@@ -54,7 +54,7 @@ import com.sun.jdi.connect.LaunchingConnector;
 
 abstract class ConnectorImpl implements Connector {
 
-    Map<String, Argument> defaultArguments = new LinkedHashMap<>();
+    final Map<String, Argument> defaultArguments = new LinkedHashMap<>();
 
     // Used by BooleanArgument
     static String trueString = null;
@@ -161,11 +161,11 @@ abstract class ConnectorImpl implements Connector {
 
     @SuppressWarnings("serial") // JDK implementation class
     abstract class ArgumentImpl implements Connector.Argument, Cloneable {
-        private String name;
-        private String label;
-        private String description;
+        private final String name;
+        private final String label;
+        private final String description;
         private String value;
-        private boolean mustSpecify;
+        private final boolean mustSpecify;
 
         ArgumentImpl(String name, String label, String description,
                      String value, boolean mustSpecify) {

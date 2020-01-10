@@ -45,7 +45,7 @@ import com.sun.jdi.VirtualMachine;
 
 public class ShortValueImpl extends PrimitiveValueImpl
                             implements ShortValue {
-    private short value;
+    private final short value;
 
     ShortValueImpl(VirtualMachine aVm, short aValue) {
         super(aVm);

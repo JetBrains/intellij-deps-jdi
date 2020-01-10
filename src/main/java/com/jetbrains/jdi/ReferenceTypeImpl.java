@@ -66,7 +66,7 @@ import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
 
 public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceType {
-    protected long ref;
+    protected final long ref;
     private String signature = null;
     private String genericSignature = null;
     private boolean genericSignatureGotten = false;

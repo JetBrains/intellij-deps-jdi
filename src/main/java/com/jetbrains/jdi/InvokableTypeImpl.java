@@ -67,7 +67,7 @@ abstract class InvokableTypeImpl extends ReferenceTypeImpl {
      * It is necessary because both ClassType and InterfaceType
      * use their own type to represent the invocation result
      */
-    static interface InvocationResult {
+    interface InvocationResult {
         ObjectReferenceImpl getException();
         ValueImpl getResult();
     }

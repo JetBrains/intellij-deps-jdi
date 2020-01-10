@@ -47,7 +47,7 @@ public class JNITypeParser {
     static final char SIGNATURE_FUNC = '(';
     static final char SIGNATURE_ENDFUNC = ')';
 
-    private String signature;
+    private final String signature;
     private List<String> typeNameList;
     private List<String> signatureList;
     private int currentIndex;

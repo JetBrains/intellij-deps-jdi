@@ -78,8 +78,8 @@ class VirtualMachineImpl extends MirrorImpl
     // JDI as little as possible when not enabled.
     int traceFlags = TRACE_NONE;
 
-    static int TRACE_RAW_SENDS     = 0x01000000;
-    static int TRACE_RAW_RECEIVES  = 0x02000000;
+    static final int TRACE_RAW_SENDS     = 0x01000000;
+    static final int TRACE_RAW_RECEIVES  = 0x02000000;
 
     boolean traceReceives = false;   // pre-compute because of frequency
 
@@ -129,12 +129,12 @@ class VirtualMachineImpl extends MirrorImpl
     private final ByteValueImpl[] byteValues = new ByteValueImpl[256];
 
     // Launched debuggee process
-    private Process process;
+    private final Process process;
 
     // coordinates state changes and corresponding listener notifications
-    private VMState state = new VMState(this);
+    private final VMState state = new VMState(this);
 
-    private Object initMonitor = new Object();
+    private final Object initMonitor = new Object();
     private boolean initComplete = false;
     private boolean shutdown = false;
 
@@ -1533,7 +1533,7 @@ class VirtualMachineImpl extends MirrorImpl
 
    static private class SoftObjectReference extends SoftReference<ObjectReferenceImpl> {
        int count;
-       Long key;
+       final Long key;
 
        SoftObjectReference(Long key, ObjectReferenceImpl mirror,
                            ReferenceQueue<ObjectReferenceImpl> queue) {

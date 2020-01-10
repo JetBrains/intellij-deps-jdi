@@ -168,8 +168,8 @@ abstract class AbstractLauncher extends ConnectorImpl
     private class Helper {
         @SuppressWarnings("unused")
         private final String address;
-        private TransportService.ListenKey listenKey;
-        private TransportService ts;
+        private final TransportService.ListenKey listenKey;
+        private final TransportService ts;
         private final String[] commandArray;
         private Process process = null;
         private Connection connection = null;

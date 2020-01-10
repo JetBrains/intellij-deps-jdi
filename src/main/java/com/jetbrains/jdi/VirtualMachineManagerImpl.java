@@ -53,9 +53,9 @@ import com.sun.jdi.connect.spi.Connection;
 
 /* Public for use by com.sun.jdi.Bootstrap */
 public class VirtualMachineManagerImpl implements VirtualMachineManagerService {
-    private List<Connector> connectors = new ArrayList<>();
+    private final List<Connector> connectors = new ArrayList<>();
     private LaunchingConnector defaultConnector = null;
-    private List<VirtualMachine> targets = new ArrayList<>();
+    private final List<VirtualMachine> targets = new ArrayList<>();
     private final ThreadGroup mainGroupForJDI;
     private ResourceBundle messages = null;
     private int vmSequenceNumber = 0;

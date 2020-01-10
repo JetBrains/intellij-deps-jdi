@@ -45,7 +45,7 @@ import com.sun.jdi.VirtualMachine;
 public class BooleanValueImpl extends PrimitiveValueImpl
                               implements BooleanValue
 {
-    private boolean value;
+    private final boolean value;
 
     BooleanValueImpl(VirtualMachine aVm, boolean aValue) {
         super(aVm);

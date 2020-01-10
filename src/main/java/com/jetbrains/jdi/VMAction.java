@@ -55,8 +55,8 @@ class VMAction extends EventObject {
     static final int VM_SUSPENDED = 1;
     static final int VM_NOT_SUSPENDED = 2;
 
-    int id;
-    ThreadReference resumingThread;
+    final int id;
+    final ThreadReference resumingThread;
 
     VMAction(VirtualMachine vm, int id) {
         this(vm, null, id);

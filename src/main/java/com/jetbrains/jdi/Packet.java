@@ -40,7 +40,7 @@ package com.jetbrains.jdi;
 
 import java.io.IOException;
 
-public class Packet extends Object {
+public class Packet {
     public final static short NoFlags = 0x0;
     public final static short Reply = 0x80;
     public final static short ReplyNoError = 0x0;

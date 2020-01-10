@@ -80,7 +80,7 @@ import com.sun.jdi.event.VMStartEvent;
 import com.sun.jdi.event.WatchpointEvent;
 import com.sun.jdi.request.EventRequest;
 
-enum EventDestination {UNKNOWN_EVENT, INTERNAL_EVENT, CLIENT_EVENT};
+enum EventDestination {UNKNOWN_EVENT, INTERNAL_EVENT, CLIENT_EVENT}
 
 /*
  * An EventSet is normally created by the transport reader thread when
@@ -98,7 +98,7 @@ enum EventDestination {UNKNOWN_EVENT, INTERNAL_EVENT, CLIENT_EVENT};
  */
 public class EventSetImpl extends ArrayList<Event> implements EventSet {
     private static final long serialVersionUID = -4857338819787924570L;
-    private VirtualMachineImpl vm; // we implement Mirror
+    private final VirtualMachineImpl vm; // we implement Mirror
     private Packet pkt;
     private byte suspendPolicy;
     private EventSetImpl internalEventSet;
@@ -218,7 +218,7 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
     }
 
     abstract class ThreadedEventImpl extends EventImpl {
-        private ThreadReference thread;
+        private final ThreadReference thread;
 
         ThreadedEventImpl(JDWP.Event.Composite.Events.EventsCommon evt,
                           int requestID, ThreadReference thread) {
@@ -237,7 +237,7 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
 
     abstract class LocatableEventImpl extends ThreadedEventImpl
                                       implements Locatable {
-        private Location location;
+        private final Location location;
 
         LocatableEventImpl(JDWP.Event.Composite.Events.EventsCommon evt,
                            int requestID,
@@ -338,7 +338,7 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
 
         public ObjectReference  monitor() {
             return monitor;
-        };
+        }
 
     }
 
@@ -357,14 +357,14 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
 
         public ObjectReference  monitor() {
             return monitor;
-        };
+        }
 
     }
 
     class MonitorWaitEventImpl extends LocatableEventImpl
                             implements MonitorWaitEvent {
         private ObjectReference monitor = null;
-        private long timeout;
+        private final long timeout;
 
         MonitorWaitEventImpl(JDWP.Event.Composite.Events.MonitorWait evt) {
             super(evt, evt.requestID, evt.thread, evt.location);
@@ -378,7 +378,7 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
 
         public ObjectReference  monitor() {
             return monitor;
-        };
+        }
 
         public long timeout() {
             return timeout;
@@ -388,7 +388,7 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
     class MonitorWaitedEventImpl extends LocatableEventImpl
                             implements MonitorWaitedEvent {
         private ObjectReference monitor = null;
-        private boolean timed_out;
+        private final boolean timed_out;
 
         MonitorWaitedEventImpl(JDWP.Event.Composite.Events.MonitorWaited evt) {
             super(evt, evt.requestID, evt.thread, evt.location);
@@ -402,7 +402,7 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
 
         public ObjectReference  monitor() {
             return monitor;
-        };
+        }
 
         public boolean timedout() {
             return timed_out;
@@ -411,7 +411,7 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
 
     class ClassPrepareEventImpl extends ThreadedEventImpl
                             implements ClassPrepareEvent {
-        private ReferenceType referenceType;
+        private final ReferenceType referenceType;
 
         ClassPrepareEventImpl(JDWP.Event.Composite.Events.ClassPrepare evt) {
             super(evt, evt.requestID, evt.thread);
@@ -430,7 +430,7 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
     }
 
     class ClassUnloadEventImpl extends EventImpl implements ClassUnloadEvent {
-        private String classSignature;
+        private final String classSignature;
 
         ClassUnloadEventImpl(JDWP.Event.Composite.Events.ClassUnload evt) {
             super(evt, evt.requestID);
@@ -453,8 +453,8 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
 
     class ExceptionEventImpl extends LocatableEventImpl
                                              implements ExceptionEvent {
-        private ObjectReference exception;
-        private Location catchLocation;
+        private final ObjectReference exception;
+        private final Location catchLocation;
 
         ExceptionEventImpl(JDWP.Event.Composite.Events.Exception evt) {
             super(evt, evt.requestID, evt.thread, evt.location);
@@ -584,7 +584,7 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
 
     class ModificationWatchpointEventImpl extends WatchpointEventImpl
                            implements ModificationWatchpointEvent {
-        Value newValue;
+        final Value newValue;
 
         ModificationWatchpointEventImpl(
                         JDWP.Event.Composite.Events.FieldModification evt) {

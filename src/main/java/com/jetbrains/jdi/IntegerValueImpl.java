@@ -45,7 +45,7 @@ import com.sun.jdi.VirtualMachine;
 
 public class IntegerValueImpl extends PrimitiveValueImpl
                               implements IntegerValue {
-    private int value;
+    private final int value;
 
     IntegerValueImpl(VirtualMachine aVm, int aValue) {
         super(aVm);

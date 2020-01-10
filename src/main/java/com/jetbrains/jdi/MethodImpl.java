@@ -56,7 +56,7 @@ import com.sun.jdi.VirtualMachine;
 public abstract class MethodImpl extends TypeComponentImpl
                                  implements Method
 {
-    private JNITypeParser signatureParser;
+    private final JNITypeParser signatureParser;
 
     abstract int argSlotCount() throws AbsentInformationException;
 
@@ -278,7 +278,7 @@ public abstract class MethodImpl extends TypeComponentImpl
      * proper type-checking.
      */
     class ArgumentContainer implements ValueContainer {
-        int index;
+        final int index;
 
         ArgumentContainer(int index) {
             this.index = index;

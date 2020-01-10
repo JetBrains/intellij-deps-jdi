@@ -51,9 +51,9 @@ public class EventQueueImpl extends MirrorImpl implements EventQueue {
      * Note this is not a synchronized list. Iteration/update should be
      * protected through the 'this' monitor.
      */
-    LinkedList<EventSet> eventSets = new LinkedList<>();
+    final LinkedList<EventSet> eventSets = new LinkedList<>();
 
-    TargetVM target;
+    final TargetVM target;
     boolean closed = false;
 
     EventQueueImpl(VirtualMachine vm, TargetVM target) {
@@ -229,7 +229,7 @@ public class EventQueueImpl extends MirrorImpl implements EventQueue {
 
     private class TimerThread extends Thread {
         private boolean timedOut = false;
-        private long timeout;
+        private final long timeout;
 
         TimerThread(long timeout) {
             super(vm.threadGroupForJDI(), "JDI Event Queue Timer");

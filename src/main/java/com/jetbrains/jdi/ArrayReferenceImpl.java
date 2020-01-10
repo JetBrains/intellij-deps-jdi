@@ -181,7 +181,7 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
                         (srcIndex + length - 1));
         }
 
-        boolean somethingToSet = false;;
+        boolean somethingToSet = false;
         ValueImpl[] setValues = new ValueImpl[length];
 
         for (int i = 0; i < length; i++) {

@@ -95,7 +95,7 @@ public class SunCommandLineLauncher extends AbstractLauncher {
                  InvocationTargetException |
                  IllegalAccessException |
                  NoSuchMethodException x) {
-        };
+        }
         if (transportService == null) {
             transportService = new SocketTransportService();
             transport = new Transport() {
@@ -198,8 +198,7 @@ public class SunCommandLineLauncher extends AbstractLauncher {
             int failCount = 0;
             while(true) {
                 try {
-                    String address = "javadebug" +
-                        String.valueOf(rr.nextInt(100000));
+                    String address = "javadebug" + rr.nextInt(100000);
                     listenKey = transportService().startListening(address);
                     break;
                 } catch (IOException ioe) {

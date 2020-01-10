@@ -53,9 +53,9 @@ public class MonitorInfoImpl extends MirrorImpl
      */
     private boolean isValid = true;
 
-    ObjectReference monitor;
-    ThreadReference thread;
-    int stack_depth;
+    final ObjectReference monitor;
+    final ThreadReference thread;
+    final int stack_depth;
 
     MonitorInfoImpl(VirtualMachine vm, ObjectReference mon,
                     ThreadReferenceImpl thread, int dpth) {

@@ -45,7 +45,7 @@ import com.sun.jdi.VirtualMachine;
 
 public class LongValueImpl extends PrimitiveValueImpl
                            implements LongValue {
-    private long value;
+    private final long value;
 
     LongValueImpl(VirtualMachine aVm, long aValue) {
         super(aVm);

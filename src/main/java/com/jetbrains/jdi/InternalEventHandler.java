@@ -52,8 +52,8 @@ import com.sun.jdi.event.EventSet;
 
 public class InternalEventHandler implements Runnable
 {
-    EventQueueImpl queue;
-    VirtualMachineImpl vm;
+    final EventQueueImpl queue;
+    final VirtualMachineImpl vm;
 
     InternalEventHandler(VirtualMachineImpl vm, EventQueueImpl queue) {
         this.vm = vm;

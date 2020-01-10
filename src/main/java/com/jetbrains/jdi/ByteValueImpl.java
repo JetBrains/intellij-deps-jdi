@@ -46,7 +46,7 @@ import com.sun.jdi.VirtualMachine;
 public class ByteValueImpl extends PrimitiveValueImpl
                            implements ByteValue
 {
-    private byte value;
+    private final byte value;
 
     ByteValueImpl(VirtualMachine aVm, byte aValue) {
         super(aVm);

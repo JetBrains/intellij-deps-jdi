@@ -50,13 +50,13 @@ import com.sun.jdi.connect.spi.Connection;
  * The Connection returned by attach and accept is one of these
  */
 class SocketConnection extends Connection {
-    private Socket socket;
+    private final Socket socket;
     private boolean closed = false;
     private OutputStream socketOutput;
     private InputStream socketInput;
-    private Object receiveLock = new Object();
-    private Object sendLock = new Object();
-    private Object closeLock = new Object();
+    private final Object receiveLock = new Object();
+    private final Object sendLock = new Object();
+    private final Object closeLock = new Object();
 
     SocketConnection(Socket socket) throws IOException {
         this.socket = socket;

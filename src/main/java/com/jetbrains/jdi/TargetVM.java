@@ -53,12 +53,12 @@ import com.sun.jdi.event.EventQueue;
 import com.sun.jdi.event.EventSet;
 
 public class TargetVM implements Runnable {
-    private Map<String, Packet> waitingQueue = new HashMap<>(32,0.75f);
+    private final Map<String, Packet> waitingQueue = new HashMap<>(32,0.75f);
     private volatile boolean shouldListen = true;
-    private List<EventQueue> eventQueues = Collections.synchronizedList(new ArrayList<>(2));
-    private VirtualMachineImpl vm;
-    private Connection connection;
-    private Thread readerThread;
+    private final List<EventQueue> eventQueues = Collections.synchronizedList(new ArrayList<>(2));
+    private final VirtualMachineImpl vm;
+    private final Connection connection;
+    private final Thread readerThread;
     private EventController eventController = null;
     private boolean eventsHeld = false;
 
@@ -103,7 +103,7 @@ public class TargetVM implements Runnable {
             if ((i > 0) && (i % 16 == 0)) {
                 vm.printTrace(line.toString());
                 line.setLength(0);
-                line.append(String.valueOf(i));
+                line.append(i);
                 line.append(": ");
                 int len = line.length();
                 for (int j = 0; j < 6 - len; j++) {
@@ -316,7 +316,8 @@ public class TargetVM implements Runnable {
     void waitForReply(Packet packet) {
         synchronized(packet) {
             while ((!packet.replied) && shouldListen) {
-                try { packet.wait(); } catch (InterruptedException e) {;}
+                try { packet.wait(); } catch (InterruptedException e) {
+                }
             }
 
             if (!packet.replied) {

@@ -46,6 +46,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.ResourceBundle;
 
 import com.sun.jdi.connect.TransportTimeoutException;
@@ -65,7 +66,7 @@ public class SocketTransportService extends TransportService {
      * the ServerSocket.
      */
     static class SocketListenKey extends ListenKey {
-        ServerSocket ss;
+        final ServerSocket ss;
 
         SocketListenKey(ServerSocket ss) {
             this.ss = ss;
@@ -133,7 +134,7 @@ public class SocketTransportService extends TransportService {
     void handshake(Socket s, long timeout) throws IOException {
         s.setSoTimeout((int)timeout);
 
-        byte[] hello = "JDWP-Handshake".getBytes("UTF-8");
+        byte[] hello = "JDWP-Handshake".getBytes(StandardCharsets.UTF_8);
         s.getOutputStream().write(hello);
 
         byte[] b = new byte[hello.length];

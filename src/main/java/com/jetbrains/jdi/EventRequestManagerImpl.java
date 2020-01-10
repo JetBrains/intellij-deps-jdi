@@ -134,7 +134,7 @@ class EventRequestManagerImpl extends MirrorImpl
          * access/modification should be protected by synchronizing on
          * the enclosing instance of EventRequestImpl.
          */
-        List<Object> filters = new ArrayList<>();
+        final List<Object> filters = new ArrayList<>();
 
         boolean isEnabled = false;
         boolean deleted = false;
@@ -581,9 +581,9 @@ class EventRequestManagerImpl extends MirrorImpl
 
     class StepRequestImpl extends ClassVisibleEventRequestImpl
                           implements StepRequest {
-        ThreadReferenceImpl thread;
-        int size;
-        int depth;
+        final ThreadReferenceImpl thread;
+        final int size;
+        final int depth;
 
         StepRequestImpl(ThreadReference thread, int size, int depth) {
             this.thread = (ThreadReferenceImpl)thread;
