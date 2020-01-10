@@ -325,7 +325,7 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
 
     class MonitorContendedEnterEventImpl extends LocatableEventImpl
                             implements MonitorContendedEnterEvent {
-        private ObjectReference monitor = null;
+        private final ObjectReference monitor;
 
         MonitorContendedEnterEventImpl(JDWP.Event.Composite.Events.MonitorContendedEnter evt) {
             super(evt, evt.requestID, evt.thread, evt.location);
@@ -344,7 +344,7 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
 
     class MonitorContendedEnteredEventImpl extends LocatableEventImpl
                             implements MonitorContendedEnteredEvent {
-        private ObjectReference monitor = null;
+        private final ObjectReference monitor;
 
         MonitorContendedEnteredEventImpl(JDWP.Event.Composite.Events.MonitorContendedEntered evt) {
             super(evt, evt.requestID, evt.thread, evt.location);
@@ -363,7 +363,7 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
 
     class MonitorWaitEventImpl extends LocatableEventImpl
                             implements MonitorWaitEvent {
-        private ObjectReference monitor = null;
+        private final ObjectReference monitor;
         private final long timeout;
 
         MonitorWaitEventImpl(JDWP.Event.Composite.Events.MonitorWait evt) {
@@ -387,7 +387,7 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
 
     class MonitorWaitedEventImpl extends LocatableEventImpl
                             implements MonitorWaitedEvent {
-        private ObjectReference monitor = null;
+        private final ObjectReference monitor;
         private final boolean timed_out;
 
         MonitorWaitedEventImpl(JDWP.Event.Composite.Events.MonitorWaited evt) {

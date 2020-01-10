@@ -44,7 +44,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -69,7 +68,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     protected final long ref;
     private String signature = null;
     private String genericSignature = null;
-    private boolean genericSignatureGotten = false;
+    private boolean genericSignatureGotten;
     private String baseSourceName = null;
     private String baseSourceDir = null;
     private String baseSourcePath = null;
@@ -131,9 +130,8 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         // Fetch all methods for the class, check performance impact
         // Needs no synchronization now, since methods() returns
         // unmodifiable local data
-        Iterator<Method> it = methods().iterator();
-        while (it.hasNext()) {
-            MethodImpl method = (MethodImpl)it.next();
+        for (Method value : methods()) {
+            MethodImpl method = (MethodImpl) value;
             if (method.ref() == ref) {
                 return method;
             }
@@ -145,9 +143,8 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         // Fetch all fields for the class, check performance impact
         // Needs no synchronization now, since fields() returns
         // unmodifiable local data
-        Iterator<Field>it = fields().iterator();
-        while (it.hasNext()) {
-            FieldImpl field = (FieldImpl)it.next();
+        for (Field value : fields()) {
+            FieldImpl field = (FieldImpl) value;
             if (field.ref() == ref) {
                 return field;
             }
@@ -361,14 +358,11 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
                     throw exc.toJDIException();
                 }
                 fields = new ArrayList<>(jdwpFields.length);
-                for (int i=0; i<jdwpFields.length; i++) {
-                    JDWP.ReferenceType.FieldsWithGeneric.FieldInfo fi
-                        = jdwpFields[i];
-
+                for (JDWP.ReferenceType.FieldsWithGeneric.FieldInfo fi : jdwpFields) {
                     Field field = new FieldImpl(vm, this, fi.fieldID,
-                                                fi.name, fi.signature,
-                                                fi.genericSignature,
-                                                fi.modBits);
+                            fi.name, fi.signature,
+                            fi.genericSignature,
+                            fi.modBits);
                     fields.add(field);
                 }
             } else {
@@ -380,19 +374,17 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
                     throw exc.toJDIException();
                 }
                 fields = new ArrayList<>(jdwpFields.length);
-                for (int i=0; i<jdwpFields.length; i++) {
-                    JDWP.ReferenceType.Fields.FieldInfo fi = jdwpFields[i];
-
+                for (JDWP.ReferenceType.Fields.FieldInfo fi : jdwpFields) {
                     Field field = new FieldImpl(vm, this, fi.fieldID,
-                                            fi.name, fi.signature,
-                                            null,
-                                            fi.modBits);
+                            fi.name, fi.signature,
+                            null,
+                            fi.modBits);
                     fields.add(field);
                 }
             }
 
             fields = Collections.unmodifiableList(fields);
-            fieldsRef = new SoftReference<List<Field>>(fields);
+            fieldsRef = new SoftReference<>(fields);
         }
         return fields;
     }
@@ -426,19 +418,18 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
          * by name, important for finding hidden or ambiguous fields.
          */
         List<Field> visibleList = new ArrayList<>();
-        Map<String, Field>  visibleTable = new HashMap<String, Field>();
+        Map<String, Field>  visibleTable = new HashMap<>();
 
         /* Track fields removed from above collection due to ambiguity */
-        List<String> ambiguousNames = new ArrayList<String>();
+        List<String> ambiguousNames = new ArrayList<>();
 
         /* Add inherited, visible fields */
         List<? extends ReferenceType> types = inheritedTypes();
-        Iterator<? extends ReferenceType> iter = types.iterator();
-        while (iter.hasNext()) {
+        for (ReferenceType referenceType : types) {
             /*
              * TO DO: Be defensive and check for cyclic interface inheritance
              */
-            ReferenceTypeImpl type = (ReferenceTypeImpl)iter.next();
+            ReferenceTypeImpl type = (ReferenceTypeImpl) referenceType;
             type.addVisibleFields(visibleList, visibleTable, ambiguousNames);
         }
 
@@ -467,16 +458,15 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
 
             /* Add inherited fields */
             List<? extends ReferenceType> types = inheritedTypes();
-            Iterator<? extends ReferenceType> iter = types.iterator();
-            while (iter.hasNext()) {
-                ReferenceTypeImpl type = (ReferenceTypeImpl)iter.next();
+            for (ReferenceType referenceType : types) {
+                ReferenceTypeImpl type = (ReferenceTypeImpl) referenceType;
                 type.addAllFields(fieldList, typeSet);
             }
         }
     }
     public List<Field> allFields() {
         List<Field> fieldList = new ArrayList<>();
-        Set<ReferenceType> typeSet = new HashSet<ReferenceType>();
+        Set<ReferenceType> typeSet = new HashSet<>();
         addAllFields(fieldList, typeSet);
         return fieldList;
     }
@@ -484,9 +474,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     public Field fieldByName(String fieldName) {
         List<Field> searchList = visibleFields();
 
-        for (int i = 0; i < searchList.size(); i++) {
-            Field f = searchList.get(i);
-
+        for (Field f : searchList) {
             if (f.name().equals(fieldName)) {
                 return f;
             }
@@ -509,20 +497,17 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
                     throw exc.toJDIException();
                 }
                 methods = new ArrayList<>(declared.length);
-                for (int i = 0; i < declared.length; i++) {
-                    JDWP.ReferenceType.MethodsWithGeneric.MethodInfo
-                        mi = declared[i];
-
+                for (JDWP.ReferenceType.MethodsWithGeneric.MethodInfo mi : declared) {
                     Method method = MethodImpl.createMethodImpl(vm, this,
-                                                         mi.methodID,
-                                                         mi.name, mi.signature,
-                                                         mi.genericSignature,
-                                                         mi.modBits);
+                            mi.methodID,
+                            mi.name, mi.signature,
+                            mi.genericSignature,
+                            mi.modBits);
                     methods.add(method);
                 }
             }
             methods = Collections.unmodifiableList(methods);
-            methodsRef = new SoftReference<List<Method>>(methods);
+            methodsRef = new SoftReference<>(methods);
         }
         return methods;
     }
@@ -536,15 +521,13 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         } catch (JDWPException exc) {
             throw exc.toJDIException();
         }
-        methods = new ArrayList<Method>(declared.length);
-        for (int i=0; i<declared.length; i++) {
-            JDWP.ReferenceType.Methods.MethodInfo mi = declared[i];
-
+        methods = new ArrayList<>(declared.length);
+        for (JDWP.ReferenceType.Methods.MethodInfo mi : declared) {
             Method method = MethodImpl.createMethodImpl(vm, this,
-                                                        mi.methodID,
-                                                        mi.name, mi.signature,
-                                                        null,
-                                                        mi.modBits);
+                    mi.methodID,
+                    mi.name, mi.signature,
+                    null,
+                    mi.modBits);
             methods.add(method);
         }
         return methods;
@@ -567,8 +550,8 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
          * map allows us to do this efficiently by keying on the
          * concatenation of name and signature.
          */
-        Map<String, Method> map = new HashMap<String, Method>();
-        addVisibleMethods(map, new HashSet<InterfaceType>());
+        Map<String, Method> map = new HashMap<>();
+        addVisibleMethods(map, new HashSet<>());
 
         /*
          * ... but the hash map destroys order. Methods should be
@@ -577,7 +560,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
          * to filter that ordered collection.
          */
         List<Method> list = allMethods();
-        list.retainAll(new HashSet<Method>(map.values()));
+        list.retainAll(new HashSet<>(map.values()));
         return list;
     }
 
@@ -585,7 +568,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
 
     public List<Method> methodsByName(String name) {
         List<Method> methods = visibleMethods();
-        ArrayList<Method> retList = new ArrayList<Method>(methods.size());
+        ArrayList<Method> retList = new ArrayList<>(methods.size());
         for (Method candidate : methods) {
             if (candidate.name().equals(name)) {
                 retList.add(candidate);
@@ -597,7 +580,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
 
     public List<Method> methodsByName(String name, String signature) {
         List<Method> methods = visibleMethods();
-        ArrayList<Method> retList = new ArrayList<Method>(methods.size());
+        ArrayList<Method> retList = new ArrayList<>(methods.size());
         for (Method candidate : methods) {
             if (candidate.name().equals(name) &&
                 candidate.signature().equals(signature)) {
@@ -616,11 +599,11 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         } catch (JDWPException exc) {
             throw exc.toJDIException();
         }
-        return Arrays.asList((InterfaceType[])intfs);
+        return Arrays.asList(intfs);
     }
 
     public List<ReferenceType> nestedTypes() {
-        List<ReferenceType> nested = new ArrayList<ReferenceType>();
+        List<ReferenceType> nested = new ArrayList<>();
         String outername = name();
         int outerlen = outername.length();
         vm.forEachClass(refType -> {
@@ -638,7 +621,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     }
 
     public Value getValue(Field sig) {
-        List<Field> list = new ArrayList<Field>(1);
+        List<Field> list = new ArrayList<>(1);
         list.add(sig);
         Map<Field, Value> map = getValues(list);
         return map.get(sig);
@@ -687,7 +670,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
                                          field.ref());
         }
 
-        Map<Field, Value> map = new HashMap<Field, Value>(size);
+        Map<Field, Value> map = new HashMap<>(size);
 
         ValueImpl[] values;
         try {
@@ -743,7 +726,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
                                 throws AbsentInformationException {
         SDE.Stratum stratum = stratum(stratumID);
         if (stratum.isJava()) {
-            List<String> result = new ArrayList<String>(1);
+            List<String> result = new ArrayList<>(1);
             result.add(baseSourceName());
             return result;
         }
@@ -754,7 +737,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
                                 throws AbsentInformationException {
         SDE.Stratum stratum = stratum(stratumID);
         if (stratum.isJava()) {
-            List<String> result = new ArrayList<String>(1);
+            List<String> result = new ArrayList<>(1);
             result.add(baseSourceDir() + baseSourceName());
             return result;
         }
@@ -801,7 +784,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
             int nextIndex;
 
             while ((nextIndex = typeName.indexOf('.', index)) > 0) {
-                sb.append(typeName.substring(index, nextIndex));
+                sb.append(typeName, index, nextIndex);
                 sb.append(java.io.File.separatorChar);
                 index = nextIndex + 1;
             }
@@ -834,7 +817,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
                     process(vm, this).extension;
             } catch (JDWPException exc) {
                 if (exc.errorCode() != JDWP.Error.ABSENT_INFORMATION) {
-                    sdeRef = new SoftReference<SDE>(NO_SDE_INFO_MARK);
+                    sdeRef = new SoftReference<>(NO_SDE_INFO_MARK);
                     throw exc.toJDIException();
                 }
             }
@@ -843,7 +826,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
             } else {
                 sde = new SDE(extension);
             }
-            sdeRef = new SoftReference<SDE>(sde);
+            sdeRef = new SoftReference<>(sde);
         }
         return sde;
     }
@@ -853,7 +836,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         if (sde.isValid()) {
             return sde.availableStrata();
         } else {
-            List<String> strata = new ArrayList<String>();
+            List<String> strata = new ArrayList<>();
             strata.add(SDE.BASE_STRATUM_NAME);
             return strata;
         }
@@ -887,14 +870,14 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
                             throws AbsentInformationException {
         boolean someAbsent = false; // A method that should have info, didn't
         SDE.Stratum stratum = stratum(stratumID);
-        List<Location> list = new ArrayList<Location>();  // location list
+        List<Location> list = new ArrayList<>();  // location list
 
-        for (Iterator<Method> iter = methods().iterator(); iter.hasNext(); ) {
-            MethodImpl method = (MethodImpl)iter.next();
+        for (Method value : methods()) {
+            MethodImpl method = (MethodImpl) value;
             try {
                 list.addAll(
-                   method.allLineLocations(stratum, sourceName));
-            } catch(AbsentInformationException exc) {
+                        method.allLineLocations(stratum, sourceName));
+            } catch (AbsentInformationException exc) {
                 someAbsent = true;
             }
         }
@@ -927,22 +910,21 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         List<Method> methods = methods();
         SDE.Stratum stratum = stratum(stratumID);
 
-        List<Location> list = new ArrayList<Location>();
+        List<Location> list = new ArrayList<>();
 
-        Iterator<Method> iter = methods.iterator();
-        while(iter.hasNext()) {
-            MethodImpl method = (MethodImpl)iter.next();
+        for (Method value : methods) {
+            MethodImpl method = (MethodImpl) value;
             // eliminate native and abstract to eliminate
             // false positives
             if (!method.isAbstract() &&
-                !method.isNative()) {
+                    !method.isNative()) {
                 try {
                     list.addAll(
-                       method.locationsOfLine(stratum,
-                                              sourceName,
-                                              lineNumber));
+                            method.locationsOfLine(stratum,
+                                    sourceName,
+                                    lineNumber));
                     somePresent = true;
-                } catch(AbsentInformationException exc) {
+                } catch (AbsentInformationException exc) {
                     someAbsent = true;
                 }
             }
@@ -969,8 +951,8 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
 
         try {
             return Arrays.asList(
-                (ObjectReference[])JDWP.ReferenceType.Instances.
-                        process(vm, this, intMax).instances);
+                    JDWP.ReferenceType.Instances.
+                            process(vm, this, intMax).instances);
         } catch (JDWPException exc) {
             throw exc.toJDIException();
         }
@@ -982,7 +964,6 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         }
         JDWP.ReferenceType.ClassFileVersion classFileVersion;
         if (versionNumberGotten) {
-            return;
         } else {
             try {
                 classFileVersion = JDWP.ReferenceType.ClassFileVersion.process(vm, this);
@@ -1050,7 +1031,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         byte[] cpbytes;
         constanPoolCount = jdwpCPool.count;
         cpbytes = jdwpCPool.bytes;
-        constantPoolBytesRef = new SoftReference<byte[]>(cpbytes);
+        constantPoolBytesRef = new SoftReference<>(cpbytes);
         constantPoolInfoGotten = true;
         return cpbytes;
     }

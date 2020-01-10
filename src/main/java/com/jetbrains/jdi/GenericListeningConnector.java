@@ -74,11 +74,7 @@ public class GenericListeningConnector
                                       boolean addAddressArgument)
     {
         transportService = ts;
-        transport = new Transport() {
-                public String name() {
-                    return transportService.name();
-                }
-            };
+        transport = transportService::name;
 
         if (addAddressArgument) {
             addStringArgument(
@@ -97,7 +93,7 @@ public class GenericListeningConnector
                 false,
                 0, Integer.MAX_VALUE);
 
-        listenMap = new HashMap<Map<String, ? extends Connector.Argument>, TransportService.ListenKey>(10);
+        listenMap = new HashMap<>(10);
     }
 
     /**
@@ -158,7 +154,7 @@ public class GenericListeningConnector
         String ts = argument(ARG_TIMEOUT, args).value();
         int timeout = 0;
         if (ts.length() > 0) {
-            timeout = Integer.decode(ts).intValue();
+            timeout = Integer.decode(ts);
         }
 
         TransportService.ListenKey listener = listenMap.get(args);

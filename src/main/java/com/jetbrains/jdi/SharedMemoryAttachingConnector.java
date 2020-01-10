@@ -39,7 +39,6 @@ package com.jetbrains.jdi;
 
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.connect.IllegalConnectorArgumentsException;
-import com.sun.jdi.connect.Transport;
 import com.sun.jdi.connect.spi.TransportService;
 
 import java.io.IOException;
@@ -63,10 +62,8 @@ public class SharedMemoryAttachingConnector extends GenericAttachingConnector {
             "",
             true);
 
-        transport = new Transport() {
-            public String name() {
-                return "dt_shmem";              // for compatibility reasons
-            }
+        transport = () -> {
+            return "dt_shmem";              // for compatibility reasons
         };
     }
 

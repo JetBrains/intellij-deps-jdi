@@ -109,12 +109,6 @@ public class FieldImpl extends TypeComponentImpl
     }
 
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(declaringType().name());
-        sb.append('.');
-        sb.append(name());
-
-        return sb.toString();
+        return declaringType().name() + '.' + name();
     }
 }

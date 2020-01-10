@@ -85,11 +85,7 @@ public class ProcessAttachingConnector
             false,
             0, Integer.MAX_VALUE);
 
-        transport = new Transport() {
-            public String name() {
-                return "local";
-            }
-        };
+        transport = () -> "local";
     }
 
     /**
@@ -102,13 +98,13 @@ public class ProcessAttachingConnector
         String t = argument(ARG_TIMEOUT, args).value();
         int timeout = 0;
         if (t.length() > 0) {
-            timeout = Integer.decode(t).intValue();
+            timeout = Integer.decode(t);
         }
 
         // Use Attach API to attach to target VM and read value of
         // sun.jdwp.listenAddress property.
 
-        String address = null;
+        String address;
         com.sun.tools.attach.VirtualMachine vm = null;
         try {
             vm = com.sun.tools.attach.VirtualMachine.attach(pid);
@@ -133,7 +129,7 @@ public class ProcessAttachingConnector
         // parse into transport library name and address
 
         final String lib = address.substring(0, pos);
-        address = address.substring(pos+1, address.length());
+        address = address.substring(pos+1);
 
         TransportService ts = null;
         if (lib.equals("dt_socket")) {
@@ -168,11 +164,7 @@ public class ProcessAttachingConnector
 
     public Transport transport() {
         if (transport == null) {
-            return new Transport() {
-                public String name() {
-                    return "local";
-                }
-            };
+            return () -> "local";
         }
         return transport;
     }

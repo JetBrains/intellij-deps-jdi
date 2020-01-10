@@ -129,7 +129,7 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
         }
         validateArrayAccess(index, length);
         if (length == 0) {
-            return new ArrayList<Value>();
+            return new ArrayList<>();
         }
 
         List<Value> vals;
@@ -145,7 +145,7 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
     public void setValue(int index, Value value)
             throws InvalidTypeException,
                    ClassNotLoadedException {
-        List<Value> list = new ArrayList<Value>(1);
+        List<Value> list = new ArrayList<>(1);
         list.add(value);
         setValues(index, list, 0, 1);
     }

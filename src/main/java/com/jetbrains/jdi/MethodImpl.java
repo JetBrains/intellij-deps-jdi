@@ -369,10 +369,9 @@ public abstract class MethodImpl extends TypeComponentImpl
         /*
          * Remove the excess args
          */
-        for (int ii = paramCount; ii < argCount; ii++) {
-            arguments.remove(paramCount);
+        if (argCount > paramCount) {
+            arguments.subList(paramCount, argCount).clear();
         }
-        return;
     }
 
     /*

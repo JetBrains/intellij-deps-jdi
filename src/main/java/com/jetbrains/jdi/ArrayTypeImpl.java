@@ -150,7 +150,7 @@ public class ArrayTypeImpl extends ReferenceTypeImpl
     }
 
     List<ReferenceType> inheritedTypes() {
-        return new ArrayList<ReferenceType>(0);
+        return new ArrayList<>(0);
     }
 
     void getModifiers() {

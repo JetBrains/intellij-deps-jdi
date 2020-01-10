@@ -73,11 +73,7 @@ public class RawCommandLineLauncher extends AbstractLauncher {
             transportService = (TransportService)Class.
                 forName("com.jetbrains.jdi.SharedMemoryTransportService").
                 getDeclaredConstructor().newInstance();
-            transport = new Transport() {
-                public String name() {
-                    return "dt_shmem";
-                }
-            };
+            transport = () -> "dt_shmem";
         } catch (ClassNotFoundException |
                  UnsatisfiedLinkError |
                  InstantiationException |
@@ -88,11 +84,7 @@ public class RawCommandLineLauncher extends AbstractLauncher {
 
         if (transportService == null) {
             transportService = new SocketTransportService();
-            transport = new Transport() {
-                public String name() {
-                    return "dt_socket";
-                }
-            };
+            transport = () -> "dt_socket";
         }
 
         addStringArgument(

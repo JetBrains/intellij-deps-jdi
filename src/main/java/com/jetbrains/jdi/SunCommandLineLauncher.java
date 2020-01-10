@@ -83,11 +83,7 @@ public class SunCommandLineLauncher extends AbstractLauncher {
             transportService = (TransportService)Class.
                 forName("com.jetbrains.jdi.SharedMemoryTransportService").
                 getDeclaredConstructor().newInstance();
-            transport = new Transport() {
-                public String name() {
-                    return "dt_shmem";
-                }
-            };
+            transport = () -> "dt_shmem";
             usingSharedMemory = true;
         } catch (ClassNotFoundException |
                  UnsatisfiedLinkError |
@@ -98,11 +94,7 @@ public class SunCommandLineLauncher extends AbstractLauncher {
         }
         if (transportService == null) {
             transportService = new SocketTransportService();
-            transport = new Transport() {
-                public String name() {
-                    return "dt_socket";
-                }
-            };
+            transport = () -> "dt_socket";
         }
 
         addStringArgument(
@@ -169,15 +161,15 @@ public class SunCommandLineLauncher extends AbstractLauncher {
                                                   arguments)).booleanValue();
         String quote = argument(ARG_QUOTE, arguments).value();
         String exe = argument(ARG_VM_EXEC, arguments).value();
-        String exePath = null;
+        String exePath;
 
         if (quote.length() > 1) {
             throw new IllegalConnectorArgumentsException("Invalid length",
                                                          ARG_QUOTE);
         }
 
-        if ((options.indexOf("-Djava.compiler=") != -1) &&
-            (options.toLowerCase().indexOf("-djava.compiler=none") == -1)) {
+        if ((options.contains("-Djava.compiler=")) &&
+            (!options.toLowerCase().contains("-djava.compiler=none"))) {
             throw new IllegalConnectorArgumentsException("Cannot debug with a JIT compiler",
                                                          ARG_OPTIONS);
         }

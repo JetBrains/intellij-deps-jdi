@@ -75,12 +75,8 @@ public class GenericAttachingConnector
                                       boolean addAddressArgument)
     {
         transportService = ts;
-        transport = new Transport() {
-            public String name() {
-                // delegate name to the transport service
-                return transportService.name();
-            }
-        };
+        // delegate name to the transport service
+        transport = transportService::name;
 
         if (addAddressArgument) {
             addStringArgument(
@@ -126,7 +122,7 @@ public class GenericAttachingConnector
         String ts  = argument(ARG_TIMEOUT, args).value();
         int timeout = 0;
         if (ts.length() > 0) {
-            timeout = Integer.decode(ts).intValue();
+            timeout = Integer.decode(ts);
         }
         Connection connection = transportService.attach(address, timeout, 0);
         return VirtualMachineManagerImpl.virtualMachineManager().createVirtualMachine(connection);

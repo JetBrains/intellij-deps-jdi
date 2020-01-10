@@ -86,7 +86,7 @@ public class VirtualMachineManagerImpl implements VirtualMachineManagerService {
          * Create a top-level thread group
          */
         ThreadGroup top = Thread.currentThread().getThreadGroup();
-        ThreadGroup parent = null;
+        ThreadGroup parent;
         while ((parent = top.getParent()) != null) {
             top = parent;
         }

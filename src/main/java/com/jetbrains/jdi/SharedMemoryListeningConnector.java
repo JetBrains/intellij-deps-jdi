@@ -38,7 +38,6 @@
 package com.jetbrains.jdi;
 
 import com.sun.jdi.connect.IllegalConnectorArgumentsException;
-import com.sun.jdi.connect.Transport;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -61,10 +60,8 @@ public class SharedMemoryListeningConnector extends GenericListeningConnector {
             "",
             false);
 
-        transport = new Transport() {
-            public String name() {
-                return "dt_shmem";              // compatibility
-            }
+        transport = () -> {
+            return "dt_shmem";              // compatibility
         };
     }
 

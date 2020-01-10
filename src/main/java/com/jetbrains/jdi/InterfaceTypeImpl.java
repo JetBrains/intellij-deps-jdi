@@ -83,13 +83,13 @@ final public class InterfaceTypeImpl extends InvokableTypeImpl
         if (superinterfaces == null) {
             superinterfaces = getInterfaces();
             superinterfaces = Collections.unmodifiableList(superinterfaces);
-            superinterfacesRef = new SoftReference<List<InterfaceType>>(superinterfaces);
+            superinterfacesRef = new SoftReference<>(superinterfaces);
         }
         return superinterfaces;
     }
 
     public List<InterfaceType> subinterfaces() {
-        List<InterfaceType> subs = new ArrayList<InterfaceType>();
+        List<InterfaceType> subs = new ArrayList<>();
         vm.forEachClass(refType -> {
             if (refType instanceof InterfaceType) {
                 InterfaceType interfaze = (InterfaceType)refType;
@@ -102,7 +102,7 @@ final public class InterfaceTypeImpl extends InvokableTypeImpl
     }
 
     public List<ClassType> implementors() {
-        List<ClassType> implementors = new ArrayList<ClassType>();
+        List<ClassType> implementors = new ArrayList<>();
         vm.forEachClass(refType -> {
             if (refType instanceof ClassType) {
                 ClassType clazz = (ClassType)refType;

@@ -69,14 +69,7 @@ public class LongValueImpl extends PrimitiveValueImpl
     }
 
     public int compareTo(LongValue obj) {
-        long other = obj.value();
-        if (value() < other) {
-            return -1;
-        } else if (value() == other) {
-            return 0;
-        } else {
-            return 1;
-        }
+        return Long.compare(value(), obj.value());
     }
 
     public Type type() {

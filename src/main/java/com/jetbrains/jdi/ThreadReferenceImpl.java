@@ -327,9 +327,7 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
             StackFrame frame = frame(0);
             Location location = frame.location();
             List<BreakpointRequest> requests = vm.eventRequestManager().breakpointRequests();
-            Iterator<BreakpointRequest> iter = requests.iterator();
-            while (iter.hasNext()) {
-                BreakpointRequest request = iter.next();
+            for (BreakpointRequest request : requests) {
                 if (location.equals(request.location())) {
                     return true;
                 }
@@ -436,13 +434,13 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
                 int count = jdwpFrames.length;
                 snapshot.frames = new ArrayList<>(count);
 
-                for (int i = 0; i<count; i++) {
-                    if (jdwpFrames[i].location == null) {
+                for (JDWP.ThreadReference.Frames.Frame jdwpFrame : jdwpFrames) {
+                    if (jdwpFrame.location == null) {
                         throw new InternalException("Invalid frame location");
                     }
                     StackFrame frame = new StackFrameImpl(vm, this,
-                                                          jdwpFrames[i].frameID,
-                                                          jdwpFrames[i].location);
+                            jdwpFrame.frameID,
+                            jdwpFrame.location);
                     // Add to the frame list
                     snapshot.frames.add(frame);
                 }
@@ -475,8 +473,8 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
         try {
             if (snapshot.ownedMonitors == null) {
                 snapshot.ownedMonitors = Arrays.asList(
-                                 (ObjectReference[])JDWP.ThreadReference.OwnedMonitors.
-                                         process(vm, this).owned);
+                        JDWP.ThreadReference.OwnedMonitors.
+                                process(vm, this).owned);
                 if ((vm.traceFlags & VirtualMachine.TRACE_OBJREFS) != 0) {
                     vm.printTrace(description() +
                                   " temporarily caching owned monitors"+
@@ -532,8 +530,8 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
 
                 snapshot.ownedMonitorsInfo = new ArrayList<>(minfo.length);
 
-                for (int i=0; i < minfo.length; i++) {
-                    MonitorInfo mon = new MonitorInfoImpl(vm, minfo[i].monitor, this, minfo[i].stack_depth);
+                for (JDWP.ThreadReference.OwnedMonitorsStackDepthInfo.monitor monitor : minfo) {
+                    MonitorInfo mon = new MonitorInfoImpl(vm, monitor.monitor, this, monitor.stack_depth);
                     snapshot.ownedMonitorsInfo.add(mon);
                 }
 

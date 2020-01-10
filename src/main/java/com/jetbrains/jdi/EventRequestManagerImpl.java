@@ -41,7 +41,6 @@ package com.jetbrains.jdi;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -429,9 +428,9 @@ class EventRequestManagerImpl extends MirrorImpl
 
     class ExceptionRequestImpl extends ClassVisibleEventRequestImpl
                                implements ExceptionRequest {
-        ReferenceType exception = null;
-        boolean caught = true;
-        boolean uncaught = true;
+        final ReferenceType exception;
+        final boolean caught;
+        final boolean uncaught;
 
         ExceptionRequestImpl(ReferenceType refType,
                           boolean notifyCaught, boolean notifyUncaught) {
@@ -624,14 +623,12 @@ class EventRequestManagerImpl extends MirrorImpl
              * Make sure this isn't a duplicate
              */
             List<StepRequest> requests = stepRequests();
-            Iterator<StepRequest> iter = requests.iterator();
-            while (iter.hasNext()) {
-                StepRequest request = iter.next();
+            for (StepRequest request : requests) {
                 if ((request != this) &&
                         request.isEnabled() &&
                         request.thread().equals(thread)) {
                     throw new DuplicateRequestException(
-                        "Only one step request allowed per thread");
+                            "Only one step request allowed per thread");
                 }
             }
 
@@ -763,10 +760,10 @@ class EventRequestManagerImpl extends MirrorImpl
         java.lang.reflect.Field[] ekinds =
             JDWP.EventKind.class.getDeclaredFields();
         int highest = 0;
-        for (int i = 0; i < ekinds.length; ++i) {
+        for (java.lang.reflect.Field ekind : ekinds) {
             int val;
             try {
-                val = ekinds[i].getInt(null);
+                val = ekind.getInt(null);
             } catch (IllegalAccessException exc) {
                 throw new RuntimeException("Got: " + exc);
             }
@@ -893,9 +890,8 @@ class EventRequestManagerImpl extends MirrorImpl
     public void deleteEventRequests(List<? extends EventRequest> eventRequests) {
         validateMirrors(eventRequests);
         // copy the eventRequests to avoid ConcurrentModificationException
-        Iterator<? extends EventRequest> iter = (new ArrayList<>(eventRequests)).iterator();
-        while (iter.hasNext()) {
-            ((EventRequestImpl)iter.next()).delete();
+        for (EventRequest eventRequest : new ArrayList<>(eventRequests)) {
+            ((EventRequestImpl) eventRequest).delete();
         }
     }
 
@@ -982,9 +978,8 @@ class EventRequestManagerImpl extends MirrorImpl
     EventRequest request(int eventCmd, int requestId) {
         List<? extends EventRequest> rl = requestList(eventCmd);
         synchronized(rl) {   // Refer Collections.synchronizedList javadoc.
-            Iterator<? extends EventRequest> itr = rl.iterator();
-            while (itr.hasNext()){
-                EventRequestImpl er = (EventRequestImpl)itr.next();
+            for (EventRequest eventRequest : rl) {
+                EventRequestImpl er = (EventRequestImpl) eventRequest;
                 if (er.id == requestId)
                     return er;
             }

@@ -231,9 +231,7 @@ public class ConcreteMethodImpl extends MethodImpl {
         List<LocalVariable> variables = getVariables();
 
         List<LocalVariable> retList = new ArrayList<>(2);
-        Iterator<LocalVariable> iter = variables.iterator();
-        while(iter.hasNext()) {
-            LocalVariable variable = iter.next();
+        for (LocalVariable variable : variables) {
             if (variable.name().equals(name)) {
                 retList.add(variable);
             }
@@ -245,9 +243,7 @@ public class ConcreteMethodImpl extends MethodImpl {
         List<LocalVariable> variables = getVariables();
 
         List<LocalVariable> retList = new ArrayList<>(variables.size());
-        Iterator<LocalVariable> iter = variables.iterator();
-        while(iter.hasNext()) {
-            LocalVariable variable = iter.next();
+        for (LocalVariable variable : variables) {
             if (variable.isArgument()) {
                 retList.add(variable);
             }
@@ -294,18 +290,17 @@ public class ConcreteMethodImpl extends MethodImpl {
             return info;
         }
 
-        List<Location> lineLocations = new ArrayList<Location>();
+        List<Location> lineLocations = new ArrayList<>();
         Map<Integer, List<Location>> lineMapper = new HashMap<>();
         int lowestLine = -1;
         int highestLine = -1;
         SDE.LineStratum lastLineStratum = null;
         SDE.Stratum baseStratum = declaringType.stratum(SDE.BASE_STRATUM_NAME);
-        Iterator<Location> it = getBaseLocations().lineLocations.iterator();
-        while(it.hasNext()) {
-            LocationImpl loc = (LocationImpl)it.next();
+        for (Location lineLocation : getBaseLocations().lineLocations) {
+            LocationImpl loc = (LocationImpl) lineLocation;
             int baseLineNumber = loc.lineNumber(baseStratum);
             SDE.LineStratum lineStratum =
-                  stratum.lineStratum(declaringType, baseLineNumber);
+                    stratum.lineStratum(declaringType, baseLineNumber);
 
             if (lineStratum == null) {
                 // location not mapped in this stratum
@@ -316,7 +311,7 @@ public class ConcreteMethodImpl extends MethodImpl {
 
             // remove unmapped and dup lines
             if ((lineNumber != -1) &&
-                          (!lineStratum.equals(lastLineStratum))) {
+                    (!lineStratum.equals(lastLineStratum))) {
                 lastLineStratum = lineStratum;
 
                 // Remember the largest/smallest line number
@@ -328,22 +323,16 @@ public class ConcreteMethodImpl extends MethodImpl {
                 }
 
                 loc.addStratumLineInfo(
-                    new StratumLineInfo(stratumID,
-                                        lineNumber,
-                                        lineStratum.sourceName(),
-                                        lineStratum.sourcePath()));
+                        new StratumLineInfo(stratumID,
+                                lineNumber,
+                                lineStratum.sourceName(),
+                                lineStratum.sourcePath()));
 
                 // Add to the location list
                 lineLocations.add(loc);
 
                 // Add to the line -> locations map
-                Integer key = lineNumber;
-                List<Location> mappedLocs = lineMapper.get(key);
-                if (mappedLocs == null) {
-                    mappedLocs = new ArrayList<Location>(1);
-                    lineMapper.put(key, mappedLocs);
-                }
-                mappedLocs.add(loc);
+                lineMapper.computeIfAbsent(lineNumber, k -> new ArrayList<>(1)).add(loc);
             }
         }
 
@@ -360,7 +349,7 @@ public class ConcreteMethodImpl extends MethodImpl {
             return info;
         }
 
-        JDWP.Method.LineTable lntab = null;
+        JDWP.Method.LineTable lntab;
         try {
             lntab = JDWP.Method.LineTable.process(vm, declaringType, ref);
         } catch (JDWPException exc) {
@@ -406,13 +395,7 @@ public class ConcreteMethodImpl extends MethodImpl {
                 lineLocations.add(loc);
 
                 // Add to the line -> locations map
-                Integer key = lineNumber;
-                List<Location> mappedLocs = lineMapper.get(key);
-                if (mappedLocs == null) {
-                    mappedLocs = new ArrayList<>(1);
-                    lineMapper.put(key, mappedLocs);
-                }
-                mappedLocs.add(loc);
+                lineMapper.computeIfAbsent(lineNumber, k -> new ArrayList<>(1)).add(loc);
             }
         }
 
@@ -440,12 +423,12 @@ public class ConcreteMethodImpl extends MethodImpl {
         info = new SoftLocationXRefs(SDE.BASE_STRATUM_NAME,
                                      lineMapper, lineLocations,
                                      lowestLine, highestLine);
-        softBaseLocationXRefsRef = new SoftReference<SoftLocationXRefs>(info);
+        softBaseLocationXRefsRef = new SoftReference<>(info);
         return info;
     }
 
     private List<LocalVariable> getVariables1_4() throws AbsentInformationException {
-        JDWP.Method.VariableTable vartab = null;
+        JDWP.Method.VariableTable vartab;
         try {
             vartab = JDWP.Method.VariableTable.
                                      process(vm, declaringType, ref);
@@ -492,7 +475,7 @@ public class ConcreteMethodImpl extends MethodImpl {
             return getVariables1_4();
         }
 
-        JDWP.Method.VariableTableWithGeneric vartab = null;
+        JDWP.Method.VariableTableWithGeneric vartab;
         try {
             vartab = JDWP.Method.VariableTableWithGeneric.
                                      process(vm, declaringType, ref);
@@ -508,7 +491,7 @@ public class ConcreteMethodImpl extends MethodImpl {
         // Get the number of slots used by argument variables
         argSlotCount = vartab.argCnt;
         int count = vartab.slots.length;
-        List<LocalVariable> variables = new ArrayList<LocalVariable>(count);
+        List<LocalVariable> variables = new ArrayList<>(count);
         for (int i=0; i<count; i++) {
             JDWP.Method.VariableTableWithGeneric.SlotInfo si = vartab.slots[i];
 

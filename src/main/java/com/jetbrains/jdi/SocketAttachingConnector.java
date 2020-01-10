@@ -43,7 +43,6 @@ import java.util.Map;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.connect.Connector;
 import com.sun.jdi.connect.IllegalConnectorArgumentsException;
-import com.sun.jdi.connect.Transport;
 
 /*
  * An AttachingConnector that uses the SocketTransportService
@@ -73,10 +72,8 @@ public class SocketAttachingConnector extends GenericAttachingConnector {
             true,
             0, Integer.MAX_VALUE);
 
-        transport = new Transport() {
-            public String name() {
-                return "dt_socket";     // for compatibility reasons
-            }
+        transport = () -> {
+            return "dt_socket";     // for compatibility reasons
         };
     }
 

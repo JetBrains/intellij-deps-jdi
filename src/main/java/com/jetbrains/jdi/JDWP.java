@@ -984,11 +984,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 requests(Request[]): " + "");
                 }
                 ps.writeInt(requests.length);
-                for (int i = 0; i < requests.length; i++) {
+                for (Request request : requests) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     requests[i](Request): " + "");
                     }
-                    requests[i].write(ps);
+                    request.write(ps);
                 }
                 ps.send();
                 return ps;
@@ -1487,11 +1487,11 @@ class JDWP {
                         ps.vm.printTrace("Sending:                     classfile(byte[]): " + "");
                     }
                     ps.writeInt(classfile.length);
-                    for (int i = 0; i < classfile.length; i++) {
+                    for (byte b : classfile) {
                         if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
-                            ps.vm.printTrace("Sending:                         classfile[i](byte): " + classfile[i]);
+                            ps.vm.printTrace("Sending:                         classfile[i](byte): " + b);
                         }
-                        ps.writeByte(classfile[i]);
+                        ps.writeByte(b);
                     }
                 }
             }
@@ -1513,11 +1513,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 classes(ClassDef[]): " + "");
                 }
                 ps.writeInt(classes.length);
-                for (int i = 0; i < classes.length; i++) {
+                for (ClassDef aClass : classes) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     classes[i](ClassDef): " + "");
                     }
-                    classes[i].write(ps);
+                    aClass.write(ps);
                 }
                 ps.send();
                 return ps;
@@ -1719,11 +1719,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 refTypesCount(ReferenceTypeImpl[]): " + "");
                 }
                 ps.writeInt(refTypesCount.length);
-                for (int i = 0; i < refTypesCount.length; i++) {
+                for (ReferenceTypeImpl referenceType : refTypesCount) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
-                        ps.vm.printTrace("Sending:                     refTypesCount[i](ReferenceTypeImpl): " + (refTypesCount[i]==null?"NULL":"ref="+refTypesCount[i].ref()));
+                        ps.vm.printTrace("Sending:                     refTypesCount[i](ReferenceTypeImpl): " + (referenceType == null ? "NULL" : "ref=" + referenceType.ref()));
                     }
-                    ps.writeClassRef(refTypesCount[i].ref());
+                    ps.writeClassRef(referenceType.ref());
                 }
                 ps.send();
                 return ps;
@@ -2253,11 +2253,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 fields(Field[]): " + "");
                 }
                 ps.writeInt(fields.length);
-                for (int i = 0; i < fields.length; i++) {
+                for (Field field : fields) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     fields[i](Field): " + "");
                     }
-                    fields[i].write(ps);
+                    field.write(ps);
                 }
                 ps.send();
                 return ps;
@@ -3340,11 +3340,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 values(FieldValue[]): " + "");
                 }
                 ps.writeInt(values.length);
-                for (int i = 0; i < values.length; i++) {
+                for (FieldValue value : values) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     values[i](FieldValue): " + "");
                     }
-                    values[i].write(ps);
+                    value.write(ps);
                 }
                 ps.send();
                 return ps;
@@ -3460,11 +3460,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 arguments(ValueImpl[]): " + "");
                 }
                 ps.writeInt(arguments.length);
-                for (int i = 0; i < arguments.length; i++) {
+                for (ValueImpl argument : arguments) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
-                        ps.vm.printTrace("Sending:                     arguments[i](ValueImpl): " + arguments[i]);
+                        ps.vm.printTrace("Sending:                     arguments[i](ValueImpl): " + argument);
                     }
-                    ps.writeValue(arguments[i]);
+                    ps.writeValue(argument);
                 }
                 if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                     ps.vm.printTrace("Sending:                 options(int): " + options);
@@ -3600,11 +3600,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 arguments(ValueImpl[]): " + "");
                 }
                 ps.writeInt(arguments.length);
-                for (int i = 0; i < arguments.length; i++) {
+                for (ValueImpl argument : arguments) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
-                        ps.vm.printTrace("Sending:                     arguments[i](ValueImpl): " + arguments[i]);
+                        ps.vm.printTrace("Sending:                     arguments[i](ValueImpl): " + argument);
                     }
-                    ps.writeValue(arguments[i]);
+                    ps.writeValue(argument);
                 }
                 if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                     ps.vm.printTrace("Sending:                 options(int): " + options);
@@ -3808,11 +3808,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 arguments(ValueImpl[]): " + "");
                 }
                 ps.writeInt(arguments.length);
-                for (int i = 0; i < arguments.length; i++) {
+                for (ValueImpl argument : arguments) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
-                        ps.vm.printTrace("Sending:                     arguments[i](ValueImpl): " + arguments[i]);
+                        ps.vm.printTrace("Sending:                     arguments[i](ValueImpl): " + argument);
                     }
-                    ps.writeValue(arguments[i]);
+                    ps.writeValue(argument);
                 }
                 if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                     ps.vm.printTrace("Sending:                 options(int): " + options);
@@ -4504,11 +4504,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 fields(Field[]): " + "");
                 }
                 ps.writeInt(fields.length);
-                for (int i = 0; i < fields.length; i++) {
+                for (Field field : fields) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     fields[i](Field): " + "");
                     }
-                    fields[i].write(ps);
+                    field.write(ps);
                 }
                 ps.send();
                 return ps;
@@ -4616,11 +4616,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 values(FieldValue[]): " + "");
                 }
                 ps.writeInt(values.length);
-                for (int i = 0; i < values.length; i++) {
+                for (FieldValue value : values) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     values[i](FieldValue): " + "");
                     }
-                    values[i].write(ps);
+                    value.write(ps);
                 }
                 ps.send();
                 return ps;
@@ -4821,11 +4821,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 arguments(ValueImpl[]): " + "");
                 }
                 ps.writeInt(arguments.length);
-                for (int i = 0; i < arguments.length; i++) {
+                for (ValueImpl argument : arguments) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
-                        ps.vm.printTrace("Sending:                     arguments[i](ValueImpl): " + arguments[i]);
+                        ps.vm.printTrace("Sending:                     arguments[i](ValueImpl): " + argument);
                     }
-                    ps.writeValue(arguments[i]);
+                    ps.writeValue(argument);
                 }
                 if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                     ps.vm.printTrace("Sending:                 options(int): " + options);
@@ -6355,11 +6355,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 values(ValueImpl[]): " + "");
                 }
                 ps.writeInt(values.length);
-                for (int i = 0; i < values.length; i++) {
+                for (ValueImpl value : values) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
-                        ps.vm.printTrace("Sending:                     values[i](ValueImpl): " + values[i]);
+                        ps.vm.printTrace("Sending:                     values[i](ValueImpl): " + value);
                     }
-                    ps.writeUntaggedValue(values[i]);
+                    ps.writeUntaggedValue(value);
                 }
                 ps.send();
                 return ps;
@@ -7007,11 +7007,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 modifiers(Modifier[]): " + "");
                 }
                 ps.writeInt(modifiers.length);
-                for (int i = 0; i < modifiers.length; i++) {
+                for (Modifier modifier : modifiers) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     modifiers[i](Modifier): " + "");
                     }
-                    modifiers[i].write(ps);
+                    modifier.write(ps);
                 }
                 ps.send();
                 return ps;
@@ -7203,11 +7203,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 slots(SlotInfo[]): " + "");
                 }
                 ps.writeInt(slots.length);
-                for (int i = 0; i < slots.length; i++) {
+                for (SlotInfo slot : slots) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     slots[i](SlotInfo): " + "");
                     }
-                    slots[i].write(ps);
+                    slot.write(ps);
                 }
                 ps.send();
                 return ps;
@@ -7319,11 +7319,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 slotValues(SlotInfo[]): " + "");
                 }
                 ps.writeInt(slotValues.length);
-                for (int i = 0; i < slotValues.length; i++) {
+                for (SlotInfo slotValue : slotValues) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     slotValues[i](SlotInfo): " + "");
                     }
-                    slotValues[i].write(ps);
+                    slotValue.write(ps);
                 }
                 ps.send();
                 return ps;

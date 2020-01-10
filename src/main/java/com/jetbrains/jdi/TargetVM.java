@@ -42,7 +42,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -200,19 +199,16 @@ public class TargetVM implements Runnable {
         // Closing a queue causes a VMDisconnectEvent to
         // be put onto the queue.
         synchronized(eventQueues) {
-            Iterator<EventQueue> iter = eventQueues.iterator();
-            while (iter.hasNext()) {
-                ((EventQueueImpl)iter.next()).close();
+            for (EventQueue eventQueue : eventQueues) {
+                ((EventQueueImpl) eventQueue).close();
             }
         }
 
         // indirectly throw VMDisconnectedException to
         // command requesters.
         synchronized(waitingQueue) {
-            Iterator<Packet> iter = waitingQueue.values().iterator();
-            while (iter.hasNext()) {
-                Packet packet = iter.next();
-                synchronized(packet) {
+            for (Packet packet : waitingQueue.values()) {
+                synchronized (packet) {
                     packet.notify();
                 }
             }
@@ -233,7 +229,6 @@ public class TargetVM implements Runnable {
             default:
                 System.err.println("Ignoring cmd " + p.id + "/" +
                                    p.cmdSet + "/" + p.cmd + " from the VM");
-                return;
         }
     }
 
@@ -271,9 +266,8 @@ public class TargetVM implements Runnable {
     void notifyDequeueEventSet() {
         int maxQueueSize = 0;
         synchronized(eventQueues) {
-            Iterator<EventQueue> iter = eventQueues.iterator();
-            while (iter.hasNext()) {
-                EventQueueImpl queue = (EventQueueImpl)iter.next();
+            for (EventQueue eventQueue : eventQueues) {
+                EventQueueImpl queue = (EventQueueImpl) eventQueue;
                 maxQueueSize = Math.max(maxQueueSize, queue.size());
             }
         }
@@ -284,9 +278,8 @@ public class TargetVM implements Runnable {
         int maxQueueSize = 0;
 
         synchronized(eventQueues) {
-            Iterator<EventQueue> iter = eventQueues.iterator();
-            while (iter.hasNext()) {
-                EventQueueImpl queue = (EventQueueImpl)iter.next();
+            for (EventQueue eventQueue : eventQueues) {
+                EventQueueImpl queue = (EventQueueImpl) eventQueue;
                 queue.enqueue(eventSet);
                 maxQueueSize = Math.max(maxQueueSize, queue.size());
             }

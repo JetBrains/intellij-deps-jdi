@@ -62,14 +62,7 @@ public class DoubleValueImpl extends PrimitiveValueImpl
     }
 
     public int compareTo(DoubleValue obj) {
-        double other = obj.value();
-        if (value() < other) {
-            return -1;
-        } else if (value() == other) {
-            return 0;
-        } else {
-            return 1;
-        }
+        return Double.compare(value(), obj.value());
     }
 
     public int hashCode() {

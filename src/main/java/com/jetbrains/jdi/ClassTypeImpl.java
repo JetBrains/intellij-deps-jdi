@@ -85,7 +85,7 @@ final public class ClassTypeImpl extends InvokableTypeImpl
 
     public ClassType superclass() {
         if (!cachedSuperclass)  {
-            ClassTypeImpl sup = null;
+            ClassTypeImpl sup;
             try {
                 sup = JDWP.ClassType.Superclass.
                     process(vm, this).superclass;
@@ -184,14 +184,9 @@ final public class ClassTypeImpl extends InvokableTypeImpl
                                         final MethodImpl method,
                                         final ValueImpl[] args,
                                         final int options) {
-        CommandSender sender =
-            new CommandSender() {
-                public PacketStream send() {
-                    return JDWP.ClassType.NewInstance.enqueueCommand(
-                                          vm, ClassTypeImpl.this, thread,
-                                          method.ref(), args, options);
-                }
-        };
+        CommandSender sender = () -> JDWP.ClassType.NewInstance.enqueueCommand(
+                                      vm, ClassTypeImpl.this, thread,
+                                      method.ref(), args, options);
 
         PacketStream stream;
         if ((options & INVOKE_SINGLE_THREADED) != 0) {
@@ -222,7 +217,7 @@ final public class ClassTypeImpl extends InvokableTypeImpl
         List<Value> arguments = method.validateAndPrepareArgumentsForInvoke(
                                                        origArguments);
         ValueImpl[] args = arguments.toArray(new ValueImpl[0]);
-        JDWP.ClassType.NewInstance ret = null;
+        JDWP.ClassType.NewInstance ret;
         try {
             PacketStream stream =
                 sendNewInstanceCommand(thread, method, args, options);

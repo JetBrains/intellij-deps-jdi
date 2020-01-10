@@ -39,7 +39,6 @@
 package com.jetbrains.jdi;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -154,9 +153,8 @@ abstract class InvokableTypeImpl extends ReferenceTypeImpl {
             return true;
         } else {
             List<InterfaceType> interfaces = interfaces();
-            Iterator<InterfaceType> iter = interfaces.iterator();
-            while (iter.hasNext()) {
-                InterfaceTypeImpl interfaze = (InterfaceTypeImpl) iter.next();
+            for (InterfaceType anInterface : interfaces) {
+                InterfaceTypeImpl interfaze = (InterfaceTypeImpl) anInterface;
                 if (interfaze.isAssignableTo(type)) {
                     return true;
                 }
@@ -172,9 +170,8 @@ abstract class InvokableTypeImpl extends ReferenceTypeImpl {
          * parent types first, so that the methods in this class will
          * overwrite them in the hash table
          */
-        Iterator<InterfaceType> iter = interfaces().iterator();
-        while (iter.hasNext()) {
-            InterfaceTypeImpl interfaze = (InterfaceTypeImpl) iter.next();
+        for (InterfaceType interfaceType : interfaces()) {
+            InterfaceTypeImpl interfaze = (InterfaceTypeImpl) interfaceType;
             if (!seenInterfaces.contains(interfaze)) {
                 interfaze.addVisibleMethods(methodMap, seenInterfaces);
                 seenInterfaces.add(interfaze);
@@ -190,9 +187,8 @@ abstract class InvokableTypeImpl extends ReferenceTypeImpl {
     final void addInterfaces(List<InterfaceType> list) {
         List<InterfaceType> immediate = interfaces();
         list.addAll(interfaces());
-        Iterator<InterfaceType> iter = immediate.iterator();
-        while (iter.hasNext()) {
-            InterfaceTypeImpl interfaze = (InterfaceTypeImpl) iter.next();
+        for (InterfaceType interfaceType : immediate) {
+            InterfaceTypeImpl interfaze = (InterfaceTypeImpl) interfaceType;
             interfaze.addInterfaces(list);
         }
         ClassTypeImpl superclass = (ClassTypeImpl) superclass();
@@ -239,9 +235,7 @@ abstract class InvokableTypeImpl extends ReferenceTypeImpl {
         if (superclass() != null) {
             inherited.add(0, superclass()); /* insert at front */
         }
-        for (ReferenceType rt : interfaces()) {
-            inherited.add(rt);
-        }
+        inherited.addAll(interfaces());
         return inherited;
     }
 

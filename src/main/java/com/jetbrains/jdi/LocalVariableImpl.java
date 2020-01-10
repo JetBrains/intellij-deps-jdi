@@ -57,7 +57,7 @@ public class LocalVariableImpl extends MirrorImpl
     private final Location scopeEnd;
     private final String name;
     private final String signature;
-    private String genericSignature = null;
+    private final String genericSignature;
 
     LocalVariableImpl(VirtualMachine vm, Method method,
                       int slot, Location scopeStart, Location scopeEnd,

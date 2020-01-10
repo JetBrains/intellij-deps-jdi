@@ -471,14 +471,8 @@ class VirtualMachineImpl extends MirrorImpl
 
     public void resume() {
         validateVM();
-        CommandSender sender =
-            new CommandSender() {
-                public PacketStream send() {
-                    return JDWP.VirtualMachine.Resume.enqueueCommand(vm);
-                }
-        };
         try {
-            PacketStream stream = state.thawCommand(sender);
+            PacketStream stream = state.thawCommand(() -> JDWP.VirtualMachine.Resume.enqueueCommand(vm));
             JDWP.VirtualMachine.Resume.waitForReply(vm, stream);
         } catch (VMDisconnectedException exc) {
             /*
@@ -838,7 +832,7 @@ class VirtualMachineImpl extends MirrorImpl
         if (typesByID == null) {
             initReferenceTypes();
         }
-        ReferenceTypeImpl type = null;
+        ReferenceTypeImpl type;
         switch(tag) {
             case JDWP.TypeTag.CLASS:
                 type = new ClassTypeImpl(vm, id);
@@ -1065,12 +1059,10 @@ class VirtualMachineImpl extends MirrorImpl
 
         // Hold lock during processing to improve performance
         synchronized (this) {
-            for (int i = 0; i < count; i++) {
-                JDWP.VirtualMachine.ClassesBySignature.ClassInfo ci =
-                                                               cinfos[i];
+            for (JDWP.VirtualMachine.ClassesBySignature.ClassInfo ci : cinfos) {
                 ReferenceTypeImpl type = referenceType(ci.typeID,
-                                                       ci.refTypeTag,
-                                                       signature);
+                        ci.refTypeTag,
+                        signature);
                 type.setStatus(ci.status);
                 list.add(type);
             }
@@ -1092,11 +1084,10 @@ class VirtualMachineImpl extends MirrorImpl
             if (!retrievedAllTypes) {
                 // Number of classes
                 int count = cinfos.length;
-                for (int i = 0; i < count; i++) {
-                    JDWP.VirtualMachine.AllClasses.ClassInfo ci = cinfos[i];
+                for (JDWP.VirtualMachine.AllClasses.ClassInfo ci : cinfos) {
                     ReferenceTypeImpl type = referenceType(ci.typeID,
-                                                           ci.refTypeTag,
-                                                           ci.signature);
+                            ci.refTypeTag,
+                            ci.signature);
                     type.setStatus(ci.status);
                 }
                 retrievedAllTypes = true;
@@ -1131,12 +1122,10 @@ class VirtualMachineImpl extends MirrorImpl
             if (!retrievedAllTypes) {
                 // Number of classes
                 int count = cinfos.length;
-                for (int i = 0; i < count; i++) {
-                    JDWP.VirtualMachine.AllClassesWithGeneric.ClassInfo ci =
-                                                               cinfos[i];
+                for (JDWP.VirtualMachine.AllClassesWithGeneric.ClassInfo ci : cinfos) {
                     ReferenceTypeImpl type = referenceType(ci.typeID,
-                                                           ci.refTypeTag,
-                                                           ci.signature);
+                            ci.refTypeTag,
+                            ci.signature);
                     type.setGenericSignature(ci.genericSignature);
                     type.setStatus(ci.status);
                 }
@@ -1159,9 +1148,7 @@ class VirtualMachineImpl extends MirrorImpl
 
     Type findBootType(String signature) throws ClassNotLoadedException {
         List<ReferenceType> types = retrieveClassesBySignature(signature);
-        Iterator<ReferenceType> iter = types.iterator();
-        while (iter.hasNext()) {
-            ReferenceType type = iter.next();
+        for (ReferenceType type : types) {
             if (type.classLoader() == null) {
                 return type;
             }
@@ -1310,7 +1297,7 @@ class VirtualMachineImpl extends MirrorImpl
                 for (int i = 0; i < requests.length; i++) {
                     SoftObjectReference ref = batchedDisposeRequests.get(i);
                     if ((traceFlags & TRACE_OBJREFS) != 0) {
-                        printTrace("Disposing object " + ref.key().longValue() +
+                        printTrace("Disposing object " + ref.key() +
                                    " (ref count = " + ref.count() + ")");
                     }
 
@@ -1319,7 +1306,7 @@ class VirtualMachineImpl extends MirrorImpl
                     // JDWP command.
                     requests[i] =
                         new JDWP.VirtualMachine.DisposeObjects.Request(
-                            new ObjectReferenceImpl(this, ref.key().longValue()),
+                            new ObjectReferenceImpl(this, ref.key()),
                             ref.count());
                 }
                 batchedDisposeRequests.clear();
@@ -1336,7 +1323,7 @@ class VirtualMachineImpl extends MirrorImpl
 
     private void batchForDispose(SoftObjectReference ref) {
         if ((traceFlags & TRACE_OBJREFS) != 0) {
-            printTrace("Batching object " + ref.key().longValue() +
+            printTrace("Batching object " + ref.key() +
                        " for dispose (ref count = " + ref.count() + ")");
         }
         batchedDisposeRequests.add(ref);

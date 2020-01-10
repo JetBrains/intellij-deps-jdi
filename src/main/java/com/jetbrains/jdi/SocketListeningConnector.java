@@ -42,7 +42,6 @@ import java.util.Map;
 
 import com.sun.jdi.connect.Connector;
 import com.sun.jdi.connect.IllegalConnectorArgumentsException;
-import com.sun.jdi.connect.Transport;
 import com.sun.jdi.connect.spi.TransportService;
 
 /*
@@ -71,10 +70,8 @@ public class SocketListeningConnector extends GenericListeningConnector {
             "",                                         // default is wildcard
             false);
 
-        transport = new Transport() {
-            public String name() {
-                return "dt_socket";     // for compatibility reasons
-            }
+        transport = () -> {
+            return "dt_socket";     // for compatibility reasons
         };
     }
 
@@ -121,6 +118,6 @@ public class SocketListeningConnector extends GenericListeningConnector {
 
     private boolean isWildcardPort(Map<String, ? extends Connector.Argument> args) {
         String port = args.get(ARG_PORT).value();
-        return port.isEmpty() || Integer.valueOf(port) == 0;
+        return port.isEmpty() || Integer.parseInt(port) == 0;
     }
 }

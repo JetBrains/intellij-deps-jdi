@@ -640,8 +640,7 @@ class PacketStream {
 
     void writeArrayRegion(List<Value> srcValues) {
         writeInt(srcValues.size());
-        for (int i = 0; i < srcValues.size(); i++) {
-            Value value = srcValues.get(i);
+        for (Value value : srcValues) {
             writeUntaggedValue(value);
         }
     }

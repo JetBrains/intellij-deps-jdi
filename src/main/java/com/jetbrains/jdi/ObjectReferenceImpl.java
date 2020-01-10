@@ -224,7 +224,7 @@ public class ObjectReferenceImpl extends ValueImpl
         if (staticFields.size() > 0) {
             map = referenceType().getValues(staticFields);
         } else {
-            map = new HashMap<Field, Value>(size);
+            map = new HashMap<>(size);
         }
 
         size = instanceFields.size();
@@ -364,15 +364,10 @@ public class ObjectReferenceImpl extends ValueImpl
                                    final MethodImpl method,
                                    final ValueImpl[] args,
                                    final int options) {
-        CommandSender sender =
-            new CommandSender() {
-                public PacketStream send() {
-                    return JDWP.ObjectReference.InvokeMethod.enqueueCommand(
-                                          vm, ObjectReferenceImpl.this,
-                                          thread, refType,
-                                          method.ref(), args, options);
-                }
-        };
+        CommandSender sender = () -> JDWP.ObjectReference.InvokeMethod.enqueueCommand(
+                                      vm, ObjectReferenceImpl.this,
+                                      thread, refType,
+                                      method.ref(), args, options);
 
         PacketStream stream;
         if ((options & INVOKE_SINGLE_THREADED) != 0) {
@@ -468,7 +463,6 @@ public class ObjectReferenceImpl extends ValueImpl
                 if (exc.errorCode() != JDWP.Error.INVALID_OBJECT) {
                     throw exc.toJDIException();
                 }
-                return;
             }
         }
     }
@@ -535,7 +529,7 @@ public class ObjectReferenceImpl extends ValueImpl
     }
 
     public List<ThreadReference> waitingThreads() throws IncompatibleThreadStateException {
-        return Arrays.asList((ThreadReference[])jdwpMonitorInfo().waiters);
+        return Arrays.asList(jdwpMonitorInfo().waiters);
     }
 
     public ThreadReference owningThread() throws IncompatibleThreadStateException {
@@ -563,7 +557,7 @@ public class ObjectReferenceImpl extends ValueImpl
         // JDWP can't currently handle more than this (in mustang)
 
         try {
-            return Arrays.asList((ObjectReference[])JDWP.ObjectReference.ReferringObjects.
+            return Arrays.asList(JDWP.ObjectReference.ReferringObjects.
                                 process(vm, this, intMax).referringObjects);
         } catch (JDWPException exc) {
             throw exc.toJDIException();

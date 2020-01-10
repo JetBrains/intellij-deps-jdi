@@ -69,26 +69,36 @@ public class JNITypeParser {
             signature = signature.substring(0, firstIndex);
         }
 
-        if (signature.equals("boolean")) {
-            sb.append('Z');
-        } else if (signature.equals("byte")) {
-            sb.append('B');
-        } else if (signature.equals("char")) {
-            sb.append('C');
-        } else if (signature.equals("short")) {
-            sb.append('S');
-        } else if (signature.equals("int")) {
-            sb.append('I');
-        } else if (signature.equals("long")) {
-            sb.append('J');
-        } else if (signature.equals("float")) {
-            sb.append('F');
-        } else if (signature.equals("double")) {
-            sb.append('D');
-        } else {
-            sb.append('L');
-            sb.append(signature.replace('.', '/'));
-            sb.append(';');
+        switch (signature) {
+            case "boolean":
+                sb.append('Z');
+                break;
+            case "byte":
+                sb.append('B');
+                break;
+            case "char":
+                sb.append('C');
+                break;
+            case "short":
+                sb.append('S');
+                break;
+            case "int":
+                sb.append('I');
+                break;
+            case "long":
+                sb.append('J');
+                break;
+            case "float":
+                sb.append('F');
+                break;
+            case "double":
+                sb.append('D');
+                break;
+            default:
+                sb.append('L');
+                sb.append(signature.replace('.', '/'));
+                sb.append(';');
+                break;
         }
 
         return sb.toString();

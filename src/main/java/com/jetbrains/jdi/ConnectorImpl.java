@@ -64,10 +64,9 @@ abstract class ConnectorImpl implements Connector {
         Map<String,Argument> defaults = new LinkedHashMap<>();
         Collection<Argument> values = defaultArguments.values();
 
-        Iterator<Argument> iter = values.iterator();
-        while (iter.hasNext()) {
-            ArgumentImpl argument = (ArgumentImpl)iter.next();
-            defaults.put(argument.name(), (Argument)argument.clone());
+        for (Argument value : values) {
+            ArgumentImpl argument = (ArgumentImpl) value;
+            defaults.put(argument.name(), (Argument) argument.clone());
         }
         return defaults;
     }
@@ -325,7 +324,7 @@ abstract class ConnectorImpl implements Connector {
                 return false;
             }
             try {
-                return isValid(Integer.decode(value).intValue());
+                return isValid(Integer.decode(value));
             } catch (NumberFormatException exc) {
                 return false;
             }
@@ -368,7 +367,7 @@ abstract class ConnectorImpl implements Connector {
                 return 0;
             }
             try {
-                return Integer.decode(value()).intValue();
+                return Integer.decode(value());
             } catch(NumberFormatException exc) {
                 return 0;
             }

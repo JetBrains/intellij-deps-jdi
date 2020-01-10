@@ -183,7 +183,7 @@ class VMState {
     }
 
     synchronized void addListener(VMListener listener) {
-        listeners.add(new WeakReference<VMListener>(listener));
+        listeners.add(new WeakReference<>(listener));
     }
 
     synchronized boolean hasListener(VMListener listener) {
@@ -211,7 +211,7 @@ class VMState {
                 threads = local.threads;
             }
             if (threads == null) {
-                threads = Arrays.asList((ThreadReference[])JDWP.VirtualMachine.AllThreads.
+                threads = Arrays.asList(JDWP.VirtualMachine.AllThreads.
                                         process(vm).threads);
                 if (local != null) {
                     local.threads = threads;
@@ -238,8 +238,8 @@ class VMState {
             }
             if (groups == null) {
                 groups = Arrays.asList(
-                                (ThreadGroupReference[])JDWP.VirtualMachine.TopLevelThreadGroups.
-                                       process(vm).groups);
+                        JDWP.VirtualMachine.TopLevelThreadGroups.
+                               process(vm).groups);
                 if (local != null) {
                     local.groups = groups;
                     if ((vm.traceFlags & VirtualMachine.TRACE_OBJREFS) != 0) {

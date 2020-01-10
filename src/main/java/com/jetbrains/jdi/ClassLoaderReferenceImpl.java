@@ -93,9 +93,9 @@ public class ClassLoaderReferenceImpl extends ObjectReferenceImpl
                   jdwpClasses = JDWP.ClassLoaderReference.VisibleClasses.
                                             process(vm, this).classes;
                 classes = new ArrayList<>(jdwpClasses.length);
-                for (int i = 0; i < jdwpClasses.length; ++i) {
-                    classes.add(vm.referenceType(jdwpClasses[i].typeID,
-                                                 jdwpClasses[i].refTypeTag));
+                for (JDWP.ClassLoaderReference.VisibleClasses.ClassInfo jdwpClass : jdwpClasses) {
+                    classes.add(vm.referenceType(jdwpClass.typeID,
+                            jdwpClass.refTypeTag));
                 }
                 classes = Collections.unmodifiableList(classes);
                 if (local != null) {

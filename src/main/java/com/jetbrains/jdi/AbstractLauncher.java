@@ -73,7 +73,7 @@ abstract class AbstractLauncher extends ConnectorImpl
         super();
 
         grp = Thread.currentThread().getThreadGroup();
-        ThreadGroup parent = null;
+        ThreadGroup parent;
         while ((parent = grp.getParent()) != null) {
             grp = parent;
         }

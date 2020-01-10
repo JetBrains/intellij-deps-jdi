@@ -417,21 +417,15 @@ public class StackFrameImpl extends MirrorImpl
             throw new InternalException(
                       "Wrong number of values returned from target VM");
         }
-        return Arrays.asList((Value[])values);
+        return Arrays.asList(values);
     }
 
     void pop() throws IncompatibleThreadStateException {
         validateStackFrame();
         // flush caches and disable caching until command completion
-        CommandSender sender =
-            new CommandSender() {
-                public PacketStream send() {
-                    return JDWP.StackFrame.PopFrames.enqueueCommand(vm,
-                                 thread, id);
-                }
-        };
         try {
-            PacketStream stream = thread.sendResumingCommand(sender);
+            PacketStream stream = thread.sendResumingCommand(
+                    () -> JDWP.StackFrame.PopFrames.enqueueCommand(vm, thread, id));
             JDWP.StackFrame.PopFrames.waitForReply(vm, stream);
         } catch (JDWPException exc) {
             switch (exc.errorCode()) {
