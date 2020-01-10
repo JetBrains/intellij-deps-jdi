@@ -110,6 +110,11 @@ public class VirtualMachineManagerImpl implements VirtualMachineManagerService {
             }
         }
 
+        // add standard jdk connectors as well
+        for (Connector c : com.sun.tools.jdi.VirtualMachineManagerImpl.virtualMachineManager().allConnectors()) {
+            addConnector(c);
+        }
+
         // Set the default launcher. In order to be compatible
         // 1.2/1.3/1.4 we try to make the default launcher
         // "com.sun.jdi.CommandLineLaunch". If this connector
