@@ -88,7 +88,7 @@ class VirtualMachineImpl extends MirrorImpl
     // tested unsynchronized (since once true, it stays true), but must
     // be set synchronously
     private Map<Long, ReferenceType> typesByID;
-    private Set<ReferenceType> typesBySignature;
+    private Map<String, List<ReferenceType>> typesBySignature;
     private boolean retrievedAllTypes = false;
 
 //    private Map<Long, ModuleReference> modulesByID;
@@ -317,7 +317,7 @@ class VirtualMachineImpl extends MirrorImpl
         }
         ArrayList<ReferenceType> a;
         synchronized (this) {
-            a = new ArrayList<>(typesBySignature);
+            a = new ArrayList<>(typesByID.values());
         }
         return Collections.unmodifiableList(a);
     }
@@ -853,7 +853,7 @@ class VirtualMachineImpl extends MirrorImpl
         }
 
         typesByID.put(id, type);
-        typesBySignature.add(type);
+        typesBySignature.computeIfAbsent(signature, s -> new ArrayList<>(1)).add(type);
 
         if ((vm.traceFlags & VirtualMachine.TRACE_REFTYPES) != 0) {
            vm.printTrace("Caching new ReferenceType, sig=" + signature +
@@ -872,30 +872,22 @@ class VirtualMachineImpl extends MirrorImpl
          * we can't differentiate here, we first remove all
          * matching classes from our cache...
          */
-        Iterator<ReferenceType> iter = typesBySignature.iterator();
-        int matches = 0;
-        while (iter.hasNext()) {
-            ReferenceTypeImpl type = (ReferenceTypeImpl)iter.next();
-            int comp = signature.compareTo(type.signature());
-            if (comp == 0) {
-                matches++;
-                iter.remove();
+        List<ReferenceType> referenceTypes = typesBySignature.remove(signature);
+        if (referenceTypes != null) {
+            for (ReferenceType t : referenceTypes) {
+                ReferenceTypeImpl type = (ReferenceTypeImpl) t;
                 typesByID.remove(type.ref());
                 if ((vm.traceFlags & VirtualMachine.TRACE_REFTYPES) != 0) {
-                   vm.printTrace("Uncaching ReferenceType, sig=" + signature +
-                                 ", id=" + type.ref());
+                    vm.printTrace("Uncaching ReferenceType, sig=" + signature + ", id=" + type.ref());
                 }
-                // fix for 4359077, don't break out. list is no longer sorted
-                // in the order we think
             }
-        }
-
-        /*
-         * ...and if there was more than one, re-retrieve the classes
-         * with that name
-         */
-        if (matches > 1) {
-            retrieveClassesBySignature(signature);
+            /*
+             * ...and if there was more than one, re-retrieve the classes
+             * with that name
+             */
+            if (referenceTypes.size() > 1) {
+                retrieveClassesBySignature(signature);
+            }
         }
     }
 
@@ -903,23 +895,13 @@ class VirtualMachineImpl extends MirrorImpl
         if (typesByID == null) {
             return new ArrayList<>(0);
         }
-        Iterator<ReferenceType> iter = typesBySignature.iterator();
-        List<ReferenceType> list = new ArrayList<>();
-        while (iter.hasNext()) {
-            ReferenceTypeImpl type = (ReferenceTypeImpl)iter.next();
-            int comp = signature.compareTo(type.signature());
-            if (comp == 0) {
-                list.add(type);
-                // fix for 4359077, don't break out. list is no longer sorted
-                // in the order we think
-            }
-        }
-        return list;
+        List<ReferenceType> res = typesBySignature.get(signature);
+        return res != null ? res : Collections.emptyList();
     }
 
     private void initReferenceTypes() {
-        typesByID = new HashMap<>(300);
-        typesBySignature = new HashSet<>();
+        typesByID = new LinkedHashMap<>(300);
+        typesBySignature = new HashMap<>(300);
     }
 
     ReferenceTypeImpl referenceType(long ref, byte tag) {
