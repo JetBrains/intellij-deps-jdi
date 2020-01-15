@@ -97,7 +97,7 @@ public class SocketListeningConnector extends GenericListeningConnector {
     }
 
     public String name() {
-        return "com.jetbrains.jdi.SocketListen";
+        return VirtualMachineManagerImpl.connectorName("com.jetbrains.jdi.SocketListen");
     }
 
     public String description() {

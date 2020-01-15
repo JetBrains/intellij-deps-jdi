@@ -91,7 +91,7 @@ public class SharedMemoryListeningConnector extends GenericListeningConnector {
     }
 
     public String name() {
-        return "com.jetbrains.jdi.SharedMemoryListen";
+        return VirtualMachineManagerImpl.connectorName("com.jetbrains.jdi.SharedMemoryListen");
     }
 
     public String description() {

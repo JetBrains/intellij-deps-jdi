@@ -155,7 +155,7 @@ public class ProcessAttachingConnector
     }
 
     public String name() {
-        return "com.jetbrains.jdi.ProcessAttach";
+        return VirtualMachineManagerImpl.connectorName("com.jetbrains.jdi.ProcessAttach");
     }
 
     public String description() {

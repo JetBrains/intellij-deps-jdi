@@ -94,7 +94,7 @@ public class SocketAttachingConnector extends GenericAttachingConnector {
     }
 
     public String name() {
-       return "com.jetbrains.jdi.SocketAttach";
+       return VirtualMachineManagerImpl.connectorName("com.jetbrains.jdi.SocketAttach");
     }
 
     public String description() {

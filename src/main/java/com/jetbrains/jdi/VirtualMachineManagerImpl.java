@@ -44,7 +44,6 @@ import java.util.*;
 import com.sun.jdi.JDIPermission;
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.VirtualMachine;
-import com.sun.jdi.VirtualMachineManager;
 import com.sun.jdi.connect.AttachingConnector;
 import com.sun.jdi.connect.Connector;
 import com.sun.jdi.connect.LaunchingConnector;
@@ -53,6 +52,7 @@ import com.sun.jdi.connect.spi.Connection;
 
 /* Public for use by com.sun.jdi.Bootstrap */
 public class VirtualMachineManagerImpl implements VirtualMachineManagerService {
+    public static boolean TEST = false;
     private final List<Connector> connectors = new ArrayList<>();
     private LaunchingConnector defaultConnector = null;
     private final List<VirtualMachine> targets = new ArrayList<>();
@@ -65,7 +65,10 @@ public class VirtualMachineManagerImpl implements VirtualMachineManagerService {
     private static final Object lock = new Object();
     private static VirtualMachineManagerImpl vmm;
 
-    public static VirtualMachineManager virtualMachineManager() {
+    public static VirtualMachineManagerImpl virtualMachineManager() {
+        if (TEST) {
+            System.err.println("Initializing JB VirtualMachineManager");
+        }
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             JDIPermission vmmPermission =
@@ -110,11 +113,6 @@ public class VirtualMachineManagerImpl implements VirtualMachineManagerService {
             }
         }
 
-        // add standard jdk connectors as well
-        for (Connector c : com.sun.tools.jdi.VirtualMachineManagerImpl.virtualMachineManager().allConnectors()) {
-            addConnector(c);
-        }
-
         // Set the default launcher. In order to be compatible
         // 1.2/1.3/1.4 we try to make the default launcher
         // "com.sun.jdi.CommandLineLaunch". If this connector
@@ -123,7 +121,7 @@ public class VirtualMachineManagerImpl implements VirtualMachineManagerService {
         boolean found = false;
         List<LaunchingConnector> launchers = launchingConnectors();
         for (LaunchingConnector lc: launchers) {
-            if (lc.name().equals("com.jetbrains.jdi.CommandLineLaunch")) {
+            if (lc.name().equals(connectorName("com.jetbrains.jdi.CommandLineLaunch"))) {
                 setDefaultConnector(lc);
                 found = true;
                 break;
@@ -203,6 +201,10 @@ public class VirtualMachineManagerImpl implements VirtualMachineManagerService {
             throw new IllegalStateException("connection is not open");
         }
 
+        if (TEST) {
+            System.err.println("Creating JB VirtualMachine");
+        }
+
         VirtualMachine vm;
         try {
             vm = new VirtualMachineImpl(this, connection, process,
@@ -243,5 +245,9 @@ public class VirtualMachineManagerImpl implements VirtualMachineManagerService {
             messages = ResourceBundle.getBundle("com.jetbrains.jdi.resources.jdi");
         }
         return messages.getString(key);
+    }
+
+    static String connectorName(String name) {
+        return TEST ? name.replace("jetbrains", "sun") : name;
     }
 }

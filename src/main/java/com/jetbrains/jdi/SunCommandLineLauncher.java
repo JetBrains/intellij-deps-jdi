@@ -240,7 +240,7 @@ public class SunCommandLineLauncher extends AbstractLauncher {
     }
 
     public String name() {
-        return "com.jetbrains.jdi.CommandLineLaunch";
+        return VirtualMachineManagerImpl.connectorName("com.jetbrains.jdi.CommandLineLaunch");
     }
 
     public String description() {

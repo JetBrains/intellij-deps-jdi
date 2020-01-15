@@ -134,7 +134,7 @@ public class RawCommandLineLauncher extends AbstractLauncher {
     }
 
     public String name() {
-        return "com.jetbrains.jdi.RawCommandLineLaunch";
+        return VirtualMachineManagerImpl.connectorName("com.jetbrains.jdi.RawCommandLineLaunch");
     }
 
     public String description() {

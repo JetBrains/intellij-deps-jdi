@@ -76,7 +76,7 @@ public class SharedMemoryAttachingConnector extends GenericAttachingConnector {
     }
 
     public String name() {
-        return "com.jetbrains.jdi.SharedMemoryAttach";
+        return VirtualMachineManagerImpl.connectorName("com.jetbrains.jdi.SharedMemoryAttach");
     }
 
     public String description() {
