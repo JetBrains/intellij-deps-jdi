@@ -66,9 +66,6 @@ public class VirtualMachineManagerImpl implements VirtualMachineManagerService {
     private static VirtualMachineManagerImpl vmm;
 
     public static VirtualMachineManagerImpl virtualMachineManager() {
-        if (TEST) {
-            System.err.println("Initializing JB VirtualMachineManager");
-        }
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             JDIPermission vmmPermission =
@@ -84,6 +81,9 @@ public class VirtualMachineManagerImpl implements VirtualMachineManagerService {
     }
 
     protected VirtualMachineManagerImpl() {
+        if (TEST) {
+            System.err.println("Initializing JB VirtualMachineManager");
+        }
 
         /*
          * Create a top-level thread group
