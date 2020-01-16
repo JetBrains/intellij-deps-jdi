@@ -80,6 +80,11 @@ public class VirtualMachineManagerImpl implements VirtualMachineManagerService {
         return vmm;
     }
 
+    public static VirtualMachineManagerImpl testVirtualMachineManager() {
+        TEST = true;
+        return virtualMachineManager();
+    }
+
     protected VirtualMachineManagerImpl() {
         if (TEST) {
             System.err.println("Initializing JB VirtualMachineManager");
