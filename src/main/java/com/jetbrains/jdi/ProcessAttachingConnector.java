@@ -137,10 +137,7 @@ public class ProcessAttachingConnector
         } else {
             if (lib.equals("dt_shmem")) {
                 try {
-                    Class<?> c = Class.forName("com.jetbrains.jdi.SharedMemoryTransportService");
-                    @SuppressWarnings("deprecation")
-                    Object tmp = c.newInstance();
-                    ts = (TransportService)tmp;
+                    ts = SharedMemoryAttachingConnector.createSharedMemoryTransportService();
                 } catch (Exception x) { }
             }
         }

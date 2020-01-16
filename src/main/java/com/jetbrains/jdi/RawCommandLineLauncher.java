@@ -70,16 +70,9 @@ public class RawCommandLineLauncher extends AbstractLauncher {
         super();
 
         try {
-            transportService = (TransportService)Class.
-                forName("com.jetbrains.jdi.SharedMemoryTransportService").
-                getDeclaredConstructor().newInstance();
+            transportService = SharedMemoryAttachingConnector.createSharedMemoryTransportService();
             transport = () -> "dt_shmem";
-        } catch (ClassNotFoundException |
-                 UnsatisfiedLinkError |
-                 InstantiationException |
-                 InvocationTargetException |
-                 IllegalAccessException |
-                 NoSuchMethodException x) {
+        } catch (ReflectiveOperationException x) {
         }
 
         if (transportService == null) {

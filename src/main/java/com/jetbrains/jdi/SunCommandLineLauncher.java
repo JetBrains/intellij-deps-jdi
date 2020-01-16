@@ -80,17 +80,10 @@ public class SunCommandLineLauncher extends AbstractLauncher {
          * transport or the socket transport
          */
         try {
-            transportService = (TransportService)Class.
-                forName("com.jetbrains.jdi.SharedMemoryTransportService").
-                getDeclaredConstructor().newInstance();
+            transportService = SharedMemoryAttachingConnector.createSharedMemoryTransportService();
             transport = () -> "dt_shmem";
             usingSharedMemory = true;
-        } catch (ClassNotFoundException |
-                 UnsatisfiedLinkError |
-                 InstantiationException |
-                 InvocationTargetException |
-                 IllegalAccessException |
-                 NoSuchMethodException x) {
+        } catch (ReflectiveOperationException x) {
         }
         if (transportService == null) {
             transportService = new SocketTransportService();
