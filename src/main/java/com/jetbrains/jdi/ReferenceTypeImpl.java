@@ -39,14 +39,7 @@
 package com.jetbrains.jdi;
 
 import java.lang.ref.SoftReference;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.ClassLoaderReference;
@@ -1131,8 +1124,10 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         decodeStatus(status);
     }
 
-    void setSignature(String signature) {
+    boolean setSignature(String signature) {
+        boolean res = !Objects.equals(this.signature, signature);
         this.signature = signature;
+        return res;
     }
 
     void setGenericSignature(String signature) {
