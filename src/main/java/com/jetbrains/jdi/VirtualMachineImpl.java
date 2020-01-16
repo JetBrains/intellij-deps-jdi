@@ -861,7 +861,9 @@ class VirtualMachineImpl extends MirrorImpl
         }
 
         typesByID.put(id, type);
-        setSignatureIfNeeded(type, signature);
+        if (signature != null) {
+            type.setSignature(signature);
+        }
 
         if ((vm.traceFlags & VirtualMachine.TRACE_REFTYPES) != 0) {
            vm.printTrace("Caching new ReferenceType, sig=" + signature +
@@ -871,10 +873,8 @@ class VirtualMachineImpl extends MirrorImpl
         return type;
     }
 
-    private void setSignatureIfNeeded(ReferenceTypeImpl type, String signature) {
-        if (signature != null && type.setSignature(signature)) {
-            typesBySignature.computeIfAbsent(signature, s -> new ArrayList<>(1)).add(type);
-        }
+    void cacheTypeBySignature(ReferenceTypeImpl type, String signature) {
+        typesBySignature.computeIfAbsent(signature, s -> new ArrayList<>(1)).add(type);
     }
 
     synchronized void removeReferenceType(String signature) {
@@ -951,8 +951,8 @@ class VirtualMachineImpl extends MirrorImpl
                 if (retType == null) {
                     retType = addReferenceType(id, tag, signature);
                 }
-                else {
-                    setSignatureIfNeeded(retType, signature);
+                else if (signature != null) {
+                    retType.setSignature(signature);
                 }
             }
             return retType;

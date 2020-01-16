@@ -197,8 +197,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
                 genericSignature();
             } else {
                 try {
-                    signature = JDWP.ReferenceType.Signature.
-                        process(vm, this).signature;
+                    setSignature(JDWP.ReferenceType.Signature.process(vm, this).signature);
                 } catch (JDWPException exc) {
                     throw exc.toJDIException();
                 }
@@ -219,7 +218,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
             } catch (JDWPException exc) {
                 throw exc.toJDIException();
             }
-            signature = result.signature;
+            setSignature(result.signature);
             setGenericSignature(result.genericSignature);
         }
         return genericSignature;
@@ -1124,10 +1123,11 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         decodeStatus(status);
     }
 
-    boolean setSignature(String signature) {
-        boolean res = !Objects.equals(this.signature, signature);
+    void setSignature(String signature) {
+        if (!Objects.equals(this.signature, signature)) {
+            vm.cacheTypeBySignature(this, signature);
+        }
         this.signature = signature;
-        return res;
     }
 
     void setGenericSignature(String signature) {
