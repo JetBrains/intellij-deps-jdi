@@ -87,8 +87,8 @@ class VirtualMachineImpl extends MirrorImpl
     // Protected by "synchronized(this)". "retrievedAllTypes" may be
     // tested unsynchronized (since once true, it stays true), but must
     // be set synchronously
-    private Map<Long, ReferenceType> typesByID;
-    private Map<String, List<ReferenceType>> typesBySignature;
+    private final Map<Long, ReferenceType> typesByID = new LinkedHashMap<>(300);
+    private final Map<String, List<ReferenceType>> typesBySignature = new HashMap<>(300);
     private boolean retrievedAllTypes = false;
 
 //    private Map<Long, ModuleReference> modulesByID;
@@ -112,16 +112,16 @@ class VirtualMachineImpl extends MirrorImpl
 
     // Per-vm singletons for primitive types and for void.
     // singleton-ness protected by "synchronized(this)".
-    private BooleanType theBooleanType;
-    private ByteType    theByteType;
-    private CharType    theCharType;
-    private ShortType   theShortType;
-    private IntegerType theIntegerType;
-    private LongType    theLongType;
-    private FloatType   theFloatType;
-    private DoubleType  theDoubleType;
+    private final BooleanType theBooleanType;
+    private final ByteType    theByteType;
+    private final CharType    theCharType;
+    private final ShortType   theShortType;
+    private final IntegerType theIntegerType;
+    private final LongType    theLongType;
+    private final FloatType   theFloatType;
+    private final DoubleType  theDoubleType;
 
-    private VoidType    theVoidType;
+    private final VoidType    theVoidType;
 
     private final VoidValueImpl voidVal;
     private final BooleanValueImpl trueValue;
@@ -246,6 +246,17 @@ class VirtualMachineImpl extends MirrorImpl
         er = internalEventRequestManager.createClassUnloadRequest();
         er.setSuspendPolicy(EventRequest.SUSPEND_NONE);
         er.enable();
+
+        theBooleanType = new BooleanTypeImpl(this);
+        theByteType = new ByteTypeImpl(this);
+        theCharType = new CharTypeImpl(this);
+        theShortType = new ShortTypeImpl(this);
+        theIntegerType = new IntegerTypeImpl(this);
+        theLongType = new LongTypeImpl(this);
+        theFloatType = new FloatTypeImpl(this);
+        theDoubleType = new DoubleTypeImpl(this);
+
+        theVoidType = new VoidTypeImpl(this);
 
         voidVal = new VoidValueImpl(this);
         trueValue = new BooleanValueImpl(this, true);
@@ -829,9 +840,6 @@ class VirtualMachineImpl extends MirrorImpl
     private synchronized ReferenceTypeImpl addReferenceType(long id,
                                                             int tag,
                                                             String signature) {
-        if (typesByID == null) {
-            initReferenceTypes();
-        }
         ReferenceTypeImpl type;
         switch(tag) {
             case JDWP.TypeTag.CLASS:
@@ -870,9 +878,6 @@ class VirtualMachineImpl extends MirrorImpl
     }
 
     synchronized void removeReferenceType(String signature) {
-        if (typesByID == null) {
-            return;
-        }
         /*
          * There can be multiple classes with the same name. Since
          * we can't differentiate here, we first remove all
@@ -898,16 +903,8 @@ class VirtualMachineImpl extends MirrorImpl
     }
 
     private synchronized List<ReferenceType> findReferenceTypes(String signature) {
-        if (typesByID == null) {
-            return new ArrayList<>(0);
-        }
         List<ReferenceType> res = typesBySignature.get(signature);
         return res != null ? res : Collections.emptyList();
-    }
-
-    private void initReferenceTypes() {
-        typesByID = new LinkedHashMap<>(300);
-        typesBySignature = new HashMap<>(300);
     }
 
     ReferenceTypeImpl referenceType(long ref, byte tag) {
@@ -948,11 +945,9 @@ class VirtualMachineImpl extends MirrorImpl
         if (id == 0) {
             return null;
         } else {
-            ReferenceTypeImpl retType = null;
+            ReferenceTypeImpl retType;
             synchronized (this) {
-                if (typesByID != null) {
-                    retType = (ReferenceTypeImpl)typesByID.get(id);
-                }
+                retType = (ReferenceTypeImpl)typesByID.get(id);
                 if (retType == null) {
                     retType = addReferenceType(id, tag, signature);
                 }
@@ -1147,101 +1142,38 @@ class VirtualMachineImpl extends MirrorImpl
     }
 
     BooleanType theBooleanType() {
-        if (theBooleanType == null) {
-            synchronized(this) {
-                if (theBooleanType == null) {
-                    theBooleanType = new BooleanTypeImpl(this);
-                }
-            }
-        }
         return theBooleanType;
     }
 
     ByteType theByteType() {
-        if (theByteType == null) {
-            synchronized(this) {
-                if (theByteType == null) {
-                    theByteType = new ByteTypeImpl(this);
-                }
-            }
-        }
         return theByteType;
     }
 
     CharType theCharType() {
-        if (theCharType == null) {
-            synchronized(this) {
-                if (theCharType == null) {
-                    theCharType = new CharTypeImpl(this);
-                }
-            }
-        }
         return theCharType;
     }
 
     ShortType theShortType() {
-        if (theShortType == null) {
-            synchronized(this) {
-                if (theShortType == null) {
-                    theShortType = new ShortTypeImpl(this);
-                }
-            }
-        }
         return theShortType;
     }
 
     IntegerType theIntegerType() {
-        if (theIntegerType == null) {
-            synchronized(this) {
-                if (theIntegerType == null) {
-                    theIntegerType = new IntegerTypeImpl(this);
-                }
-            }
-        }
         return theIntegerType;
     }
 
     LongType theLongType() {
-        if (theLongType == null) {
-            synchronized(this) {
-                if (theLongType == null) {
-                    theLongType = new LongTypeImpl(this);
-                }
-            }
-        }
         return theLongType;
     }
 
     FloatType theFloatType() {
-        if (theFloatType == null) {
-            synchronized(this) {
-                if (theFloatType == null) {
-                    theFloatType = new FloatTypeImpl(this);
-                }
-            }
-        }
         return theFloatType;
     }
 
     DoubleType theDoubleType() {
-        if (theDoubleType == null) {
-            synchronized(this) {
-                if (theDoubleType == null) {
-                    theDoubleType = new DoubleTypeImpl(this);
-                }
-            }
-        }
         return theDoubleType;
     }
 
     VoidType theVoidType() {
-        if (theVoidType == null) {
-            synchronized(this) {
-                if (theVoidType == null) {
-                    theVoidType = new VoidTypeImpl(this);
-                }
-            }
-        }
         return theVoidType;
     }
 
