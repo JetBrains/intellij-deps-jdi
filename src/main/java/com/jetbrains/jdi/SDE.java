@@ -52,7 +52,7 @@ class SDE {
     /* for C capatibility */
     static final String NullString = null;
 
-    private class FileTableRecord {
+    private static class FileTableRecord {
         int fileId;
         String sourceName;
         String sourcePath; // do not read - use accessor
@@ -85,7 +85,7 @@ class SDE {
         }
     }
 
-    private class LineTableRecord {
+    private static class LineTableRecord {
         int jplsStart;
         int jplsEnd;
         int jplsLineInc;
@@ -95,7 +95,7 @@ class SDE {
         int fileId;
     }
 
-    private class StratumTableRecord {
+    private static class StratumTableRecord {
         String id;
         int fileIndex;
         int lineIndex;

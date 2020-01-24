@@ -52,8 +52,8 @@ import com.sun.jdi.connect.spi.Connection;
 class SocketConnection extends Connection {
     private final Socket socket;
     private boolean closed = false;
-    private OutputStream socketOutput;
-    private InputStream socketInput;
+    private final OutputStream socketOutput;
+    private final InputStream socketInput;
     private final Object receiveLock = new Object();
     private final Object sendLock = new Object();
     private final Object closeLock = new Object();

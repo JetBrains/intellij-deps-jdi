@@ -117,7 +117,7 @@ public class NonConcreteMethodImpl extends MethodImpl {
         return new byte[0];
     }
 
-    int argSlotCount() throws AbsentInformationException {
+    int argSlotCount() {
         throw new InternalException("should not get here");
     }
 }

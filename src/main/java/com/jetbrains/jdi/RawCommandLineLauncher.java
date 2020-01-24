@@ -39,7 +39,6 @@
 package com.jetbrains.jdi;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
 import com.sun.jdi.VirtualMachine;

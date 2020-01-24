@@ -254,9 +254,7 @@ abstract class InvokableTypeImpl extends ReferenceTypeImpl {
         return stream;
     }
 
-    private void validateMethodInvocation(Method method)
-                                            throws InvalidTypeException,
-                                                   InvocationException {
+    private void validateMethodInvocation(Method method) {
         if (!canInvoke(method)) {
             throw new IllegalArgumentException("Invalid method");
         }

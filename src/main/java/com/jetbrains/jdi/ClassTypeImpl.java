@@ -259,9 +259,7 @@ final public class ClassTypeImpl extends InvokableTypeImpl
         return method;
     }
 
-    void validateConstructorInvocation(Method method)
-                                   throws InvalidTypeException,
-                                          InvocationException {
+    void validateConstructorInvocation(Method method) {
         /*
          * Method must be in this class.
          */

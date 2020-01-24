@@ -305,8 +305,7 @@ public class ObjectReferenceImpl extends ValueImpl
     }
 
     void validateMethodInvocation(Method method, int options)
-                                         throws InvalidTypeException,
-                                         InvocationException {
+                                         throws InvalidTypeException {
         /*
          * Method must be in this object's class, a superclass, or
          * implemented interface
@@ -326,9 +325,7 @@ public class ObjectReferenceImpl extends ValueImpl
         }
     }
 
-    void validateClassMethodInvocation(Method method, int options)
-                                         throws InvalidTypeException,
-                                         InvocationException {
+    void validateClassMethodInvocation(Method method, int options) {
         /*
          * Method must be a non-constructor
          */
@@ -346,9 +343,7 @@ public class ObjectReferenceImpl extends ValueImpl
         }
     }
 
-    void validateIfaceMethodInvocation(Method method, int options)
-                                         throws InvalidTypeException,
-                                         InvocationException {
+    void validateIfaceMethodInvocation(Method method, int options) {
         /*
          * For nonvirtual invokes, method must have a body
          */
