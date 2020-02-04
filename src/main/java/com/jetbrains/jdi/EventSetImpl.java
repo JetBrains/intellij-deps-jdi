@@ -916,36 +916,33 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
         final int frameCount;
         final JDWP.ThreadReference.Status status;
         final String name;
-        final long frame0id;
-        final Location frame0location;
-        static final ExtendedState EMPTY = new ExtendedState() {
+        final JDWP.ThreadReference.Frames.Frame frame0;
+
+        static final ExtendedState EMPTY = new ExtendedState(0, null, null, null) {
             @Override
             void apply(EventSetImpl eventSet) {
             }
         };
 
-        private ExtendedState() {
-            frameCount = 0;
-            status = null;
-            name = null;
-            frame0id = 0;
-            frame0location = null;
-        }
-
-        private ExtendedState(PacketStream ps) throws JDWPException {
-            ps.pkt.replied = true;
-            frameCount = JDWP.ThreadReference.FrameCount.waitForReply(ps.vm, ps).frameCount;
-            status = JDWP.ThreadReference.Status.waitForReply(ps.vm, ps);
-            name = JDWP.ThreadReference.Name.waitForReply(ps.vm, ps).threadName;
-            JDWP.ThreadReference.Frames.Frame[] frames = JDWP.ThreadReference.Frames.waitForReply(ps.vm, ps).frames;
-            frame0id = frames[0].frameID;
-            frame0location = frames[0].location;
+        private ExtendedState(int frameCount,
+                              JDWP.ThreadReference.Status status,
+                              String name,
+                              JDWP.ThreadReference.Frames.Frame frame0) {
+            this.frameCount = frameCount;
+            this.status = status;
+            this.name = name;
+            this.frame0 = frame0;
         }
 
         static ExtendedState read(PacketStream ps) {
             if (ps.available() > 0) {
                 try {
-                    return new ExtendedState(ps);
+                    ps.pkt.replied = true;
+                    return new ExtendedState(
+                            JDWP.ThreadReference.FrameCount.waitForReply(ps.vm, ps).frameCount,
+                            JDWP.ThreadReference.Status.waitForReply(ps.vm, ps),
+                            JDWP.ThreadReference.Name.waitForReply(ps.vm, ps).threadName,
+                            JDWP.ThreadReference.Frames.waitForReply(ps.vm, ps).frames[0]);
                 } catch (Exception ignored) {
                 }
             }
@@ -961,7 +958,7 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
                         t.setFrameCount(frameCount);
                         t.setStatus(status);
                         t.setName(name);
-                        t.setFrame0(new StackFrameImpl(eventSet.vm, t, frame0id, frame0location));
+                        t.setFrame0(new StackFrameImpl(eventSet.vm, t, frame0.frameID, frame0.location));
                         break; // only set for one thread (should be the same in all events in the set)
                     }
                 }
