@@ -182,6 +182,14 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
         return super.vmNotSuspended(action);
     }
 
+    void setName(String name) {
+        Cache local = (Cache)getCache();
+
+        if (local != null) {
+            local.name = name;
+        }
+    }
+
     /**
      * Note that we only cache the name string while the entire VM is suspended
      * because the name can change via Thread.setName arbitrarily while this
@@ -293,6 +301,10 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
         }
     }
 
+    void setStatus(JDWP.ThreadReference.Status status) {
+        localCache.status = status;
+    }
+
     private JDWP.ThreadReference.Status jdwpStatus() {
         LocalCache snapshot = localCache;
         JDWP.ThreadReference.Status myStatus = snapshot.status;
@@ -356,6 +368,10 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
         return threadGroup;
     }
 
+    void setFrameCount(int count) {
+        localCache.frameCount = count;
+    }
+
     public int frameCount() throws IncompatibleThreadStateException  {
         LocalCache snapshot = localCache;
         try {
@@ -414,6 +430,13 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
                 "length must be greater than or equal to zero");
         }
         return privateFrames(start, length);
+    }
+
+    void setFrame0(StackFrame frame) {
+        LocalCache snapshot = localCache;
+        snapshot.frames = Collections.singletonList(frame);
+        snapshot.framesStart = 0;
+        snapshot.framesLength = 1;
     }
 
     /**

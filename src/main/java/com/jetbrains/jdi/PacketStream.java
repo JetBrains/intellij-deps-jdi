@@ -643,6 +643,10 @@ class PacketStream {
         return n;
     }
 
+    int available() {
+        return pkt.data.length - inCursor;
+    }
+
     byte command() {
         return (byte)pkt.cmd;
     }

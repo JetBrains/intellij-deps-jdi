@@ -56,28 +56,7 @@ import com.sun.jdi.ThreadReference;
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
-import com.sun.jdi.event.AccessWatchpointEvent;
-import com.sun.jdi.event.BreakpointEvent;
-import com.sun.jdi.event.ClassPrepareEvent;
-import com.sun.jdi.event.ClassUnloadEvent;
-import com.sun.jdi.event.Event;
-import com.sun.jdi.event.EventIterator;
-import com.sun.jdi.event.EventSet;
-import com.sun.jdi.event.ExceptionEvent;
-import com.sun.jdi.event.MethodEntryEvent;
-import com.sun.jdi.event.MethodExitEvent;
-import com.sun.jdi.event.ModificationWatchpointEvent;
-import com.sun.jdi.event.MonitorContendedEnterEvent;
-import com.sun.jdi.event.MonitorContendedEnteredEvent;
-import com.sun.jdi.event.MonitorWaitEvent;
-import com.sun.jdi.event.MonitorWaitedEvent;
-import com.sun.jdi.event.StepEvent;
-import com.sun.jdi.event.ThreadDeathEvent;
-import com.sun.jdi.event.ThreadStartEvent;
-import com.sun.jdi.event.VMDeathEvent;
-import com.sun.jdi.event.VMDisconnectEvent;
-import com.sun.jdi.event.VMStartEvent;
-import com.sun.jdi.event.WatchpointEvent;
+import com.sun.jdi.event.*;
 import com.sun.jdi.request.EventRequest;
 
 enum EventDestination {UNKNOWN_EVENT, INTERNAL_EVENT, CLIENT_EVENT}
@@ -102,6 +81,7 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
     private Packet pkt;
     private byte suspendPolicy;
     private EventSetImpl internalEventSet;
+    private ExtendedState extendedState;
 
     public String toString() {
         String string = "event set, policy:" + suspendPolicy +
@@ -116,6 +96,10 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
         }
         string += "}";
         return string;
+    }
+
+    void applyExtendedState() {
+        extendedState.apply(this);
     }
 
     abstract class EventImpl extends MirrorImpl implements Event {
@@ -656,6 +640,7 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
         }
         PacketStream ps = new PacketStream(vm, pkt);
         JDWP.Event.Composite compEvt = new JDWP.Event.Composite(vm, ps);
+        extendedState = ExtendedState.read(ps);
         suspendPolicy = compEvt.suspendPolicy;
         if ((vm.traceFlags & VirtualMachine.TRACE_EVENTS) != 0) {
             switch(suspendPolicy) {
@@ -733,7 +718,7 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
     /**
      * Filter out internal events
      */
-    EventSet userFilter() {
+    EventSetImpl userFilter() {
         return this;
     }
 
@@ -925,5 +910,62 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
     }
     public void clear() {
         throw new UnsupportedOperationException();
+    }
+
+    private static class ExtendedState {
+        final int frameCount;
+        final JDWP.ThreadReference.Status status;
+        final String name;
+        final long frame0id;
+        final Location frame0location;
+        static final ExtendedState EMPTY = new ExtendedState() {
+            @Override
+            void apply(EventSetImpl eventSet) {
+            }
+        };
+
+        private ExtendedState() {
+            frameCount = 0;
+            status = null;
+            name = null;
+            frame0id = 0;
+            frame0location = null;
+        }
+
+        private ExtendedState(PacketStream ps) throws JDWPException {
+            ps.pkt.replied = true;
+            frameCount = JDWP.ThreadReference.FrameCount.waitForReply(ps.vm, ps).frameCount;
+            status = JDWP.ThreadReference.Status.waitForReply(ps.vm, ps);
+            name = JDWP.ThreadReference.Name.waitForReply(ps.vm, ps).threadName;
+            JDWP.ThreadReference.Frames.Frame[] frames = JDWP.ThreadReference.Frames.waitForReply(ps.vm, ps).frames;
+            frame0id = frames[0].frameID;
+            frame0location = frames[0].location;
+        }
+
+        static ExtendedState read(PacketStream ps) {
+            if (ps.available() > 0) {
+                try {
+                    return new ExtendedState(ps);
+                } catch (Exception ignored) {
+                }
+            }
+            return EMPTY;
+        }
+
+        void apply(EventSetImpl eventSet) {
+            for (Event e : eventSet) {
+                if (e instanceof LocatableEvent) {
+                    ThreadReference thread = ((LocatableEvent) e).thread();
+                    if (thread instanceof ThreadReferenceImpl) {
+                        ThreadReferenceImpl t = (ThreadReferenceImpl) thread;
+                        t.setFrameCount(frameCount);
+                        t.setStatus(status);
+                        t.setName(name);
+                        t.setFrame0(new StackFrameImpl(eventSet.vm, t, frame0id, frame0location));
+                        break; // only set for one thread (should be the same in all events in the set)
+                    }
+                }
+            }
+        }
     }
 }
