@@ -81,7 +81,7 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
     private Packet pkt;
     private byte suspendPolicy;
     private EventSetImpl internalEventSet;
-    private ExtendedState extendedState;
+    private ExtendedState extendedState = ExtendedState.EMPTY;
 
     public String toString() {
         String string = "event set, policy:" + suspendPolicy +
