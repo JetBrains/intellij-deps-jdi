@@ -82,7 +82,9 @@ class PacketStream {
             throw new InternalException("waitForReply without send");
         }
 
-        vm.waitForTargetReply(pkt);
+        if (vm != null) {
+            vm.waitForTargetReply(pkt);
+        }
 
         if (pkt.errorCode != Packet.ReplyNoError) {
             JDWPException e = new JDWPException(pkt.errorCode);

@@ -269,6 +269,51 @@ class VirtualMachineImpl extends MirrorImpl
         notifyInitCompletion();
     }
 
+    VirtualMachineImpl(Packet idSizesPacket) {
+        super(null);  // Can't use super(this)
+        vm = this;
+
+        this.vmManager = null;
+        this.process = null;
+        this.sequenceNumber = -1;
+        threadGroupForJDI = null;
+        target = null;
+        eventQueue = null;
+        eventRequestManager = null;
+        internalEventRequestManager = null;
+
+        assert idSizesPacket.cmdSet == JDWP.VirtualMachine.COMMAND_SET && idSizesPacket.cmd == JDWP.VirtualMachine.IDSizes.COMMAND;
+
+        JDWP.VirtualMachine.IDSizes idSizes;
+        try {
+            idSizes = JDWP.VirtualMachine.IDSizes.waitForReply(this, new PacketStream(null, idSizesPacket));
+        } catch (JDWPException exc) {
+            throw exc.toJDIException();
+        }
+
+        sizeofFieldRef  = idSizes.fieldIDSize;
+        sizeofMethodRef = idSizes.methodIDSize;
+        sizeofObjectRef = idSizes.objectIDSize;
+        sizeofClassRef = idSizes.referenceTypeIDSize;
+        sizeofFrameRef  = idSizes.frameIDSize;
+        sizeofModuleRef = idSizes.objectIDSize;
+
+        theBooleanType = new BooleanTypeImpl(this);
+        theByteType = new ByteTypeImpl(this);
+        theCharType = new CharTypeImpl(this);
+        theShortType = new ShortTypeImpl(this);
+        theIntegerType = new IntegerTypeImpl(this);
+        theLongType = new LongTypeImpl(this);
+        theFloatType = new FloatTypeImpl(this);
+        theDoubleType = new DoubleTypeImpl(this);
+
+        theVoidType = new VoidTypeImpl(this);
+
+        voidVal = new VoidValueImpl(this);
+        trueValue = new BooleanValueImpl(this, true);
+        falseValue = new BooleanValueImpl(this, false);
+    }
+
     EventRequestManagerImpl getInternalEventRequestManager() {
         return internalEventRequestManager;
     }
