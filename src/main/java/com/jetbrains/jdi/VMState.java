@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,7 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  *
- * Copyright (C) 2019 JetBrains s.r.o.
+ * Copyright (C) 2020 JetBrains s.r.o.
  *
  * This program is free software; you can redistribute and/or modify it under
  * the terms of the GNU General Public License v2 with Classpath Exception.
@@ -187,7 +187,7 @@ class VMState {
     }
 
     synchronized boolean hasListener(VMListener listener) {
-        return listeners.contains(listener);
+        return listeners.stream().anyMatch(ref -> listener.equals(ref.get()));
     }
 
     synchronized void removeListener(VMListener listener) {
