@@ -355,12 +355,16 @@ class VirtualMachineImpl extends MirrorImpl
 
     public List<ReferenceType> classesByName(String className) {
         validateVM();
-        String signature = JNITypeParser.typeNameToSignature(className);
+        return classesBySignature(JNITypeParser.typeNameToSignature(className));
+    }
+
+    List<ReferenceType> classesBySignature(String signature) {
+        validateVM();
         List<ReferenceType> list;
         if (retrievedAllTypes) {
-           list = findReferenceTypes(signature);
+            list = findReferenceTypes(signature);
         } else {
-           list = retrieveClassesBySignature(signature);
+            list = retrieveClassesBySignature(signature);
         }
         return Collections.unmodifiableList(list);
     }
@@ -1175,8 +1179,7 @@ class VirtualMachineImpl extends MirrorImpl
     }
 
     Type findBootType(String signature) throws ClassNotLoadedException {
-        List<ReferenceType> types = retrieveClassesBySignature(signature);
-        for (ReferenceType type : types) {
+        for (ReferenceType type : classesBySignature(signature)) {
             if (type.classLoader() == null) {
                 return type;
             }

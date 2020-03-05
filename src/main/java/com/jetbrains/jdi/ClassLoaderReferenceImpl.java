@@ -117,8 +117,7 @@ public class ClassLoaderReferenceImpl extends ObjectReferenceImpl
         List<ReferenceType> types = visibleClasses();
 
         // first check already loaded classes and possibly avoid massive signature retrieval later
-        String typeName = new JNITypeParser(signature).typeName();
-        for (ReferenceType type : vm.classesByName(typeName)) {
+        for (ReferenceType type : vm.classesBySignature(signature)) {
             if (types.contains(type)) {
                 return type;
             }
@@ -129,6 +128,8 @@ public class ClassLoaderReferenceImpl extends ObjectReferenceImpl
                 return type;
             }
         }
+
+        String typeName = new JNITypeParser(signature).typeName();
         throw new ClassNotLoadedException(typeName, "Class " + typeName + " not loaded");
     }
 
