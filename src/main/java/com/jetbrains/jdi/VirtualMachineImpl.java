@@ -1179,11 +1179,19 @@ class VirtualMachineImpl extends MirrorImpl
     }
 
     Type findBootType(String signature) throws ClassNotLoadedException {
+        // first check already loaded classes
         for (ReferenceType type : classesBySignature(signature)) {
             if (type.classLoader() == null) {
                 return type;
             }
         }
+
+        for (ReferenceType type : retrieveClassesBySignature(signature)) {
+            if (type.classLoader() == null) {
+                return type;
+            }
+        }
+
         JNITypeParser parser = new JNITypeParser(signature);
         throw new ClassNotLoadedException(parser.typeName(),
                                          "Type " + parser.typeName() + " not loaded");
