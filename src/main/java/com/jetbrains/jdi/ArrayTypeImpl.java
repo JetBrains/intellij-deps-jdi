@@ -62,8 +62,10 @@ public class ArrayTypeImpl extends ReferenceTypeImpl
 
     public ArrayReference newInstance(int length) {
         try {
-            return (ArrayReference)JDWP.ArrayType.NewInstance.
-                                       process(vm, this, length).newArray;
+            ArrayReferenceImpl res = (ArrayReferenceImpl) JDWP.ArrayType.NewInstance.process(vm, this, length).newArray;
+            res.setLength(length);
+            res.setType(this);
+            return res;
         } catch (JDWPException exc) {
             throw exc.toJDIException();
         }

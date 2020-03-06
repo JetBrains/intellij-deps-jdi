@@ -52,7 +52,7 @@ import com.sun.jdi.VirtualMachine;
 public class ArrayReferenceImpl extends ObjectReferenceImpl
     implements ArrayReference
 {
-    int length = -1;
+    private int length = -1;
 
     ArrayReferenceImpl(VirtualMachine aVm, long aRef) {
         super(aVm, aRef);
@@ -84,6 +84,10 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
             }
         }
         return length;
+    }
+
+    void setLength(int length) {
+        this.length = length;
     }
 
     public Value getValue(int index) {

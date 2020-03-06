@@ -190,6 +190,10 @@ public class ObjectReferenceImpl extends ValueImpl
         return type;
     }
 
+    void setType(ReferenceType type) {
+        this.type = type;
+    }
+
     public Value getValue(Field sig) {
         List<Field> list = new ArrayList<>(1);
         list.add(sig);
