@@ -146,10 +146,11 @@ abstract class InvokableTypeImpl extends ReferenceTypeImpl {
 
     @Override
     boolean isAssignableTo(ReferenceType type) {
-        ClassTypeImpl superclazz = (ClassTypeImpl) superclass();
         if (this.equals(type)) {
             return true;
-        } else if ((superclazz != null) && superclazz.isAssignableTo(type)) {
+        }
+        ClassTypeImpl superclazz = (ClassTypeImpl) superclass();
+        if ((superclazz != null) && superclazz.isAssignableTo(type)) {
             return true;
         } else {
             List<InterfaceType> interfaces = interfaces();
