@@ -57,6 +57,7 @@ public abstract class MethodImpl extends TypeComponentImpl
                                  implements Method
 {
     private final JNITypeParser signatureParser;
+    private Boolean obsolete = null;
 
     abstract int argSlotCount() throws AbsentInformationException;
 
@@ -236,13 +237,19 @@ public abstract class MethodImpl extends TypeComponentImpl
         return name().equals("<clinit>");
     }
 
+    void noticeRedefineClass() {
+        obsolete = null;
+    }
+
     public boolean isObsolete() {
-        try {
-            return JDWP.Method.IsObsolete.process(vm,
-                                    declaringType, ref).isObsolete;
-        } catch (JDWPException exc) {
-            throw exc.toJDIException();
+        if (obsolete == null) {
+            try {
+                obsolete = JDWP.Method.IsObsolete.process(vm, declaringType, ref).isObsolete;
+            } catch (JDWPException exc) {
+                throw exc.toJDIException();
+            }
         }
+        return obsolete;
     }
 
     /*

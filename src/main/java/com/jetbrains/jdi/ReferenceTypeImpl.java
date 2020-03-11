@@ -38,24 +38,12 @@
 
 package com.jetbrains.jdi;
 
+import com.sun.jdi.*;
+
 import java.lang.ref.SoftReference;
 import java.util.*;
 
-import com.sun.jdi.AbsentInformationException;
-import com.sun.jdi.ClassLoaderReference;
-import com.sun.jdi.ClassNotLoadedException;
-import com.sun.jdi.ClassObjectReference;
-import com.sun.jdi.Field;
-import com.sun.jdi.InterfaceType;
-import com.sun.jdi.InternalException;
-import com.sun.jdi.Location;
-import com.sun.jdi.Method;
 //import com.sun.jdi.ModuleReference;
-import com.sun.jdi.ObjectReference;
-import com.sun.jdi.ReferenceType;
-import com.sun.jdi.Type;
-import com.sun.jdi.Value;
-import com.sun.jdi.VirtualMachine;
 
 public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceType {
     protected final long ref;
@@ -109,6 +97,14 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         baseSourcePath = null;
         modifiers = -1;
         fieldsRef = null;
+        if (methodsRef != null) {
+            List<Method> methods = methodsRef.get();
+            if (methods != null) {
+                for (Method method : methods) {
+                    ((MethodImpl) method).noticeRedefineClass();
+                }
+            }
+        }
         methodsRef = null;
         sdeRef = null;
         versionNumberGotten = false;
