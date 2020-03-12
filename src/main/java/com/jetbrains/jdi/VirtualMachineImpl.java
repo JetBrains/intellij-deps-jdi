@@ -50,11 +50,12 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 import java.text.MessageFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 //import com.sun.jdi.ModuleReference;
 
-class VirtualMachineImpl extends MirrorImpl
+public class VirtualMachineImpl extends MirrorImpl
              implements PathSearchingVirtualMachine, ThreadListener {
     // VM Level exported variables, these
     // are unique to a given vm
@@ -82,6 +83,7 @@ class VirtualMachineImpl extends MirrorImpl
     static final int TRACE_RAW_RECEIVES  = 0x02000000;
 
     boolean traceReceives = false;   // pre-compute because of frequency
+    private final AtomicInteger sentPackets = new AtomicInteger();
 
     // ReferenceType access - updated with class prepare and unload events
     // Protected by "synchronized(this)". "retrievedAllTypes" may be
@@ -1167,6 +1169,7 @@ class VirtualMachineImpl extends MirrorImpl
     }
 
     void sendToTarget(Packet packet) {
+        sentPackets.incrementAndGet();
         target.send(packet);
     }
 
@@ -1521,4 +1524,8 @@ class VirtualMachineImpl extends MirrorImpl
            return get();
        }
    }
+
+    public int getSentPacketsNumber() {
+        return sentPackets.get();
+    }
 }
