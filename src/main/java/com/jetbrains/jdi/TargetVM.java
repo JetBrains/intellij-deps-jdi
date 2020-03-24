@@ -52,7 +52,7 @@ import com.sun.jdi.event.EventQueue;
 import com.sun.jdi.event.EventSet;
 
 public class TargetVM implements Runnable {
-    private final Map<String, Packet> waitingQueue = new HashMap<>(32,0.75f);
+    private final Map<Integer, Packet> waitingQueue = new HashMap<>(32,0.75f);
     private volatile boolean shouldListen = true;
     private final List<EventQueue> eventQueues = Collections.synchronizedList(new ArrayList<>(2));
     private final VirtualMachineImpl vm;
@@ -163,13 +163,9 @@ public class TargetVM implements Runnable {
                 }*/
 
                 vm.state().notifyCommandComplete(p.id);
-                idString = String.valueOf(p.id);
 
                 synchronized(waitingQueue) {
-                    p2 = waitingQueue.get(idString);
-
-                    if (p2 != null)
-                        waitingQueue.remove(idString);
+                    p2 = waitingQueue.remove(p.id);
                 }
 
                 if (p2 == null) {
@@ -289,10 +285,9 @@ public class TargetVM implements Runnable {
     }
 
     void send(Packet packet) {
-        String id = String.valueOf(packet.id);
 
         synchronized(waitingQueue) {
-            waitingQueue.put(id, packet);
+            waitingQueue.put(packet.id, packet);
         }
 
         if ((vm.traceFlags & VirtualMachineImpl.TRACE_RAW_SENDS) != 0) {
