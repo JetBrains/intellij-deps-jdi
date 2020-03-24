@@ -241,7 +241,9 @@ final public class ClassTypeImpl extends InvokableTypeImpl
         if (ret.exception != null) {
             throw new InvocationException(ret.exception);
         } else {
-            return ret.newObject;
+            ObjectReferenceImpl newObject = ret.newObject;
+            newObject.setType(this);
+            return newObject;
         }
     }
 
