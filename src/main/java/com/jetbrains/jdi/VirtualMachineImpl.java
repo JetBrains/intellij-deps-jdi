@@ -84,6 +84,7 @@ public class VirtualMachineImpl extends MirrorImpl
 
     boolean traceReceives = false;   // pre-compute because of frequency
     private final AtomicInteger sentPackets = new AtomicInteger();
+    private final AtomicInteger waitPackets = new AtomicInteger();
 
     // ReferenceType access - updated with class prepare and unload events
     // Protected by "synchronized(this)". "retrievedAllTypes" may be
@@ -1174,6 +1175,7 @@ public class VirtualMachineImpl extends MirrorImpl
     }
 
     void waitForTargetReply(Packet packet) {
+        waitPackets.incrementAndGet();
         target.waitForReply(packet);
         /*
          * If any object disposes have been batched up, send them now.
@@ -1527,5 +1529,9 @@ public class VirtualMachineImpl extends MirrorImpl
 
     public int getSentPacketsNumber() {
         return sentPackets.get();
+    }
+
+    public int getWaitPacketsNumber() {
+        return waitPackets.get();
     }
 }
