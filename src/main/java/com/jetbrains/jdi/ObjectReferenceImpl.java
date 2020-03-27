@@ -38,27 +38,9 @@
 
 package com.jetbrains.jdi;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.sun.jdi.*;
 
-import com.sun.jdi.ClassNotLoadedException;
-import com.sun.jdi.ClassType;
-import com.sun.jdi.Field;
-import com.sun.jdi.IncompatibleThreadStateException;
-import com.sun.jdi.InterfaceType;
-import com.sun.jdi.InternalException;
-import com.sun.jdi.InvalidTypeException;
-import com.sun.jdi.InvocationException;
-import com.sun.jdi.Method;
-import com.sun.jdi.ObjectReference;
-import com.sun.jdi.ReferenceType;
-import com.sun.jdi.ThreadReference;
-import com.sun.jdi.Type;
-import com.sun.jdi.Value;
-import com.sun.jdi.VirtualMachine;
+import java.util.*;
 
 public class ObjectReferenceImpl extends ValueImpl
              implements ObjectReference, VMListener
@@ -452,11 +434,19 @@ public class ObjectReferenceImpl extends ValueImpl
 
     /* leave synchronized to keep count accurate */
     public synchronized void enableCollection() {
+        enableCollection(true);
+    }
+
+    /* leave synchronized to keep count accurate */
+    public synchronized void enableCollection(boolean wait) {
         gcDisableCount--;
 
         if (gcDisableCount == 0) {
             try {
-                JDWP.ObjectReference.EnableCollection.process(vm, this);
+                PacketStream ps = JDWP.ObjectReference.EnableCollection.enqueueCommand(vm, this);
+                if (wait) {
+                    JDWP.ObjectReference.EnableCollection.waitForReply(vm, ps);
+                }
             } catch (JDWPException exc) {
                 // If already collected, no harm done, no exception
                 if (exc.errorCode() != JDWP.Error.INVALID_OBJECT) {
