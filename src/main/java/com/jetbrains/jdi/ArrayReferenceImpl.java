@@ -163,6 +163,13 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
     public void setValues(int index, List<? extends Value> values,
                           int srcIndex, int length)
             throws InvalidTypeException,
+            ClassNotLoadedException {
+        setValues(index, values, srcIndex, length, true);
+    }
+
+    public void setValues(int index, List<? extends Value> values,
+                          int srcIndex, int length, boolean checkAssignable)
+            throws InvalidTypeException,
                    ClassNotLoadedException {
 
         if (length == -1) { // -1 means the rest of the array
@@ -193,9 +200,7 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
 
             try {
                 // Validate and convert if necessary
-                setValues[i] =
-                  prepareForAssignment(value,
-                                                 new Component());
+                setValues[i] = prepareForAssignment(value, new Component(checkAssignable));
                 somethingToSet = true;
             } catch (ClassNotLoadedException e) {
                 /*
@@ -288,6 +293,13 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
      * of this array. In the future we may need to expand its use.
      */
     class Component implements ValueContainer {
+        private final boolean checkAssignable;
+
+        public Component(boolean checkAssignable) {
+            super();
+            this.checkAssignable = checkAssignable;
+        }
+
         public Type type() throws ClassNotLoadedException {
             return arrayType().componentType();
         }
@@ -299,6 +311,11 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
         }
         public Type findType(String signature) throws ClassNotLoadedException {
             return arrayType().findComponentType(signature);
+        }
+
+        @Override
+        public boolean checkAssignable() {
+            return checkAssignable;
         }
     }
 }
