@@ -56,6 +56,8 @@ import com.sun.jdi.VirtualMachine;
 public abstract class MethodImpl extends TypeComponentImpl
                                  implements Method
 {
+    public static final int SKIP_ASSIGNABLE_CHECK = 1 << 10;
+
     private final JNITypeParser signatureParser;
     private Boolean obsolete = null;
 
@@ -286,9 +288,11 @@ public abstract class MethodImpl extends TypeComponentImpl
      */
     class ArgumentContainer implements ValueContainer {
         final int index;
+        final boolean checkAssignable;
 
-        ArgumentContainer(int index) {
+        ArgumentContainer(int index, boolean checkAssignable) {
             this.index = index;
+            this.checkAssignable = checkAssignable;
         }
         public Type type() throws ClassNotLoadedException {
             return argumentType(index);
@@ -301,6 +305,10 @@ public abstract class MethodImpl extends TypeComponentImpl
         }
         public Type findType(String signature) throws ClassNotLoadedException {
             return MethodImpl.this.findType(signature);
+        }
+        @Override
+        public boolean checkAssignable() {
+            return checkAssignable;
         }
     }
 
@@ -384,7 +392,7 @@ public abstract class MethodImpl extends TypeComponentImpl
     /*
      * The output list will be different than the input list.
      */
-    List<Value> validateAndPrepareArgumentsForInvoke(List<? extends Value> origArguments)
+    List<Value> validateAndPrepareArgumentsForInvoke(List<? extends Value> origArguments, int options)
                          throws ClassNotLoadedException, InvalidTypeException {
 
         List<Value> arguments = new ArrayList<>(origArguments);
@@ -405,8 +413,7 @@ public abstract class MethodImpl extends TypeComponentImpl
 
         for (int i = 0; i < argSize; i++) {
             Value value = arguments.get(i);
-            value = ValueImpl.prepareForAssignment(value,
-                                                   new ArgumentContainer(i));
+            value = ValueImpl.prepareForAssignment(value, new ArgumentContainer(i, isCheckAssignable(options)));
             arguments.set(i, value);
         }
         return arguments;
@@ -428,5 +435,9 @@ public abstract class MethodImpl extends TypeComponentImpl
         }
         sb.append(")");
         return sb.toString();
+    }
+
+    static boolean isCheckAssignable(int options) {
+        return (options & SKIP_ASSIGNABLE_CHECK) == 0;
     }
 }

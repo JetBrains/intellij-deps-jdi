@@ -52,4 +52,8 @@ interface ValueContainer {
     Type findType(String signature) throws ClassNotLoadedException;
     String typeName();
     String signature();
+
+    default boolean checkAssignable() {
+        return true;
+    }
 }

@@ -117,7 +117,7 @@ abstract class InvokableTypeImpl extends ReferenceTypeImpl {
         MethodImpl method = (MethodImpl) methodIntf;
         ThreadReferenceImpl thread = (ThreadReferenceImpl) threadIntf;
         validateMethodInvocation(method);
-        List<? extends Value> arguments = method.validateAndPrepareArgumentsForInvoke(origArguments);
+        List<? extends Value> arguments = method.validateAndPrepareArgumentsForInvoke(origArguments, options);
         ValueImpl[] args = arguments.toArray(new ValueImpl[0]);
         InvocationResult ret;
         try {

@@ -214,8 +214,7 @@ final public class ClassTypeImpl extends InvokableTypeImpl
 
         validateConstructorInvocation(method);
 
-        List<Value> arguments = method.validateAndPrepareArgumentsForInvoke(
-                                                       origArguments);
+        List<Value> arguments = method.validateAndPrepareArgumentsForInvoke(origArguments, options);
         ValueImpl[] args = arguments.toArray(new ValueImpl[0]);
         JDWP.ClassType.NewInstance ret;
         try {

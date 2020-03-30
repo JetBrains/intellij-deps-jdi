@@ -387,8 +387,7 @@ public class ObjectReferenceImpl extends ValueImpl
 
         validateMethodInvocation(method, options);
 
-        List<Value> arguments = method.validateAndPrepareArgumentsForInvoke(
-                                                  origArguments);
+        List<Value> arguments = method.validateAndPrepareArgumentsForInvoke(origArguments, options);
 
         ValueImpl[] args = arguments.toArray(new ValueImpl[0]);
         JDWP.ObjectReference.InvokeMethod ret;
@@ -459,7 +458,7 @@ public class ObjectReferenceImpl extends ValueImpl
     public boolean isCollected() {
         try {
             return JDWP.ObjectReference.IsCollected.process(vm, this).
-                                                              isCollected;
+                    isCollected;
         } catch (JDWPException exc) {
             throw exc.toJDIException();
         }
@@ -594,15 +593,17 @@ public class ObjectReferenceImpl extends ValueImpl
             throw new InvalidTypeException("Can't assign object value to a void");
         }
 
-        // Validate assignment
-        ReferenceType destType = (ReferenceTypeImpl)destination.type();
-        ReferenceTypeImpl myType = (ReferenceTypeImpl)referenceType();
-        if (!myType.isAssignableTo(destType)) {
-            JNITypeParser parser = new JNITypeParser(destType.signature());
-            String destTypeName = parser.typeName();
-            throw new InvalidTypeException("Can't assign " +
-                                           type().name() +
-                                           " to " + destTypeName);
+        if (destination.checkAssignable()) {
+            // Validate assignment
+            ReferenceType destType = (ReferenceTypeImpl) destination.type();
+            ReferenceTypeImpl myType = (ReferenceTypeImpl) referenceType();
+            if (!myType.isAssignableTo(destType)) {
+                JNITypeParser parser = new JNITypeParser(destType.signature());
+                String destTypeName = parser.typeName();
+                throw new InvalidTypeException("Can't assign " +
+                        type().name() +
+                        " to " + destTypeName);
+            }
         }
     }
 
