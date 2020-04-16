@@ -41,6 +41,7 @@ package com.jetbrains.jdi;
 import java.lang.ref.WeakReference;
 import java.util.*;
 
+import com.sun.jdi.ReferenceType;
 import com.sun.jdi.ThreadGroupReference;
 import com.sun.jdi.ThreadReference;
 import com.sun.jdi.VirtualMachine;
@@ -179,6 +180,19 @@ class VMState {
             }
 
             notifyingListeners = false;
+        }
+    }
+
+    synchronized void referenceTypeRemoved(ReferenceType type) {
+        Iterator<WeakReference<VMListener>> iter = listeners.iterator();
+        while (iter.hasNext()) {
+            VMListener listener = iter.next().get();
+            if (listener != null) {
+                listener.referenceTypeRemoved(type);
+            } else {
+                // Listener is unreachable; clean up
+                iter.remove();
+            }
         }
     }
 

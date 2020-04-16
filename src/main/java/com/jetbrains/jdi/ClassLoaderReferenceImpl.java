@@ -38,9 +38,7 @@
 
 package com.jetbrains.jdi;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import com.sun.jdi.ClassLoaderReference;
 import com.sun.jdi.ClassNotLoadedException;
@@ -51,6 +49,8 @@ import com.sun.jdi.VirtualMachine;
 public class ClassLoaderReferenceImpl extends ObjectReferenceImpl
                                       implements ClassLoaderReference
 {
+    private final Set<ReferenceType> cachedVisible = Collections.synchronizedSet(new HashSet<>());
+
     // This is cached only while the VM is suspended
     private static class Cache extends ObjectReferenceImpl.Cache {
         List<ReferenceType> visibleClasses = null;
@@ -97,6 +97,7 @@ public class ClassLoaderReferenceImpl extends ObjectReferenceImpl
                     classes.add(vm.referenceType(jdwpClass.typeID,
                             jdwpClass.refTypeTag));
                 }
+                cachedVisible.addAll(classes);
                 classes = Collections.unmodifiableList(classes);
                 if (local != null) {
                     local.visibleClasses = classes;
@@ -114,16 +115,24 @@ public class ClassLoaderReferenceImpl extends ObjectReferenceImpl
     }
 
     Type findType(String signature) throws ClassNotLoadedException {
-        List<ReferenceType> types = visibleClasses();
-
         // first check already loaded classes and possibly avoid massive signature retrieval later
-        for (ReferenceType type : vm.classesBySignature(signature)) {
-            if (types.contains(type)) {
+        List<ReferenceType> typesByName = vm.classesBySignature(signature);
+        for (ReferenceType type : typesByName) {
+            if (cachedVisible.contains(type)) {
                 return type;
             }
         }
 
-        for (ReferenceType type : types) {
+        // now request visible classes, it updates cachedVisible
+        List<ReferenceType> visibleTypes = visibleClasses();
+        for (ReferenceType type : typesByName) {
+            if (cachedVisible.contains(type)) {
+                return type;
+            }
+        }
+
+        // last resort - check all visible classes directly
+        for (ReferenceType type : visibleTypes) {
             if (type.signature().equals(signature)) {
                 return type;
             }
@@ -135,5 +144,22 @@ public class ClassLoaderReferenceImpl extends ObjectReferenceImpl
 
     byte typeValueKey() {
         return JDWP.Tag.CLASS_LOADER;
+    }
+
+    public boolean isVisible(ReferenceType type) {
+        if (cachedVisible.contains(type)) {
+            return true;
+        }
+        visibleClasses(); // updates cachedVisible
+        return cachedVisible.contains(type);
+    }
+
+    public void addVisible(ReferenceType type) {
+        cachedVisible.add(type);
+    }
+
+    @Override
+    public void referenceTypeRemoved(ReferenceType type) {
+        cachedVisible.remove(type);
     }
 }

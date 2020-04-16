@@ -940,6 +940,7 @@ public class VirtualMachineImpl extends MirrorImpl
             for (ReferenceType t : referenceTypes) {
                 ReferenceTypeImpl type = (ReferenceTypeImpl) t;
                 typesByID.remove(type.ref());
+                state.referenceTypeRemoved(type);
                 if ((vm.traceFlags & VirtualMachine.TRACE_REFTYPES) != 0) {
                     vm.printTrace("Uncaching ReferenceType, sig=" + signature + ", id=" + type.ref());
                 }
