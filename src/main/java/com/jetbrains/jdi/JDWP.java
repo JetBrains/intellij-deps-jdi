@@ -984,11 +984,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 requests(Request[]): " + "");
                 }
                 ps.writeInt(requests.length);
-                for (Request request : requests) {
+                for (int i = 0; i < requests.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     requests[i](Request): " + "");
                     }
-                    request.write(ps);
+                    requests[i].write(ps);
                 }
                 ps.send();
                 return ps;
@@ -1487,11 +1487,11 @@ class JDWP {
                         ps.vm.printTrace("Sending:                     classfile(byte[]): " + "");
                     }
                     ps.writeInt(classfile.length);
-                    for (byte b : classfile) {
+                    for (int i = 0; i < classfile.length; i++) {
                         if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
-                            ps.vm.printTrace("Sending:                         classfile[i](byte): " + b);
+                            ps.vm.printTrace("Sending:                         classfile[i](byte): " + classfile[i]);
                         }
-                        ps.writeByte(b);
+                        ps.writeByte(classfile[i]);
                     }
                 }
             }
@@ -1513,11 +1513,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 classes(ClassDef[]): " + "");
                 }
                 ps.writeInt(classes.length);
-                for (ClassDef aClass : classes) {
+                for (int i = 0; i < classes.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     classes[i](ClassDef): " + "");
                     }
-                    aClass.write(ps);
+                    classes[i].write(ps);
                 }
                 ps.send();
                 return ps;
@@ -1719,11 +1719,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 refTypesCount(ReferenceTypeImpl[]): " + "");
                 }
                 ps.writeInt(refTypesCount.length);
-                for (ReferenceTypeImpl referenceType : refTypesCount) {
+                for (int i = 0; i < refTypesCount.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
-                        ps.vm.printTrace("Sending:                     refTypesCount[i](ReferenceTypeImpl): " + (referenceType == null ? "NULL" : "ref=" + referenceType.ref()));
+                        ps.vm.printTrace("Sending:                     refTypesCount[i](ReferenceTypeImpl): " + (refTypesCount[i]==null?"NULL":"ref="+refTypesCount[i].ref()));
                     }
-                    ps.writeClassRef(referenceType.ref());
+                    ps.writeClassRef(refTypesCount[i].ref());
                 }
                 ps.send();
                 return ps;
@@ -1758,58 +1758,6 @@ class JDWP {
                 }
             }
         }
-
-        /**
-         * Returns all modules in the target VM.
-         * <p>Since JDWP version 9.
-         */
-//        static class AllModules {
-//            static final int COMMAND = 22;
-//
-//            static AllModules process(VirtualMachineImpl vm)
-//                                    throws JDWPException {
-//                PacketStream ps = enqueueCommand(vm);
-//                return waitForReply(vm, ps);
-//            }
-//
-//            static PacketStream enqueueCommand(VirtualMachineImpl vm) {
-//                PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
-//                if ((vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
-//                    vm.printTrace("Sending Command(id=" + ps.pkt.id + ") JDWP.VirtualMachine.AllModules"+(ps.pkt.flags!=0?", FLAGS=" + ps.pkt.flags:""));
-//                }
-//                ps.send();
-//                return ps;
-//            }
-//
-//            static AllModules waitForReply(VirtualMachineImpl vm, PacketStream ps)
-//                                    throws JDWPException {
-//                ps.waitForReply();
-//                return new AllModules(vm, ps);
-//            }
-//
-//
-//            /**
-//             * The number of the modules that follow.
-//             */
-//            final ModuleReferenceImpl[] modules;
-//
-//            private AllModules(VirtualMachineImpl vm, PacketStream ps) {
-//                if (vm.traceReceives) {
-//                    vm.printTrace("Receiving Command(id=" + ps.pkt.id + ") JDWP.VirtualMachine.AllModules"+(ps.pkt.flags!=0?", FLAGS=" + ps.pkt.flags:"")+(ps.pkt.errorCode!=0?", ERROR CODE=" + ps.pkt.errorCode:""));
-//                }
-//                if (vm.traceReceives) {
-//                    vm.printReceiveTrace(4, "modules(ModuleReferenceImpl[]): " + "");
-//                }
-//                int modulesCount = ps.readInt();
-//                modules = new ModuleReferenceImpl[modulesCount];
-//                for (int i = 0; i < modulesCount; i++) {;
-//                    modules[i] = ps.readModule();
-//                    if (vm.traceReceives) {
-//                        vm.printReceiveTrace(5, "modules[i](ModuleReferenceImpl): " + (modules[i]==null?"NULL":"ref="+modules[i].ref()));
-//                    }
-//                }
-//            }
-//        }
     }
 
     static class ReferenceType {
@@ -2253,11 +2201,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 fields(Field[]): " + "");
                 }
                 ps.writeInt(fields.length);
-                for (Field field : fields) {
+                for (int i = 0; i < fields.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     fields[i](Field): " + "");
                     }
-                    field.write(ps);
+                    fields[i].write(ps);
                 }
                 ps.send();
                 return ps;
@@ -3164,57 +3112,6 @@ class JDWP {
                 }
             }
         }
-
-        /**
-         * Returns the module that this reference type belongs to.
-         * <p>Since JDWP version 9.
-         */
-//        static class Module {
-//            static final int COMMAND = 19;
-//
-//            static Module process(VirtualMachineImpl vm,
-//                                ReferenceTypeImpl refType)
-//                                    throws JDWPException {
-//                PacketStream ps = enqueueCommand(vm, refType);
-//                return waitForReply(vm, ps);
-//            }
-//
-//            static PacketStream enqueueCommand(VirtualMachineImpl vm,
-//                                ReferenceTypeImpl refType) {
-//                PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
-//                if ((vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
-//                    vm.printTrace("Sending Command(id=" + ps.pkt.id + ") JDWP.ReferenceType.Module"+(ps.pkt.flags!=0?", FLAGS=" + ps.pkt.flags:""));
-//                }
-//                if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
-//                    ps.vm.printTrace("Sending:                 refType(ReferenceTypeImpl): " + (refType==null?"NULL":"ref="+refType.ref()));
-//                }
-//                ps.writeClassRef(refType.ref());
-//                ps.send();
-//                return ps;
-//            }
-//
-//            static Module waitForReply(VirtualMachineImpl vm, PacketStream ps)
-//                                    throws JDWPException {
-//                ps.waitForReply();
-//                return new Module(vm, ps);
-//            }
-//
-//
-//            /**
-//             * The module this reference type belongs to.
-//             */
-//            final ModuleReferenceImpl module;
-//
-//            private Module(VirtualMachineImpl vm, PacketStream ps) {
-//                if (vm.traceReceives) {
-//                    vm.printTrace("Receiving Command(id=" + ps.pkt.id + ") JDWP.ReferenceType.Module"+(ps.pkt.flags!=0?", FLAGS=" + ps.pkt.flags:"")+(ps.pkt.errorCode!=0?", ERROR CODE=" + ps.pkt.errorCode:""));
-//                }
-//                module = ps.readModule();
-//                if (vm.traceReceives) {
-//                    vm.printReceiveTrace(4, "module(ModuleReferenceImpl): " + (module==null?"NULL":"ref="+module.ref()));
-//                }
-//            }
-//        }
     }
 
     static class ClassType {
@@ -3340,11 +3237,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 values(FieldValue[]): " + "");
                 }
                 ps.writeInt(values.length);
-                for (FieldValue value : values) {
+                for (int i = 0; i < values.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     values[i](FieldValue): " + "");
                     }
-                    value.write(ps);
+                    values[i].write(ps);
                 }
                 ps.send();
                 return ps;
@@ -3460,11 +3357,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 arguments(ValueImpl[]): " + "");
                 }
                 ps.writeInt(arguments.length);
-                for (ValueImpl argument : arguments) {
+                for (int i = 0; i < arguments.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
-                        ps.vm.printTrace("Sending:                     arguments[i](ValueImpl): " + argument);
+                        ps.vm.printTrace("Sending:                     arguments[i](ValueImpl): " + arguments[i]);
                     }
-                    ps.writeValue(argument);
+                    ps.writeValue(arguments[i]);
                 }
                 if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                     ps.vm.printTrace("Sending:                 options(int): " + options);
@@ -3600,11 +3497,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 arguments(ValueImpl[]): " + "");
                 }
                 ps.writeInt(arguments.length);
-                for (ValueImpl argument : arguments) {
+                for (int i = 0; i < arguments.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
-                        ps.vm.printTrace("Sending:                     arguments[i](ValueImpl): " + argument);
+                        ps.vm.printTrace("Sending:                     arguments[i](ValueImpl): " + arguments[i]);
                     }
-                    ps.writeValue(argument);
+                    ps.writeValue(arguments[i]);
                 }
                 if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                     ps.vm.printTrace("Sending:                 options(int): " + options);
@@ -3808,11 +3705,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 arguments(ValueImpl[]): " + "");
                 }
                 ps.writeInt(arguments.length);
-                for (ValueImpl argument : arguments) {
+                for (int i = 0; i < arguments.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
-                        ps.vm.printTrace("Sending:                     arguments[i](ValueImpl): " + argument);
+                        ps.vm.printTrace("Sending:                     arguments[i](ValueImpl): " + arguments[i]);
                     }
-                    ps.writeValue(argument);
+                    ps.writeValue(arguments[i]);
                 }
                 if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                     ps.vm.printTrace("Sending:                 options(int): " + options);
@@ -4504,11 +4401,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 fields(Field[]): " + "");
                 }
                 ps.writeInt(fields.length);
-                for (Field field : fields) {
+                for (int i = 0; i < fields.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     fields[i](Field): " + "");
                     }
-                    field.write(ps);
+                    fields[i].write(ps);
                 }
                 ps.send();
                 return ps;
@@ -4616,11 +4513,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 values(FieldValue[]): " + "");
                 }
                 ps.writeInt(values.length);
-                for (FieldValue value : values) {
+                for (int i = 0; i < values.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     values[i](FieldValue): " + "");
                     }
-                    value.write(ps);
+                    values[i].write(ps);
                 }
                 ps.send();
                 return ps;
@@ -4821,11 +4718,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 arguments(ValueImpl[]): " + "");
                 }
                 ps.writeInt(arguments.length);
-                for (ValueImpl argument : arguments) {
+                for (int i = 0; i < arguments.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
-                        ps.vm.printTrace("Sending:                     arguments[i](ValueImpl): " + argument);
+                        ps.vm.printTrace("Sending:                     arguments[i](ValueImpl): " + arguments[i]);
                     }
-                    ps.writeValue(argument);
+                    ps.writeValue(arguments[i]);
                 }
                 if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                     ps.vm.printTrace("Sending:                 options(int): " + options);
@@ -6355,11 +6252,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 values(ValueImpl[]): " + "");
                 }
                 ps.writeInt(values.length);
-                for (ValueImpl value : values) {
+                for (int i = 0; i < values.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
-                        ps.vm.printTrace("Sending:                     values[i](ValueImpl): " + value);
+                        ps.vm.printTrace("Sending:                     values[i](ValueImpl): " + values[i]);
                     }
-                    ps.writeUntaggedValue(value);
+                    ps.writeUntaggedValue(values[i]);
                 }
                 ps.send();
                 return ps;
@@ -6504,7 +6401,7 @@ class JDWP {
                  * Modifier kind
                  */
                 final byte modKind;
-                final ModifierCommon aModifierCommon;
+                ModifierCommon aModifierCommon;
 
                 Modifier(byte modKind, ModifierCommon aModifierCommon) {
                     this.modKind = modKind;
@@ -7007,11 +6904,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 modifiers(Modifier[]): " + "");
                 }
                 ps.writeInt(modifiers.length);
-                for (Modifier modifier : modifiers) {
+                for (int i = 0; i < modifiers.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     modifiers[i](Modifier): " + "");
                     }
-                    modifier.write(ps);
+                    modifiers[i].write(ps);
                 }
                 ps.send();
                 return ps;
@@ -7203,11 +7100,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 slots(SlotInfo[]): " + "");
                 }
                 ps.writeInt(slots.length);
-                for (SlotInfo slot : slots) {
+                for (int i = 0; i < slots.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     slots[i](SlotInfo): " + "");
                     }
-                    slot.write(ps);
+                    slots[i].write(ps);
                 }
                 ps.send();
                 return ps;
@@ -7319,11 +7216,11 @@ class JDWP {
                     ps.vm.printTrace("Sending:                 slotValues(SlotInfo[]): " + "");
                 }
                 ps.writeInt(slotValues.length);
-                for (SlotInfo slotValue : slotValues) {
+                for (int i = 0; i < slotValues.length; i++) {
                     if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
                         ps.vm.printTrace("Sending:                     slotValues[i](SlotInfo): " + "");
                     }
-                    slotValue.write(ps);
+                    slotValues[i].write(ps);
                 }
                 ps.send();
                 return ps;
@@ -7522,113 +7419,6 @@ class JDWP {
             }
         }
     }
-
-//    static class ModuleReference {
-//        static final int COMMAND_SET = 18;
-//        private ModuleReference() {}  // hide constructor
-//
-//        /**
-//         * Returns the name of this module.
-//         * <p>Since JDWP version 9.
-//         */
-//        static class Name {
-//            static final int COMMAND = 1;
-//
-//            static Name process(VirtualMachineImpl vm,
-//                                ModuleReferenceImpl module)
-//                                    throws JDWPException {
-//                PacketStream ps = enqueueCommand(vm, module);
-//                return waitForReply(vm, ps);
-//            }
-//
-//            static PacketStream enqueueCommand(VirtualMachineImpl vm,
-//                                ModuleReferenceImpl module) {
-//                PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
-//                if ((vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
-//                    vm.printTrace("Sending Command(id=" + ps.pkt.id + ") JDWP.ModuleReference.Name"+(ps.pkt.flags!=0?", FLAGS=" + ps.pkt.flags:""));
-//                }
-//                if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
-//                    ps.vm.printTrace("Sending:                 module(ModuleReferenceImpl): " + (module==null?"NULL":"ref="+module.ref()));
-//                }
-//                ps.writeModuleRef(module.ref());
-//                ps.send();
-//                return ps;
-//            }
-//
-//            static Name waitForReply(VirtualMachineImpl vm, PacketStream ps)
-//                                    throws JDWPException {
-//                ps.waitForReply();
-//                return new Name(vm, ps);
-//            }
-//
-//
-//            /**
-//             * The module's name.
-//             */
-//            final String name;
-//
-//            private Name(VirtualMachineImpl vm, PacketStream ps) {
-//                if (vm.traceReceives) {
-//                    vm.printTrace("Receiving Command(id=" + ps.pkt.id + ") JDWP.ModuleReference.Name"+(ps.pkt.flags!=0?", FLAGS=" + ps.pkt.flags:"")+(ps.pkt.errorCode!=0?", ERROR CODE=" + ps.pkt.errorCode:""));
-//                }
-//                name = ps.readString();
-//                if (vm.traceReceives) {
-//                    vm.printReceiveTrace(4, "name(String): " + name);
-//                }
-//            }
-//        }
-//
-//        /**
-//         * Returns the class loader of this module.
-//         * <p>Since JDWP version 9.
-//         */
-//        static class ClassLoader {
-//            static final int COMMAND = 2;
-//
-//            static ClassLoader process(VirtualMachineImpl vm,
-//                                ModuleReferenceImpl module)
-//                                    throws JDWPException {
-//                PacketStream ps = enqueueCommand(vm, module);
-//                return waitForReply(vm, ps);
-//            }
-//
-//            static PacketStream enqueueCommand(VirtualMachineImpl vm,
-//                                ModuleReferenceImpl module) {
-//                PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
-//                if ((vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
-//                    vm.printTrace("Sending Command(id=" + ps.pkt.id + ") JDWP.ModuleReference.ClassLoader"+(ps.pkt.flags!=0?", FLAGS=" + ps.pkt.flags:""));
-//                }
-//                if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
-//                    ps.vm.printTrace("Sending:                 module(ModuleReferenceImpl): " + (module==null?"NULL":"ref="+module.ref()));
-//                }
-//                ps.writeModuleRef(module.ref());
-//                ps.send();
-//                return ps;
-//            }
-//
-//            static ClassLoader waitForReply(VirtualMachineImpl vm, PacketStream ps)
-//                                    throws JDWPException {
-//                ps.waitForReply();
-//                return new ClassLoader(vm, ps);
-//            }
-//
-//
-//            /**
-//             * The module's class loader.
-//             */
-//            final ClassLoaderReferenceImpl classLoader;
-//
-//            private ClassLoader(VirtualMachineImpl vm, PacketStream ps) {
-//                if (vm.traceReceives) {
-//                    vm.printTrace("Receiving Command(id=" + ps.pkt.id + ") JDWP.ModuleReference.ClassLoader"+(ps.pkt.flags!=0?", FLAGS=" + ps.pkt.flags:"")+(ps.pkt.errorCode!=0?", ERROR CODE=" + ps.pkt.errorCode:""));
-//                }
-//                classLoader = ps.readClassLoaderReference();
-//                if (vm.traceReceives) {
-//                    vm.printReceiveTrace(4, "classLoader(ClassLoaderReferenceImpl): " + (classLoader==null?"NULL":"ref="+classLoader.ref()));
-//                }
-//            }
-//        }
-//    }
 
     static class Event {
         static final int COMMAND_SET = 64;
