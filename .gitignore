@@ -1,6 +1,7 @@
 /out
 .gradle/
-build/
+/build
+/jdwpgen/build
 gradle.properties
 .idea/shelf
 .idea/workspace.xml
