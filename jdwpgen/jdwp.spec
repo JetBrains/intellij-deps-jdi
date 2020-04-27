@@ -594,21 +594,21 @@ JDWP "Java(tm) Debug Wire Protocol"
             (Error VM_DEAD)
         )
     )
-    (Command AllModules=22
-        "Returns all modules in the target VM."
-        "<p>Since JDWP version 9."
-        (Out
-        )
-        (Reply
-            (Repeat modules "The number of the modules that follow."
-                (moduleID module "One of the modules.")
-            )
-        )
-        (ErrorSet
-            (Error NOT_IMPLEMENTED)
-            (Error VM_DEAD)
-        )
-    )
+//    (Command AllModules=22
+//        "Returns all modules in the target VM."
+//        "<p>Since JDWP version 9."
+//        (Out
+//        )
+//        (Reply
+//            (Repeat modules "The number of the modules that follow."
+//                (moduleID module "One of the modules.")
+//            )
+//        )
+//        (ErrorSet
+//            (Error NOT_IMPLEMENTED)
+//            (Error VM_DEAD)
+//        )
+//    )
 )
 
 (CommandSet ReferenceType=2
@@ -1068,22 +1068,22 @@ JDWP "Java(tm) Debug Wire Protocol"
             (Error VM_DEAD)
         )
     )
-    (Command Module=19
-        "Returns the module that this reference type belongs to."
-        "<p>Since JDWP version 9."
-        (Out
-            (referenceType refType "The reference type.")
-        )
-        (Reply
-            (moduleID module "The module this reference type belongs to.")
-        )
-        (ErrorSet
-            (Error INVALID_CLASS   "refType is not the ID of a reference type.")
-            (Error INVALID_OBJECT  "refType is not a known ID.")
-            (Error NOT_IMPLEMENTED)
-            (Error VM_DEAD)
-        )
-    )
+//    (Command Module=19
+//        "Returns the module that this reference type belongs to."
+//        "<p>Since JDWP version 9."
+//        (Out
+//            (referenceType refType "The reference type.")
+//        )
+//        (Reply
+//            (moduleID module "The module this reference type belongs to.")
+//        )
+//        (ErrorSet
+//            (Error INVALID_CLASS   "refType is not the ID of a reference type.")
+//            (Error INVALID_OBJECT  "refType is not a known ID.")
+//            (Error NOT_IMPLEMENTED)
+//            (Error VM_DEAD)
+//        )
+//    )
 )
 (CommandSet ClassType=3
     (Command Superclass=1
@@ -2701,38 +2701,38 @@ JDWP "Java(tm) Debug Wire Protocol"
         )
     )
 )
-(CommandSet ModuleReference=18
-    (Command Name=1
-        "Returns the name of this module."
-        "<p>Since JDWP version 9."
-        (Out
-            (moduleID module "This module.")
-        )
-        (Reply
-            (string name  "The module's name.")
-        )
-        (ErrorSet
-            (Error INVALID_MODULE)
-            (Error NOT_IMPLEMENTED)
-            (Error VM_DEAD)
-        )
-    )
-    (Command ClassLoader=2
-        "Returns the class loader of this module."
-        "<p>Since JDWP version 9."
-        (Out
-            (moduleID module "This module.")
-        )
-        (Reply
-            (classLoaderObject classLoader  "The module's class loader.")
-        )
-        (ErrorSet
-            (Error INVALID_MODULE)
-            (Error NOT_IMPLEMENTED)
-            (Error VM_DEAD)
-        )
-    )
-)
+//(CommandSet ModuleReference=18
+//    (Command Name=1
+//        "Returns the name of this module."
+//        "<p>Since JDWP version 9."
+//        (Out
+//            (moduleID module "This module.")
+//        )
+//        (Reply
+//            (string name  "The module's name.")
+//        )
+//        (ErrorSet
+//            (Error INVALID_MODULE)
+//            (Error NOT_IMPLEMENTED)
+//            (Error VM_DEAD)
+//        )
+//    )
+//    (Command ClassLoader=2
+//        "Returns the class loader of this module."
+//        "<p>Since JDWP version 9."
+//        (Out
+//            (moduleID module "This module.")
+//        )
+//        (Reply
+//            (classLoaderObject classLoader  "The module's class loader.")
+//        )
+//        (ErrorSet
+//            (Error INVALID_MODULE)
+//            (Error NOT_IMPLEMENTED)
+//            (Error VM_DEAD)
+//        )
+//    )
+//)
 (CommandSet Event=64
     (Command Composite=100
         "Several events may occur at a given time in the target VM. "
