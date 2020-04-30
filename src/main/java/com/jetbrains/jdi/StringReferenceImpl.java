@@ -41,13 +41,20 @@ package com.jetbrains.jdi;
 import com.sun.jdi.StringReference;
 import com.sun.jdi.VirtualMachine;
 
-public class StringReferenceImpl extends ObjectReferenceImpl
-    implements StringReference
-{
-    private String value;
+import java.util.concurrent.CompletableFuture;
+
+public class StringReferenceImpl extends ObjectReferenceImpl implements StringReference {
+    private volatile String value;
 
     StringReferenceImpl(VirtualMachine aVm, long aRef) {
         super(aVm, aRef);
+    }
+
+    public CompletableFuture<String> valueAsync() {
+        if (value != null) {
+            return CompletableFuture.completedFuture(value);
+        }
+        return JDWP.StringReference.Value.processAsync(vm, this).thenApply(v -> value = v.stringValue);
     }
 
     public String value() {

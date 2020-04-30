@@ -178,6 +178,7 @@ public class TargetVM implements Runnable {
                 p2.errorCode = p.errorCode;
                 p2.data = p.data;
                 p2.replied = true;
+                p2.reply.complete(p2);
 
                 synchronized(p2) {
                     p2.notify();

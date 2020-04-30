@@ -56,6 +56,32 @@ class OutNode extends AbstractTypeListNode {
         cmdName = cmd.name;
     }
 
+    void genProcessAsyncMethod(PrintWriter writer, int depth) {
+        writer.println();
+        indent(writer, depth);
+        writer.print(
+                "static CompletableFuture<" + cmdName + "> processAsync(VirtualMachineImpl vm");
+        for (Node node : components) {
+            TypeNode tn = (TypeNode)node;
+            writer.println(", ");
+            indent(writer, depth+5);
+            writer.print(tn.javaParam());
+        }
+        writer.println(") {");
+        indent(writer, depth+1);
+        writer.print("PacketStream ps = enqueueCommand(vm");
+        for (Node node : components) {
+            TypeNode tn = (TypeNode)node;
+            writer.print(", ");
+            writer.print(tn.name());
+        }
+        writer.println(");");
+        indent(writer, depth+1);
+        writer.println("return ps.readReply(p -> new " + cmdName + "(vm, ps));");
+        indent(writer, depth);
+        writer.println("}");
+    }
+
     void genProcessMethod(PrintWriter writer, int depth) {
         writer.println();
         indent(writer, depth);
@@ -141,6 +167,7 @@ class OutNode extends AbstractTypeListNode {
         genJavaPreDef(writer, depth);
         super.genJava(writer, depth);
         genProcessMethod(writer, depth);
+        genProcessAsyncMethod(writer, depth);
         genEnqueueMethod(writer, depth);
         genWaitMethod(writer, depth);
     }

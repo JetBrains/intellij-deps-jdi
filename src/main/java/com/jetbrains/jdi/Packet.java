@@ -39,6 +39,7 @@
 package com.jetbrains.jdi;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 
 public class Packet {
     public final static short NoFlags = 0x0;
@@ -58,6 +59,7 @@ public class Packet {
     short errorCode;
     byte[] data;
     volatile boolean replied = false;
+    final CompletableFuture<Packet> reply = new CompletableFuture<>();
 
     /**
      * Return byte representation of the packet

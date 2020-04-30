@@ -44,6 +44,8 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 class PacketStream {
     final VirtualMachineImpl vm;
@@ -86,6 +88,10 @@ class PacketStream {
             vm.waitForTargetReply(pkt);
         }
 
+        processError();
+    }
+
+    private void processError() throws JDWPException {
         if (pkt.errorCode != Packet.ReplyNoError) {
             JDWPException e = new JDWPException(pkt.errorCode);
             if (pkt.errorCode == JDWP.Error.INTERNAL && pkt.data.length > 0) {
@@ -107,6 +113,17 @@ class PacketStream {
             }
             throw e;
         }
+    }
+
+    <T> CompletableFuture<T> readReply(Function<Packet, T> reader) {
+        return pkt.reply.thenApply(p -> {
+            try {
+                processError();
+            } catch (JDWPException e) {
+                throw e.toJDIException();
+            }
+            return reader.apply(p);
+        });
     }
 
     void writeBoolean(boolean data) {

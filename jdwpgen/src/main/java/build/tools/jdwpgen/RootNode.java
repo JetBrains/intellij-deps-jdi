@@ -93,6 +93,7 @@ class RootNode extends AbstractNamedNode {
         writer.println();
         writer.println("import com.sun.jdi.*;");
         writer.println("import java.util.*;");
+        writer.println("import java.util.concurrent.CompletableFuture;");
         writer.println();
 
         genJavaClass(writer, depth);

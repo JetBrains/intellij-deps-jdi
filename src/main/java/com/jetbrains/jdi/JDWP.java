@@ -2,6 +2,7 @@ package com.jetbrains.jdi;
 
 import com.sun.jdi.*;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 
 /**
@@ -24,6 +25,11 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<Version> processAsync(VirtualMachineImpl vm) {
+                PacketStream ps = enqueueCommand(vm);
+                return ps.readReply(p -> new Version(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm) {
@@ -110,6 +116,12 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, signature);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<ClassesBySignature> processAsync(VirtualMachineImpl vm, 
+                                String signature) {
+                PacketStream ps = enqueueCommand(vm, signature);
+                return ps.readReply(p -> new ClassesBySignature(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -202,6 +214,11 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<AllClasses> processAsync(VirtualMachineImpl vm) {
+                PacketStream ps = enqueueCommand(vm);
+                return ps.readReply(p -> new AllClasses(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm) {
@@ -305,6 +322,11 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<AllThreads> processAsync(VirtualMachineImpl vm) {
+                PacketStream ps = enqueueCommand(vm);
+                return ps.readReply(p -> new AllThreads(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
                 if ((vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
@@ -356,6 +378,11 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<TopLevelThreadGroups> processAsync(VirtualMachineImpl vm) {
+                PacketStream ps = enqueueCommand(vm);
+                return ps.readReply(p -> new TopLevelThreadGroups(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm) {
@@ -431,6 +458,11 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<Dispose> processAsync(VirtualMachineImpl vm) {
+                PacketStream ps = enqueueCommand(vm);
+                return ps.readReply(p -> new Dispose(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
                 if ((vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
@@ -466,6 +498,11 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<IDSizes> processAsync(VirtualMachineImpl vm) {
+                PacketStream ps = enqueueCommand(vm);
+                return ps.readReply(p -> new IDSizes(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm) {
@@ -556,6 +593,11 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<Suspend> processAsync(VirtualMachineImpl vm) {
+                PacketStream ps = enqueueCommand(vm);
+                return ps.readReply(p -> new Suspend(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
                 if ((vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
@@ -593,6 +635,11 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<Resume> processAsync(VirtualMachineImpl vm) {
+                PacketStream ps = enqueueCommand(vm);
+                return ps.readReply(p -> new Resume(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm) {
@@ -637,6 +684,12 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<Exit> processAsync(VirtualMachineImpl vm, 
+                                int exitCode) {
+                PacketStream ps = enqueueCommand(vm, exitCode);
+                return ps.readReply(p -> new Exit(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 int exitCode) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
@@ -677,6 +730,12 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, utf);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<CreateString> processAsync(VirtualMachineImpl vm, 
+                                String utf) {
+                PacketStream ps = enqueueCommand(vm, utf);
+                return ps.readReply(p -> new CreateString(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -730,6 +789,11 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<Capabilities> processAsync(VirtualMachineImpl vm) {
+                PacketStream ps = enqueueCommand(vm);
+                return ps.readReply(p -> new Capabilities(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm) {
@@ -835,6 +899,11 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<ClassPaths> processAsync(VirtualMachineImpl vm) {
+                PacketStream ps = enqueueCommand(vm);
+                return ps.readReply(p -> new ClassPaths(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm) {
@@ -974,6 +1043,12 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<DisposeObjects> processAsync(VirtualMachineImpl vm, 
+                                Request[] requests) {
+                PacketStream ps = enqueueCommand(vm, requests);
+                return ps.readReply(p -> new DisposeObjects(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 Request[] requests) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
@@ -1030,6 +1105,11 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<HoldEvents> processAsync(VirtualMachineImpl vm) {
+                PacketStream ps = enqueueCommand(vm);
+                return ps.readReply(p -> new HoldEvents(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
                 if ((vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
@@ -1066,6 +1146,11 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<ReleaseEvents> processAsync(VirtualMachineImpl vm) {
+                PacketStream ps = enqueueCommand(vm);
+                return ps.readReply(p -> new ReleaseEvents(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm) {
@@ -1106,6 +1191,11 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<CapabilitiesNew> processAsync(VirtualMachineImpl vm) {
+                PacketStream ps = enqueueCommand(vm);
+                return ps.readReply(p -> new CapabilitiesNew(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm) {
@@ -1503,6 +1593,12 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<RedefineClasses> processAsync(VirtualMachineImpl vm, 
+                                ClassDef[] classes) {
+                PacketStream ps = enqueueCommand(vm, classes);
+                return ps.readReply(p -> new RedefineClasses(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ClassDef[] classes) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
@@ -1551,6 +1647,12 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<SetDefaultStratum> processAsync(VirtualMachineImpl vm, 
+                                String stratumID) {
+                PacketStream ps = enqueueCommand(vm, stratumID);
+                return ps.readReply(p -> new SetDefaultStratum(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 String stratumID) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
@@ -1596,6 +1698,11 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<AllClassesWithGeneric> processAsync(VirtualMachineImpl vm) {
+                PacketStream ps = enqueueCommand(vm);
+                return ps.readReply(p -> new AllClassesWithGeneric(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm) {
@@ -1709,6 +1816,12 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<InstanceCounts> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl[] refTypesCount) {
+                PacketStream ps = enqueueCommand(vm, refTypesCount);
+                return ps.readReply(p -> new InstanceCounts(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ReferenceTypeImpl[] refTypesCount) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
@@ -1784,6 +1897,12 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<Signature> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType) {
+                PacketStream ps = enqueueCommand(vm, refType);
+                return ps.readReply(p -> new Signature(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ReferenceTypeImpl refType) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
@@ -1834,6 +1953,12 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, refType);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<ClassLoader> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType) {
+                PacketStream ps = enqueueCommand(vm, refType);
+                return ps.readReply(p -> new ClassLoader(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -1890,6 +2015,12 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<Modifiers> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType) {
+                PacketStream ps = enqueueCommand(vm, refType);
+                return ps.readReply(p -> new Modifiers(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ReferenceTypeImpl refType) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
@@ -1943,6 +2074,12 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, refType);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<Fields> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType) {
+                PacketStream ps = enqueueCommand(vm, refType);
+                return ps.readReply(p -> new Fields(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -2054,6 +2191,12 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, refType);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<Methods> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType) {
+                PacketStream ps = enqueueCommand(vm, refType);
+                return ps.readReply(p -> new Methods(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -2186,6 +2329,13 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<GetValues> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType, 
+                                Field[] fields) {
+                PacketStream ps = enqueueCommand(vm, refType, fields);
+                return ps.readReply(p -> new GetValues(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ReferenceTypeImpl refType, 
                                 Field[] fields) {
@@ -2256,6 +2406,12 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<SourceFile> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType) {
+                PacketStream ps = enqueueCommand(vm, refType);
+                return ps.readReply(p -> new SourceFile(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ReferenceTypeImpl refType) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
@@ -2306,6 +2462,12 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, refType);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<NestedTypes> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType) {
+                PacketStream ps = enqueueCommand(vm, refType);
+                return ps.readReply(p -> new NestedTypes(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -2399,6 +2561,12 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<Status> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType) {
+                PacketStream ps = enqueueCommand(vm, refType);
+                return ps.readReply(p -> new Status(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ReferenceTypeImpl refType) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
@@ -2450,6 +2618,12 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, refType);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<Interfaces> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType) {
+                PacketStream ps = enqueueCommand(vm, refType);
+                return ps.readReply(p -> new Interfaces(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -2509,6 +2683,12 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<ClassObject> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType) {
+                PacketStream ps = enqueueCommand(vm, refType);
+                return ps.readReply(p -> new ClassObject(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ReferenceTypeImpl refType) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
@@ -2559,6 +2739,12 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, refType);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<SourceDebugExtension> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType) {
+                PacketStream ps = enqueueCommand(vm, refType);
+                return ps.readReply(p -> new SourceDebugExtension(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -2614,6 +2800,12 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, refType);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<SignatureWithGeneric> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType) {
+                PacketStream ps = enqueueCommand(vm, refType);
+                return ps.readReply(p -> new SignatureWithGeneric(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -2683,6 +2875,12 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, refType);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<FieldsWithGeneric> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType) {
+                PacketStream ps = enqueueCommand(vm, refType);
+                return ps.readReply(p -> new FieldsWithGeneric(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -2811,6 +3009,12 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<MethodsWithGeneric> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType) {
+                PacketStream ps = enqueueCommand(vm, refType);
+                return ps.readReply(p -> new MethodsWithGeneric(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ReferenceTypeImpl refType) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
@@ -2932,6 +3136,13 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<Instances> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType, 
+                                int maxInstances) {
+                PacketStream ps = enqueueCommand(vm, refType, maxInstances);
+                return ps.readReply(p -> new Instances(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ReferenceTypeImpl refType, 
                                 int maxInstances) {
@@ -2996,6 +3207,12 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<ClassFileVersion> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType) {
+                PacketStream ps = enqueueCommand(vm, refType);
+                return ps.readReply(p -> new ClassFileVersion(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ReferenceTypeImpl refType) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
@@ -3058,6 +3275,12 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, refType);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<ConstantPool> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType) {
+                PacketStream ps = enqueueCommand(vm, refType);
+                return ps.readReply(p -> new ConstantPool(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -3129,6 +3352,12 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, clazz);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<Superclass> processAsync(VirtualMachineImpl vm, 
+                                ClassTypeImpl clazz) {
+                PacketStream ps = enqueueCommand(vm, clazz);
+                return ps.readReply(p -> new Superclass(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -3220,6 +3449,13 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, clazz, values);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<SetValues> processAsync(VirtualMachineImpl vm, 
+                                ClassTypeImpl clazz, 
+                                FieldValue[] values) {
+                PacketStream ps = enqueueCommand(vm, clazz, values);
+                return ps.readReply(p -> new SetValues(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -3329,6 +3565,16 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, clazz, thread, methodID, arguments, options);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<InvokeMethod> processAsync(VirtualMachineImpl vm, 
+                                ClassTypeImpl clazz, 
+                                ThreadReferenceImpl thread, 
+                                long methodID, 
+                                ValueImpl[] arguments, 
+                                int options) {
+                PacketStream ps = enqueueCommand(vm, clazz, thread, methodID, arguments, options);
+                return ps.readReply(p -> new InvokeMethod(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -3471,6 +3717,16 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<NewInstance> processAsync(VirtualMachineImpl vm, 
+                                ClassTypeImpl clazz, 
+                                ThreadReferenceImpl thread, 
+                                long methodID, 
+                                ValueImpl[] arguments, 
+                                int options) {
+                PacketStream ps = enqueueCommand(vm, clazz, thread, methodID, arguments, options);
+                return ps.readReply(p -> new NewInstance(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ClassTypeImpl clazz, 
                                 ThreadReferenceImpl thread, 
@@ -3561,6 +3817,13 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, arrType, length);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<NewInstance> processAsync(VirtualMachineImpl vm, 
+                                ArrayTypeImpl arrType, 
+                                int length) {
+                PacketStream ps = enqueueCommand(vm, arrType, length);
+                return ps.readReply(p -> new NewInstance(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -3679,6 +3942,16 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<InvokeMethod> processAsync(VirtualMachineImpl vm, 
+                                InterfaceTypeImpl clazz, 
+                                ThreadReferenceImpl thread, 
+                                long methodID, 
+                                ValueImpl[] arguments, 
+                                int options) {
+                PacketStream ps = enqueueCommand(vm, clazz, thread, methodID, arguments, options);
+                return ps.readReply(p -> new InvokeMethod(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 InterfaceTypeImpl clazz, 
                                 ThreadReferenceImpl thread, 
@@ -3773,6 +4046,13 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, refType, methodID);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<LineTable> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType, 
+                                long methodID) {
+                PacketStream ps = enqueueCommand(vm, refType, methodID);
+                return ps.readReply(p -> new LineTable(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -3882,6 +4162,13 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, refType, methodID);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<VariableTable> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType, 
+                                long methodID) {
+                PacketStream ps = enqueueCommand(vm, refType, methodID);
+                return ps.readReply(p -> new VariableTable(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -4019,6 +4306,13 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<Bytecodes> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType, 
+                                long methodID) {
+                PacketStream ps = enqueueCommand(vm, refType, methodID);
+                return ps.readReply(p -> new Bytecodes(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ReferenceTypeImpl refType, 
                                 long methodID) {
@@ -4082,6 +4376,13 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, refType, methodID);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<IsObsolete> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType, 
+                                long methodID) {
+                PacketStream ps = enqueueCommand(vm, refType, methodID);
+                return ps.readReply(p -> new IsObsolete(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -4148,6 +4449,13 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, refType, methodID);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<VariableTableWithGeneric> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType, 
+                                long methodID) {
+                PacketStream ps = enqueueCommand(vm, refType, methodID);
+                return ps.readReply(p -> new VariableTableWithGeneric(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -4302,6 +4610,12 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<ReferenceType> processAsync(VirtualMachineImpl vm, 
+                                ObjectReferenceImpl object) {
+                PacketStream ps = enqueueCommand(vm, object);
+                return ps.readReply(p -> new ReferenceType(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ObjectReferenceImpl object) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
@@ -4384,6 +4698,13 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, object, fields);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<GetValues> processAsync(VirtualMachineImpl vm, 
+                                ObjectReferenceImpl object, 
+                                Field[] fields) {
+                PacketStream ps = enqueueCommand(vm, object, fields);
+                return ps.readReply(p -> new GetValues(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -4498,6 +4819,13 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<SetValues> processAsync(VirtualMachineImpl vm, 
+                                ObjectReferenceImpl object, 
+                                FieldValue[] values) {
+                PacketStream ps = enqueueCommand(vm, object, values);
+                return ps.readReply(p -> new SetValues(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ObjectReferenceImpl object, 
                                 FieldValue[] values) {
@@ -4551,6 +4879,12 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, object);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<MonitorInfo> processAsync(VirtualMachineImpl vm, 
+                                ObjectReferenceImpl object) {
+                PacketStream ps = enqueueCommand(vm, object);
+                return ps.readReply(p -> new MonitorInfo(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -4687,6 +5021,17 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<InvokeMethod> processAsync(VirtualMachineImpl vm, 
+                                ObjectReferenceImpl object, 
+                                ThreadReferenceImpl thread, 
+                                ClassTypeImpl clazz, 
+                                long methodID, 
+                                ValueImpl[] arguments, 
+                                int options) {
+                PacketStream ps = enqueueCommand(vm, object, thread, clazz, methodID, arguments, options);
+                return ps.readReply(p -> new InvokeMethod(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ObjectReferenceImpl object, 
                                 ThreadReferenceImpl thread, 
@@ -4795,6 +5140,12 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<DisableCollection> processAsync(VirtualMachineImpl vm, 
+                                ObjectReferenceImpl object) {
+                PacketStream ps = enqueueCommand(vm, object);
+                return ps.readReply(p -> new DisableCollection(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ObjectReferenceImpl object) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
@@ -4841,6 +5192,12 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<EnableCollection> processAsync(VirtualMachineImpl vm, 
+                                ObjectReferenceImpl object) {
+                PacketStream ps = enqueueCommand(vm, object);
+                return ps.readReply(p -> new EnableCollection(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ObjectReferenceImpl object) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
@@ -4881,6 +5238,12 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, object);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<IsCollected> processAsync(VirtualMachineImpl vm, 
+                                ObjectReferenceImpl object) {
+                PacketStream ps = enqueueCommand(vm, object);
+                return ps.readReply(p -> new IsCollected(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -4939,6 +5302,13 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, object, maxReferrers);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<ReferringObjects> processAsync(VirtualMachineImpl vm, 
+                                ObjectReferenceImpl object, 
+                                int maxReferrers) {
+                PacketStream ps = enqueueCommand(vm, object, maxReferrers);
+                return ps.readReply(p -> new ReferringObjects(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -5008,6 +5378,12 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<Value> processAsync(VirtualMachineImpl vm, 
+                                ObjectReferenceImpl stringObject) {
+                PacketStream ps = enqueueCommand(vm, stringObject);
+                return ps.readReply(p -> new Value(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ObjectReferenceImpl stringObject) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
@@ -5061,6 +5437,12 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, thread);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<Name> processAsync(VirtualMachineImpl vm, 
+                                ThreadReferenceImpl thread) {
+                PacketStream ps = enqueueCommand(vm, thread);
+                return ps.readReply(p -> new Name(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -5134,6 +5516,12 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<Suspend> processAsync(VirtualMachineImpl vm, 
+                                ThreadReferenceImpl thread) {
+                PacketStream ps = enqueueCommand(vm, thread);
+                return ps.readReply(p -> new Suspend(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ThreadReferenceImpl thread) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
@@ -5180,6 +5568,12 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<Resume> processAsync(VirtualMachineImpl vm, 
+                                ThreadReferenceImpl thread) {
+                PacketStream ps = enqueueCommand(vm, thread);
+                return ps.readReply(p -> new Resume(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ThreadReferenceImpl thread) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
@@ -5222,6 +5616,12 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, thread);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<Status> processAsync(VirtualMachineImpl vm, 
+                                ThreadReferenceImpl thread) {
+                PacketStream ps = enqueueCommand(vm, thread);
+                return ps.readReply(p -> new Status(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -5285,6 +5685,12 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<ThreadGroup> processAsync(VirtualMachineImpl vm, 
+                                ThreadReferenceImpl thread) {
+                PacketStream ps = enqueueCommand(vm, thread);
+                return ps.readReply(p -> new ThreadGroup(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ThreadReferenceImpl thread) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
@@ -5339,6 +5745,14 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, thread, startFrame, length);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<Frames> processAsync(VirtualMachineImpl vm, 
+                                ThreadReferenceImpl thread, 
+                                int startFrame, 
+                                int length) {
+                PacketStream ps = enqueueCommand(vm, thread, startFrame, length);
+                return ps.readReply(p -> new Frames(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -5435,6 +5849,12 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<FrameCount> processAsync(VirtualMachineImpl vm, 
+                                ThreadReferenceImpl thread) {
+                PacketStream ps = enqueueCommand(vm, thread);
+                return ps.readReply(p -> new FrameCount(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ThreadReferenceImpl thread) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
@@ -5487,6 +5907,12 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, thread);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<OwnedMonitors> processAsync(VirtualMachineImpl vm, 
+                                ThreadReferenceImpl thread) {
+                PacketStream ps = enqueueCommand(vm, thread);
+                return ps.readReply(p -> new OwnedMonitors(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -5553,6 +5979,12 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<CurrentContendedMonitor> processAsync(VirtualMachineImpl vm, 
+                                ThreadReferenceImpl thread) {
+                PacketStream ps = enqueueCommand(vm, thread);
+                return ps.readReply(p -> new CurrentContendedMonitor(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ThreadReferenceImpl thread) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
@@ -5605,6 +6037,13 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<Stop> processAsync(VirtualMachineImpl vm, 
+                                ThreadReferenceImpl thread, 
+                                ObjectReferenceImpl throwable) {
+                PacketStream ps = enqueueCommand(vm, thread, throwable);
+                return ps.readReply(p -> new Stop(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ThreadReferenceImpl thread, 
                                 ObjectReferenceImpl throwable) {
@@ -5651,6 +6090,12 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<Interrupt> processAsync(VirtualMachineImpl vm, 
+                                ThreadReferenceImpl thread) {
+                PacketStream ps = enqueueCommand(vm, thread);
+                return ps.readReply(p -> new Interrupt(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ThreadReferenceImpl thread) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
@@ -5692,6 +6137,12 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, thread);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<SuspendCount> processAsync(VirtualMachineImpl vm, 
+                                ThreadReferenceImpl thread) {
+                PacketStream ps = enqueueCommand(vm, thread);
+                return ps.readReply(p -> new SuspendCount(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -5750,6 +6201,12 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, thread);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<OwnedMonitorsStackDepthInfo> processAsync(VirtualMachineImpl vm, 
+                                ThreadReferenceImpl thread) {
+                PacketStream ps = enqueueCommand(vm, thread);
+                return ps.readReply(p -> new OwnedMonitorsStackDepthInfo(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -5874,6 +6331,13 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<ForceEarlyReturn> processAsync(VirtualMachineImpl vm, 
+                                ThreadReferenceImpl thread, 
+                                ValueImpl value) {
+                PacketStream ps = enqueueCommand(vm, thread, value);
+                return ps.readReply(p -> new ForceEarlyReturn(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ThreadReferenceImpl thread, 
                                 ValueImpl value) {
@@ -5925,6 +6389,12 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<Name> processAsync(VirtualMachineImpl vm, 
+                                ThreadGroupReferenceImpl group) {
+                PacketStream ps = enqueueCommand(vm, group);
+                return ps.readReply(p -> new Name(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ThreadGroupReferenceImpl group) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
@@ -5973,6 +6443,12 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, group);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<Parent> processAsync(VirtualMachineImpl vm, 
+                                ThreadGroupReferenceImpl group) {
+                PacketStream ps = enqueueCommand(vm, group);
+                return ps.readReply(p -> new Parent(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -6030,6 +6506,12 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, group);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<Children> processAsync(VirtualMachineImpl vm, 
+                                ThreadGroupReferenceImpl group) {
+                PacketStream ps = enqueueCommand(vm, group);
+                return ps.readReply(p -> new Children(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -6110,6 +6592,12 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<Length> processAsync(VirtualMachineImpl vm, 
+                                ArrayReferenceImpl arrayObject) {
+                PacketStream ps = enqueueCommand(vm, arrayObject);
+                return ps.readReply(p -> new Length(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ArrayReferenceImpl arrayObject) {
                 PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
@@ -6161,6 +6649,14 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, arrayObject, firstIndex, length);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<GetValues> processAsync(VirtualMachineImpl vm, 
+                                ArrayReferenceImpl arrayObject, 
+                                int firstIndex, 
+                                int length) {
+                PacketStream ps = enqueueCommand(vm, arrayObject, firstIndex, length);
+                return ps.readReply(p -> new GetValues(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -6230,6 +6726,14 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, arrayObject, firstIndex, values);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<SetValues> processAsync(VirtualMachineImpl vm, 
+                                ArrayReferenceImpl arrayObject, 
+                                int firstIndex, 
+                                ValueImpl[] values) {
+                PacketStream ps = enqueueCommand(vm, arrayObject, firstIndex, values);
+                return ps.readReply(p -> new SetValues(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -6305,6 +6809,12 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, classLoaderObject);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<VisibleClasses> processAsync(VirtualMachineImpl vm, 
+                                ClassLoaderReferenceImpl classLoaderObject) {
+                PacketStream ps = enqueueCommand(vm, classLoaderObject);
+                return ps.readReply(p -> new VisibleClasses(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -6884,6 +7394,14 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<Set> processAsync(VirtualMachineImpl vm, 
+                                byte eventKind, 
+                                byte suspendPolicy, 
+                                Modifier[] modifiers) {
+                PacketStream ps = enqueueCommand(vm, eventKind, suspendPolicy, modifiers);
+                return ps.readReply(p -> new Set(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 byte eventKind, 
                                 byte suspendPolicy, 
@@ -6956,6 +7474,13 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<Clear> processAsync(VirtualMachineImpl vm, 
+                                byte eventKind, 
+                                int requestID) {
+                PacketStream ps = enqueueCommand(vm, eventKind, requestID);
+                return ps.readReply(p -> new Clear(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 byte eventKind, 
                                 int requestID) {
@@ -6999,6 +7524,11 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<ClearAllBreakpoints> processAsync(VirtualMachineImpl vm) {
+                PacketStream ps = enqueueCommand(vm);
+                return ps.readReply(p -> new ClearAllBreakpoints(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm) {
@@ -7078,6 +7608,14 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, thread, frame, slots);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<GetValues> processAsync(VirtualMachineImpl vm, 
+                                ThreadReferenceImpl thread, 
+                                long frame, 
+                                SlotInfo[] slots) {
+                PacketStream ps = enqueueCommand(vm, thread, frame, slots);
+                return ps.readReply(p -> new GetValues(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -7196,6 +7734,14 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<SetValues> processAsync(VirtualMachineImpl vm, 
+                                ThreadReferenceImpl thread, 
+                                long frame, 
+                                SlotInfo[] slotValues) {
+                PacketStream ps = enqueueCommand(vm, thread, frame, slotValues);
+                return ps.readReply(p -> new SetValues(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ThreadReferenceImpl thread, 
                                 long frame, 
@@ -7254,6 +7800,13 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, thread, frame);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<ThisObject> processAsync(VirtualMachineImpl vm, 
+                                ThreadReferenceImpl thread, 
+                                long frame) {
+                PacketStream ps = enqueueCommand(vm, thread, frame);
+                return ps.readReply(p -> new ThisObject(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
@@ -7321,6 +7874,13 @@ class JDWP {
                 return waitForReply(vm, ps);
             }
 
+            static CompletableFuture<PopFrames> processAsync(VirtualMachineImpl vm, 
+                                ThreadReferenceImpl thread, 
+                                long frame) {
+                PacketStream ps = enqueueCommand(vm, thread, frame);
+                return ps.readReply(p -> new PopFrames(vm, ps));
+            }
+
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
                                 ThreadReferenceImpl thread, 
                                 long frame) {
@@ -7370,6 +7930,12 @@ class JDWP {
                                     throws JDWPException {
                 PacketStream ps = enqueueCommand(vm, classObject);
                 return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<ReflectedType> processAsync(VirtualMachineImpl vm, 
+                                ClassObjectReferenceImpl classObject) {
+                PacketStream ps = enqueueCommand(vm, classObject);
+                return ps.readReply(p -> new ReflectedType(vm, ps));
             }
 
             static PacketStream enqueueCommand(VirtualMachineImpl vm, 
