@@ -40,6 +40,7 @@ package com.jetbrains.jdi;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
@@ -75,9 +76,9 @@ final public class ClassTypeImpl extends InvokableTypeImpl
         }
     }
 
-    private boolean cachedSuperclass = false;
-    private ClassType superclass = null;
-    private List<InterfaceType> interfaces = null;
+    private volatile boolean cachedSuperclass = false;
+    private volatile ClassType superclass = null;
+    private volatile List<InterfaceType> interfaces = null;
 
     protected ClassTypeImpl(VirtualMachine aVm, long aRef) {
         super(aVm, aRef);
@@ -107,12 +108,33 @@ final public class ClassTypeImpl extends InvokableTypeImpl
         return superclass;
     }
 
+    public CompletableFuture<ClassType> superclassAsync() {
+        if (cachedSuperclass) {
+            return CompletableFuture.completedFuture(superclass);
+        }
+        return JDWP.ClassType.Superclass.processAsync(vm, this).thenApply(s -> {
+            ClassTypeImpl sup = s.superclass;
+            if (sup != null) {
+                superclass = sup;
+            }
+            cachedSuperclass = true;
+            return sup;
+        });
+    }
+
     @Override
     public List<InterfaceType> interfaces()  {
         if (interfaces == null) {
             interfaces = getInterfaces();
         }
         return interfaces;
+    }
+
+    public CompletableFuture<List<InterfaceType>> interfacesAsync()  {
+        if (interfaces != null) {
+            return CompletableFuture.completedFuture(interfaces);
+        }
+        return getInterfacesAsync().thenApply(r -> interfaces = r);
     }
 
     @Override

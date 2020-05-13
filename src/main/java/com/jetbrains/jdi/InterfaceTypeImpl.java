@@ -42,6 +42,7 @@ import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import com.sun.jdi.ClassType;
 import com.sun.jdi.InterfaceType;
@@ -71,7 +72,7 @@ final public class InterfaceTypeImpl extends InvokableTypeImpl
 
     }
 
-    private SoftReference<List<InterfaceType>> superinterfacesRef = null;
+    private volatile SoftReference<List<InterfaceType>> superinterfacesRef = null;
 
     protected InterfaceTypeImpl(VirtualMachine aVm,long aRef) {
         super(aVm, aRef);
@@ -86,6 +87,17 @@ final public class InterfaceTypeImpl extends InvokableTypeImpl
             superinterfacesRef = new SoftReference<>(superinterfaces);
         }
         return superinterfaces;
+    }
+
+    public CompletableFuture<List<InterfaceType>> superinterfacesAsync() {
+        List<InterfaceType> superinterfaces = (superinterfacesRef == null) ? null : superinterfacesRef.get();
+        if (superinterfaces != null) {
+            return CompletableFuture.completedFuture(superinterfaces);
+        }
+        return getInterfacesAsync().thenApply(r -> {
+            superinterfacesRef = new SoftReference<>(Collections.unmodifiableList(r));
+            return r;
+        });
     }
 
     public List<InterfaceType> subinterfaces() {
@@ -158,6 +170,10 @@ final public class InterfaceTypeImpl extends InvokableTypeImpl
     @Override
     List<InterfaceType> interfaces() {
         return superinterfaces();
+    }
+
+    CompletableFuture<List<InterfaceType>> interfacesAsync() {
+        return superinterfacesAsync();
     }
 
     @Override

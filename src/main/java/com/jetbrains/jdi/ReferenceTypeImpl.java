@@ -42,6 +42,7 @@ import com.sun.jdi.*;
 
 import java.lang.ref.SoftReference;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 //import com.sun.jdi.ModuleReference;
 
@@ -588,6 +589,10 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
             throw exc.toJDIException();
         }
         return Arrays.asList(intfs);
+    }
+
+    CompletableFuture<List<InterfaceType>> getInterfacesAsync() {
+        return JDWP.ReferenceType.Interfaces.processAsync(vm, this).thenApply(r -> Arrays.asList(r.interfaces));
     }
 
     public List<ReferenceType> nestedTypes() {
