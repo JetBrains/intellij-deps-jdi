@@ -38,10 +38,8 @@
 
 package com.jetbrains.jdi;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 import com.sun.jdi.ArrayReference;
 import com.sun.jdi.ArrayType;
@@ -152,7 +150,12 @@ public class ArrayTypeImpl extends ReferenceTypeImpl
     }
 
     List<ReferenceType> inheritedTypes() {
-        return new ArrayList<>(0);
+        return Collections.emptyList();
+    }
+
+    @Override
+    CompletableFuture<List<? extends ReferenceType>> inheritedTypesAsync() {
+        return CompletableFuture.completedFuture(Collections.emptyList());
     }
 
     void getModifiers() {

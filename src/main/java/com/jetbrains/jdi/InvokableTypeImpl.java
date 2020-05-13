@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
@@ -240,6 +241,18 @@ abstract class InvokableTypeImpl extends ReferenceTypeImpl {
         return inherited;
     }
 
+    @Override
+    final CompletableFuture<List<? extends ReferenceType>> inheritedTypesAsync() {
+        return superclassAsync().thenCombine(interfacesAsync(), (superclass, interfaces) -> {
+            List<ReferenceType> res = new ArrayList<>();
+            if (superclass != null) {
+                res.add(superclass);
+            }
+            res.addAll(interfaces);
+            return res;
+        });
+    }
+
     private PacketStream sendInvokeCommand(final ThreadReferenceImpl thread,
                                            final MethodImpl method,
                                            final ValueImpl[] args,
@@ -296,11 +309,15 @@ abstract class InvokableTypeImpl extends ReferenceTypeImpl {
      */
     abstract ClassType superclass();
 
+    abstract CompletableFuture<ClassType> superclassAsync();
+
     /**
      * Get the implemented/extended interfaces
      * @return the list of implemented/extended interfaces
      */
     abstract List<InterfaceType> interfaces();
+
+    abstract CompletableFuture<List<InterfaceType>> interfacesAsync();
 
     /**
      * Checks the provided method whether it can be invoked

@@ -159,6 +159,11 @@ final public class InterfaceTypeImpl extends InvokableTypeImpl
     }
 
     @Override
+    CompletableFuture<ClassType> superclassAsync() {
+        return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
     boolean isAssignableTo(ReferenceType type) {
         if (type.name().equals("java.lang.Object")) {
             // interfaces are always assignable to j.l.Object

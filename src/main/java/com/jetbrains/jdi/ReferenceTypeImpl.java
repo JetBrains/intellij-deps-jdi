@@ -43,6 +43,7 @@ import com.sun.jdi.*;
 import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 //import com.sun.jdi.ModuleReference;
 
@@ -55,7 +56,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     private String baseSourceDir = null;
     private String baseSourcePath = null;
     protected int modifiers = -1;
-    private SoftReference<List<Field>> fieldsRef = null;
+    private volatile SoftReference<List<Field>> fieldsRef = null;
     private SoftReference<List<Method>> methodsRef = null;
     private SoftReference<SDE> sdeRef = null;
 
@@ -335,6 +336,34 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return (status & JDWP.ClassStatus.ERROR) != 0;
     }
 
+    public CompletableFuture<List<Field>> fieldsAsync() {
+        List<Field> fields = (fieldsRef == null) ? null : fieldsRef.get();
+        if (fields != null) {
+            return CompletableFuture.completedFuture(fields);
+        }
+        if (vm.canGet1_5LanguageFeatures()) {
+            return JDWP.ReferenceType.FieldsWithGeneric.processAsync(vm, this).thenApply(r -> {
+                List<Field> res = Collections.unmodifiableList(
+                        Arrays.stream(r.declared)
+                                .map(fi -> new FieldImpl(vm, this, fi.fieldID, fi.name,
+                                        fi.signature, fi.genericSignature, fi.modBits))
+                                .collect(Collectors.toList()));
+                fieldsRef = new SoftReference<>(res);
+                return res;
+            });
+        } else {
+            return JDWP.ReferenceType.Fields.processAsync(vm, this).thenApply(r -> {
+                List<Field> res = Collections.unmodifiableList(
+                        Arrays.stream(r.declared)
+                                .map(fi -> new FieldImpl(vm, this, fi.fieldID, fi.name,
+                                        fi.signature, null, fi.modBits))
+                                .collect(Collectors.toList()));
+                fieldsRef = new SoftReference<>(res);
+                return res;
+            });
+        }
+    }
+
     public List<Field> fields() {
         List<Field> fields = (fieldsRef == null) ? null : fieldsRef.get();
         if (fields == null) {
@@ -380,6 +409,8 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
 
     abstract List<? extends ReferenceType> inheritedTypes();
 
+    abstract CompletableFuture<List<? extends ReferenceType>> inheritedTypesAsync();
+
     void addVisibleFields(List<Field> visibleList, Map<String, Field> visibleTable, List<String> ambiguousNames) {
         for (Field field : visibleFields()) {
             String name = field.name();
@@ -413,8 +444,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         List<String> ambiguousNames = new ArrayList<>();
 
         /* Add inherited, visible fields */
-        List<? extends ReferenceType> types = inheritedTypes();
-        for (ReferenceType referenceType : types) {
+        for (ReferenceType referenceType : inheritedTypes()) {
             /*
              * TO DO: Be defensive and check for cyclic interface inheritance
              */
@@ -446,18 +476,47 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
             fieldList.addAll(fields());
 
             /* Add inherited fields */
-            List<? extends ReferenceType> types = inheritedTypes();
-            for (ReferenceType referenceType : types) {
+            for (ReferenceType referenceType : inheritedTypes()) {
                 ReferenceTypeImpl type = (ReferenceTypeImpl) referenceType;
                 type.addAllFields(fieldList, typeSet);
             }
         }
     }
+
+    CompletableFuture<List<Field>> addAllFieldsAsync(List<Field> fieldList, Set<ReferenceType> typeSet) {
+        /* Continue the recursion only if this type is new */
+        if (!typeSet.contains(this)) {
+            typeSet.add(this);
+
+            /* Add local fields */
+            return fieldsAsync()
+                    .thenAccept(fieldList::addAll)
+                    /* Add inherited fields */
+                    .thenCompose(__ -> inheritedTypesAsync())
+                    .thenCompose(types -> {
+                        CompletableFuture<List<Field>> res = CompletableFuture.completedFuture(fieldList);
+                        for (ReferenceType referenceType : types) {
+                            res = res.thenCombine(((ReferenceTypeImpl) referenceType).addAllFieldsAsync(fieldList, typeSet),
+                                    (f, f2) -> fieldList);
+                        }
+                        return res;
+                    });
+        }
+        return CompletableFuture.completedFuture(fieldList);
+    }
+
     public List<Field> allFields() {
         List<Field> fieldList = new ArrayList<>();
         Set<ReferenceType> typeSet = new HashSet<>();
         addAllFields(fieldList, typeSet);
         return fieldList;
+    }
+
+    public CompletableFuture<List<Field>> allFieldsAsync() {
+        //TODO: may improve further, but need to preserve the order
+        List<Field> fieldList = Collections.synchronizedList(new ArrayList<>());
+        Set<ReferenceType> typeSet = Collections.synchronizedSet(new HashSet<>());
+        return addAllFieldsAsync(fieldList, typeSet);
     }
 
     public Field fieldByName(String fieldName) {
