@@ -41,12 +41,13 @@ package com.jetbrains.jdi;
 import com.sun.jdi.*;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 public class ObjectReferenceImpl extends ValueImpl
              implements ObjectReference, VMListener
 {
     protected final long ref;
-    private ReferenceType type = null;
+    private volatile ReferenceType type = null;
     private int gcDisableCount = 0;
     boolean addedListener = false;
 
@@ -154,8 +155,20 @@ public class ObjectReferenceImpl extends ValueImpl
         return(int)ref();
     }
 
+    public CompletableFuture<? extends Type> typeAsync() {
+        return referenceTypeAsync();
+    }
+
     public Type type() {
         return referenceType();
+    }
+
+    public CompletableFuture<ReferenceType> referenceTypeAsync() {
+        if (type != null) {
+            return CompletableFuture.completedFuture(type);
+        }
+        return JDWP.ObjectReference.ReferenceType.processAsync(vm, this)
+                .thenApply(rtinfo -> type = vm.referenceType(rtinfo.typeID, rtinfo.refTypeTag));
     }
 
     public ReferenceType referenceType() {
