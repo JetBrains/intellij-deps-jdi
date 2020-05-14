@@ -189,25 +189,79 @@ public class ObjectReferenceImpl extends ValueImpl
         this.type = type;
     }
 
-    public Value getValue(Field sig) {
-        List<Field> list = new ArrayList<>(1);
-        list.add(sig);
-        Map<Field, Value> map = getValues(list);
-        return map.get(sig);
+    public CompletableFuture<Value> getValueAsync(Field sig) {
+        return getValuesAsync(Collections.singletonList(sig)).thenApply(m -> m.get(sig));
     }
 
-    public Map<Field,Value> getValues(List<? extends Field> theFields) {
+    public Value getValue(Field sig) {
+        return getValues(Collections.singletonList(sig)).get(sig);
+    }
+
+    public CompletableFuture<Map<Field, Value>> getValuesAsync(List<? extends Field> theFields) {
         validateMirrors(theFields);
 
         List<Field> staticFields = new ArrayList<>(0);
         int size = theFields.size();
         List<Field> instanceFields = new ArrayList<>(size);
 
-        for (int i = 0; i < size; i++) {
-            Field field = theFields.get(i);
-
+        for (Field field : theFields) {
             // Make sure the field is valid
-            ((ReferenceTypeImpl)referenceType()).validateFieldAccess(field);
+            ((ReferenceTypeImpl) referenceType()).validateFieldAccess(field);
+
+            // FIX ME! We need to do some sanity checking
+            // here; make sure the field belongs to this
+            // object.
+            if (field.isStatic())
+                staticFields.add(field);
+            else {
+                instanceFields.add(field);
+            }
+        }
+
+        CompletableFuture<Map<Field, Value>> res;
+        if (staticFields.size() > 0) {
+            res = ((ReferenceTypeImpl) referenceType()).getValuesAsync(staticFields);
+        } else {
+            res = CompletableFuture.completedFuture(new HashMap<>(size));
+        }
+
+        int sizeInstance = instanceFields.size();
+
+        JDWP.ObjectReference.GetValues.Field[] queryFields = new JDWP.ObjectReference.GetValues.Field[sizeInstance];
+        for (int i = 0; i < sizeInstance; i++) {
+            FieldImpl field = (FieldImpl) instanceFields.get(i);/* thanks OTI */
+            queryFields[i] = new JDWP.ObjectReference.GetValues.Field(field.ref());
+        }
+
+        return res.thenCombine(JDWP.ObjectReference.GetValues.processAsync(vm, this, queryFields).thenApply(r -> {
+            Map<Field, Value> map = new HashMap<>(sizeInstance);
+            ValueImpl[] values = r.values;
+            if (sizeInstance != values.length) {
+                throw new InternalException(
+                        "Wrong number of values returned from target VM");
+            }
+            for (int i = 0; i < sizeInstance; i++) {
+                FieldImpl field = (FieldImpl) instanceFields.get(i);
+                map.put(field, values[i]);
+            }
+
+            return map;
+        }), (fieldValueMap, fieldValueMap2) -> {
+            fieldValueMap.putAll(fieldValueMap2);
+            return fieldValueMap;
+        });
+    }
+
+    public Map<Field, Value> getValues(List<? extends Field> theFields) {
+        validateMirrors(theFields);
+
+        List<Field> staticFields = new ArrayList<>(0);
+        int size = theFields.size();
+        List<Field> instanceFields = new ArrayList<>(size);
+
+        for (Field field : theFields) {
+            // Make sure the field is valid
+            ((ReferenceTypeImpl) referenceType()).validateFieldAccess(field);
 
             // FIX ME! We need to do some sanity checking
             // here; make sure the field belongs to this

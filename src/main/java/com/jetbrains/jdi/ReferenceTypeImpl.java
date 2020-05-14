@@ -672,13 +672,13 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return nested;
     }
 
-    public Value getValue(Field sig) {
-        List<Field> list = new ArrayList<>(1);
-        list.add(sig);
-        Map<Field, Value> map = getValues(list);
-        return map.get(sig);
+    public CompletableFuture<Value> getValueAsync(Field sig) {
+        return getValuesAsync(Collections.singletonList(sig)).thenApply(m -> m.get(sig));
     }
 
+    public Value getValue(Field sig) {
+        return getValues(Collections.singletonList(sig)).get(sig);
+    }
 
     void validateFieldAccess(Field field) {
         /*
@@ -696,6 +696,42 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         if (field.isFinal()) {
             throw new IllegalArgumentException("Cannot set value of final field");
         }
+    }
+
+    public CompletableFuture<Map<Field,Value>> getValuesAsync(List<? extends Field> theFields) {
+        validateMirrors(theFields);
+
+        int size = theFields.size();
+        JDWP.ReferenceType.GetValues.Field[] queryFields = new JDWP.ReferenceType.GetValues.Field[size];
+
+        for (int i=0; i<size; i++) {
+            FieldImpl field = (FieldImpl)theFields.get(i);
+
+            validateFieldAccess(field);
+
+            // Do more validation specific to ReferenceType field getting
+            if (!field.isStatic()) {
+                throw new IllegalArgumentException("Attempt to use non-static field with ReferenceType");
+            }
+            queryFields[i] = new JDWP.ReferenceType.GetValues.Field(field.ref());
+        }
+
+        return JDWP.ReferenceType.GetValues.processAsync(vm, this, queryFields).thenApply(r -> {
+            ValueImpl[] values = r.values;
+
+            if (size != values.length) {
+                throw new InternalException(
+                        "Wrong number of values returned from target VM");
+            }
+
+            Map<Field, Value> map = new HashMap<>(size);
+            for (int i=0; i<size; i++) {
+                FieldImpl field = (FieldImpl)theFields.get(i);
+                map.put(field, values[i]);
+            }
+
+            return map;
+        });
     }
 
     /**
