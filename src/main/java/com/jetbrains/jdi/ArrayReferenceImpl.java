@@ -38,7 +38,7 @@
 
 package com.jetbrains.jdi;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -99,12 +99,19 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
     }
 
     public Value getValue(int index) {
-        List<Value> list = getValues(index, 1);
-        return list.get(0);
+        return getValues(index, 1).get(0);
+    }
+
+    public CompletableFuture<Value> getValueAsync(int index) {
+        return getValuesAsync(index, 1).thenApply(r -> r.get(0));
     }
 
     public List<Value> getValues() {
         return getValues(0, -1);
+    }
+
+    public CompletableFuture<List<Value>> getValuesAsync() {
+        return getValuesAsync(0, -1);
     }
 
     /**
@@ -135,13 +142,29 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
         return (T)x;
     }
 
+    public CompletableFuture<List<Value>> getValuesAsync(int index, int len) {
+        return lengthAsync().thenCompose(__ -> { // preload length
+            int length = len;
+            if (length == -1) { // -1 means the rest of the array
+                length = length() - index;
+            }
+            validateArrayAccess(index, length);
+            if (length == 0) {
+                return CompletableFuture.completedFuture(Collections.emptyList());
+            }
+
+            return JDWP.ArrayReference.GetValues.processAsync(vm, this, index, length)
+                    .thenApply(r -> cast(r.values));
+        });
+    }
+
     public List<Value> getValues(int index, int length) {
         if (length == -1) { // -1 means the rest of the array
            length = length() - index;
         }
         validateArrayAccess(index, length);
         if (length == 0) {
-            return new ArrayList<>();
+            return Collections.emptyList();
         }
 
         List<Value> vals;
@@ -157,9 +180,7 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
     public void setValue(int index, Value value)
             throws InvalidTypeException,
                    ClassNotLoadedException {
-        List<Value> list = new ArrayList<>(1);
-        list.add(value);
-        setValues(index, list, 0, 1);
+        setValues(index, Collections.singletonList(value), 0, 1);
     }
 
     public void setValues(List<? extends Value> values)
