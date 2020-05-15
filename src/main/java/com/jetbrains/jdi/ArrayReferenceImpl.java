@@ -40,6 +40,7 @@ package com.jetbrains.jdi;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import com.sun.jdi.ArrayReference;
 import com.sun.jdi.ClassNotLoadedException;
@@ -52,7 +53,7 @@ import com.sun.jdi.VirtualMachine;
 public class ArrayReferenceImpl extends ObjectReferenceImpl
     implements ArrayReference
 {
-    private int length = -1;
+    private volatile int length = -1;
 
     ArrayReferenceImpl(VirtualMachine aVm, long aRef) {
         super(aVm, aRef);
@@ -84,6 +85,13 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
             }
         }
         return length;
+    }
+
+    public CompletableFuture<Integer> lengthAsync() {
+        if (length != -1) {
+            return CompletableFuture.completedFuture(length);
+        }
+        return JDWP.ArrayReference.Length.processAsync(vm, this).thenApply(r -> length = r.arrayLength);
     }
 
     void setLength(int length) {
