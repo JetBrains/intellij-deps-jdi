@@ -1535,4 +1535,11 @@ public class VirtualMachineImpl extends MirrorImpl
     public int getWaitPacketsNumber() {
         return waitPackets.get();
     }
+
+    /**
+     * @return true if there's no debugger commands being sent/read or waited for
+     */
+    public boolean isIdle() {
+        return target.isIdle();
+    }
 }

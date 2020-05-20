@@ -261,14 +261,26 @@ public class TargetVM implements Runnable {
     }
 
     void notifyDequeueEventSet() {
+        controlEventFlow(getMaxQueueSize());
+    }
+
+    private int getMaxQueueSize() {
         int maxQueueSize = 0;
         synchronized(eventQueues) {
             for (EventQueue eventQueue : eventQueues) {
-                EventQueueImpl queue = (EventQueueImpl) eventQueue;
-                maxQueueSize = Math.max(maxQueueSize, queue.size());
+                maxQueueSize = Math.max(maxQueueSize, ((EventQueueImpl) eventQueue).size());
             }
         }
-        controlEventFlow(maxQueueSize);
+        return maxQueueSize;
+    }
+
+    boolean isIdle() {
+        synchronized(waitingQueue) {
+            if (!waitingQueue.isEmpty()) {
+                return false;
+            }
+        }
+        return getMaxQueueSize() == 0;
     }
 
     private void queueEventSet(EventSet eventSet) {
