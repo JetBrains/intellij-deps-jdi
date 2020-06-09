@@ -62,6 +62,8 @@ import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.request.BreakpointRequest;
 
+import java.util.concurrent.CompletableFuture;
+
 public class ThreadReferenceImpl extends ObjectReferenceImpl
                                  implements ThreadReference {
     static final int SUSPEND_STATUS_SUSPENDED = 0x1;
@@ -138,7 +140,7 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
     // This is cached only while all threads in the VM are suspended
     // Yes, someone could change the name of a thread while it is suspended.
     private static class Cache extends ObjectReferenceImpl.Cache {
-        String name = null;
+        volatile String name = null;
     }
     protected ObjectReferenceImpl.Cache newCache() {
         return new Cache();
@@ -215,6 +217,26 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
         return name;
     }
 
+    public CompletableFuture<String> nameAsync() {
+        String name = null;
+        Cache local = (Cache) getCache();
+
+        if (local != null) {
+            name = local.name;
+        }
+        if (name == null) {
+            return JDWP.ThreadReference.Name.processAsync(vm, this)
+                    .thenApply(res -> {
+                        Cache cache = (Cache) getCache();
+                        if (cache != null) {
+                            cache.name = res.threadName;
+                        }
+                        return res.threadName;
+                    });
+        }
+        return CompletableFuture.completedFuture(name);
+    }
+
     /*
      * Sends a command to the back end which is defined to do an
      * implicit vm-wide resume.
@@ -222,7 +244,7 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
     PacketStream sendResumingCommand(CommandSender sender) {
         synchronized (vm.state()) {
             processThreadAction(new ThreadAction(this,
-                                        ThreadAction.THREAD_RESUMABLE));
+                    ThreadAction.THREAD_RESUMABLE));
             return sender.send();
         }
     }
@@ -309,26 +331,53 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
         LocalCache snapshot = localCache;
         JDWP.ThreadReference.Status myStatus = snapshot.status;
         try {
-             if (myStatus == null) {
-                 myStatus = JDWP.ThreadReference.Status.process(vm, this);
+            if (myStatus == null) {
+                myStatus = JDWP.ThreadReference.Status.process(vm, this);
                 if ((myStatus.suspendStatus & SUSPEND_STATUS_SUSPENDED) != 0) {
                     // thread is suspended, we can cache the status.
                     snapshot.status = myStatus;
                 }
             }
-         } catch (JDWPException exc) {
+        } catch (JDWPException exc) {
             throw exc.toJDIException();
         }
         return myStatus;
+    }
+
+    private CompletableFuture<JDWP.ThreadReference.Status> jdwpStatusAsync() {
+        LocalCache snapshot = localCache;
+        JDWP.ThreadReference.Status myStatus = snapshot.status;
+        if (myStatus != null) {
+            return CompletableFuture.completedFuture(myStatus);
+        }
+        return JDWP.ThreadReference.Status.processAsync(vm, this)
+                .thenApply(res -> {
+                    if ((res.suspendStatus & SUSPEND_STATUS_SUSPENDED) != 0) {
+                        // thread is suspended, we can cache the status.
+                        snapshot.status = res;
+                    }
+                    return res;
+                });
     }
 
     public int status() {
         return jdwpStatus().threadStatus;
     }
 
+    public CompletableFuture<Integer> statusAsync() {
+        return jdwpStatusAsync().thenApply(res -> res.threadStatus);
+    }
+
     public boolean isSuspended() {
         return ((suspendedZombieCount > 0) ||
                 ((jdwpStatus().suspendStatus & SUSPEND_STATUS_SUSPENDED) != 0));
+    }
+
+    public CompletableFuture<Boolean> isSuspendedAsync() {
+        if (suspendedZombieCount > 0) {
+            return CompletableFuture.completedFuture(true);
+        }
+        return jdwpStatusAsync().thenApply(res -> (res.suspendStatus & SUSPEND_STATUS_SUSPENDED) != 0);
     }
 
     public boolean isAtBreakpoint() {
@@ -381,21 +430,30 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
             }
         } catch (JDWPException exc) {
             switch (exc.errorCode()) {
-            case JDWP.Error.THREAD_NOT_SUSPENDED:
-            case JDWP.Error.INVALID_THREAD:   /* zombie */
-                throw new IncompatibleThreadStateException();
-            default:
-                throw exc.toJDIException();
+                case JDWP.Error.THREAD_NOT_SUSPENDED:
+                case JDWP.Error.INVALID_THREAD:   /* zombie */
+                    throw new IncompatibleThreadStateException();
+                default:
+                    throw exc.toJDIException();
             }
         }
         return snapshot.frameCount;
     }
 
-    public List<StackFrame> frames() throws IncompatibleThreadStateException  {
+    public CompletableFuture<Integer> frameCountAsync() {
+        LocalCache snapshot = localCache;
+        if (snapshot.frameCount != -1) {
+            return CompletableFuture.completedFuture(snapshot.frameCount);
+        }
+        return JDWP.ThreadReference.FrameCount.processAsync(vm, this)
+                .thenApply(res -> localCache.frameCount = res.frameCount);
+    }
+
+    public List<StackFrame> frames() throws IncompatibleThreadStateException {
         return privateFrames(0, -1);
     }
 
-    public StackFrame frame(int index) throws IncompatibleThreadStateException  {
+    public StackFrame frame(int index) throws IncompatibleThreadStateException {
         List<StackFrame> list = privateFrames(index, 1);
         return list.get(0);
     }
