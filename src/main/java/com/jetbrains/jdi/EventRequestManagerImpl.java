@@ -38,11 +38,8 @@
 
 package com.jetbrains.jdi;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 import com.sun.jdi.Field;
 import com.sun.jdi.Location;
@@ -82,7 +79,7 @@ import com.sun.jdi.request.WatchpointRequest;
 // Remove SuppressWarning when we fix the warnings from List filters
 // and List[] requestLists. The generic array is not supported.
 @SuppressWarnings({"unchecked", "rawtypes"})
-class EventRequestManagerImpl extends MirrorImpl
+public class EventRequestManagerImpl extends MirrorImpl
                               implements EventRequestManager
 {
     private final List<? extends EventRequest>[] requestLists;
@@ -126,7 +123,7 @@ class EventRequestManagerImpl extends MirrorImpl
     }
 
     private abstract class EventRequestImpl extends MirrorImpl implements EventRequest {
-        int id;
+        volatile int id;
 
         /*
          * This list is not protected by a synchronized wrapper. All
@@ -135,8 +132,8 @@ class EventRequestManagerImpl extends MirrorImpl
          */
         final List<Object> filters = new ArrayList<>();
 
-        boolean isEnabled = false;
-        boolean deleted = false;
+        volatile boolean isEnabled = false;
+        volatile boolean deleted = false;
         byte suspendPolicy = JDWP.SuspendPolicy.ALL;
         private Map<Object, Object> clientProperties = null;
 
@@ -184,6 +181,15 @@ class EventRequestManagerImpl extends MirrorImpl
             }
         }
 
+        CompletableFuture<Void> deleteAsync() {
+            if (!deleted) {
+                requestList().remove(this);
+                return setEnabledAsync(false)
+                        .thenAccept(res -> deleted = true);
+            }
+            return CompletableFuture.completedFuture(null);
+        }
+
         public boolean isEnabled() {
             return isEnabled;
         }
@@ -208,6 +214,21 @@ class EventRequestManagerImpl extends MirrorImpl
                     }
                 }
             }
+        }
+
+        public synchronized CompletableFuture<Void> setEnabledAsync(boolean val) {
+            if (deleted) {
+                throw invalidState();
+            } else {
+                if (val != isEnabled) {
+                    if (isEnabled) {
+                        return clearAsync();
+                    } else {
+                        return setAsync();
+                    }
+                }
+            }
+            return CompletableFuture.completedFuture(null);
         }
 
         public synchronized void addCountFilter(int count) {
@@ -236,24 +257,38 @@ class EventRequestManagerImpl extends MirrorImpl
          */
         synchronized void set() {
             JDWP.EventRequest.Set.Modifier[] mods =
-                filters.toArray(
-                    new JDWP.EventRequest.Set.Modifier[filters.size()]);
+                    filters.toArray(
+                            new JDWP.EventRequest.Set.Modifier[filters.size()]);
             try {
-                id = JDWP.EventRequest.Set.process(vm, (byte)eventCmd(),
-                                                   suspendPolicy, mods).requestID;
+                id = JDWP.EventRequest.Set.process(vm, (byte) eventCmd(),
+                        suspendPolicy, mods).requestID;
             } catch (JDWPException exc) {
                 throw exc.toJDIException();
             }
             isEnabled = true;
         }
 
+        synchronized CompletableFuture<Void> setAsync() {
+            JDWP.EventRequest.Set.Modifier[] mods = filters.toArray(new JDWP.EventRequest.Set.Modifier[0]);
+            return JDWP.EventRequest.Set.processAsync(vm, (byte) eventCmd(), suspendPolicy, mods)
+                    .thenAccept(res -> {
+                        id = res.requestID;
+                        isEnabled = true;
+                    });
+        }
+
         synchronized void clear() {
             try {
-                JDWP.EventRequest.Clear.process(vm, (byte)eventCmd(), id);
+                JDWP.EventRequest.Clear.process(vm, (byte) eventCmd(), id);
             } catch (JDWPException exc) {
                 throw exc.toJDIException();
             }
             isEnabled = false;
+        }
+
+        synchronized CompletableFuture<Void> clearAsync() {
+            return JDWP.EventRequest.Clear.processAsync(vm, (byte) eventCmd(), id)
+                    .thenAccept(__ -> isEnabled = false);
         }
 
         /**
@@ -298,7 +333,7 @@ class EventRequestManagerImpl extends MirrorImpl
         }
     }
 
-    abstract class ThreadVisibleEventRequestImpl extends EventRequestImpl {
+    public abstract class ThreadVisibleEventRequestImpl extends EventRequestImpl {
         public synchronized void addThreadFilter(ThreadReference thread) {
             validateMirror(thread);
             if (isEnabled() || deleted) {
@@ -306,6 +341,37 @@ class EventRequestManagerImpl extends MirrorImpl
             }
             filters.add(JDWP.EventRequest.Set.Modifier.ThreadOnly
                                       .create((ThreadReferenceImpl)thread));
+        }
+
+        // also no limitation for the request to be disabled
+        public synchronized CompletableFuture<Void> addThreadFilterAsync(ThreadReference thread) {
+            validateMirror(thread);
+            if (deleted) {
+                throw invalidState();
+            }
+            filters.add(JDWP.EventRequest.Set.Modifier.ThreadOnly.create((ThreadReferenceImpl) thread));
+            if (isEnabled()) {
+                //recreate the request
+                return CompletableFuture.allOf(clearAsync(), setAsync());
+            }
+            return CompletableFuture.completedFuture(null);
+        }
+
+        public synchronized CompletableFuture<Void> removeThreadFilterAsync(ThreadReference thread) {
+            validateMirror(thread);
+            if (deleted) {
+                throw invalidState();
+            }
+            filters.removeIf(f -> {
+                JDWP.EventRequest.Set.Modifier mod = (JDWP.EventRequest.Set.Modifier) f;
+                return mod.aModifierCommon instanceof JDWP.EventRequest.Set.Modifier.ThreadOnly
+                        && Objects.equals(thread, ((JDWP.EventRequest.Set.Modifier.ThreadOnly) mod.aModifierCommon).thread);
+            });
+            if (isEnabled()) {
+                //recreate the request
+                return CompletableFuture.allOf(clearAsync(), setAsync());
+            }
+            return CompletableFuture.completedFuture(null);
         }
     }
 
@@ -887,12 +953,26 @@ class EventRequestManagerImpl extends MirrorImpl
         ((EventRequestImpl)eventRequest).delete();
     }
 
+    public CompletableFuture<Void> deleteEventRequestAsync(EventRequest eventRequest) {
+        validateMirror(eventRequest);
+        return ((EventRequestImpl) eventRequest).deleteAsync();
+    }
+
     public void deleteEventRequests(List<? extends EventRequest> eventRequests) {
         validateMirrors(eventRequests);
         // copy the eventRequests to avoid ConcurrentModificationException
         for (EventRequest eventRequest : new ArrayList<>(eventRequests)) {
             ((EventRequestImpl) eventRequest).delete();
         }
+    }
+
+    public CompletableFuture<Void> deleteEventRequestsAsync(List<? extends EventRequest> eventRequests) {
+        validateMirrors(eventRequests);
+        // copy the eventRequests to avoid ConcurrentModificationException
+        ArrayList<? extends EventRequest> copy = new ArrayList<>(eventRequests);
+        CompletableFuture[] futures = copy.stream().map(r -> ((EventRequestImpl) r).deleteAsync())
+                .toArray(CompletableFuture[]::new);
+        return CompletableFuture.allOf(futures);
     }
 
     public void deleteAllBreakpoints() {
