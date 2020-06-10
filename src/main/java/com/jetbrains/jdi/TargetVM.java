@@ -44,6 +44,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.VirtualMachine;
@@ -60,6 +61,7 @@ public class TargetVM implements Runnable {
     private final Thread readerThread;
     private EventController eventController = null;
     private boolean eventsHeld = false;
+    private CompletableFuture<Long> latencyRequest = null;
 
     /*
      * TO DO: The limit numbers below are somewhat arbitrary and should
@@ -293,6 +295,12 @@ public class TargetVM implements Runnable {
 
         synchronized(waitingQueue) {
             waitingQueue.put(packet.id, packet);
+            final CompletableFuture<Long> request = latencyRequest;
+            if (request != null) {
+                latencyRequest = null;
+                long start = System.currentTimeMillis();
+                packet.reply.thenRun(() -> request.complete(System.currentTimeMillis() - start));
+            }
         }
 
         if ((vm.traceFlags & VirtualMachineImpl.TRACE_RAW_SENDS) != 0) {
@@ -334,6 +342,15 @@ public class TargetVM implements Runnable {
         try {
             connection.close();
         } catch (IOException ioe) { }
+    }
+
+    CompletableFuture<Long> measureLatency() {
+        synchronized (waitingQueue) {
+            if (latencyRequest == null) {
+                latencyRequest = new CompletableFuture<>();
+            }
+            return latencyRequest;
+        }
     }
 
     private class EventController extends Thread {

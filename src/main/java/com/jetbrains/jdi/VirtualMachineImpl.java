@@ -50,6 +50,7 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 import java.text.MessageFormat;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -1541,5 +1542,9 @@ public class VirtualMachineImpl extends MirrorImpl
      */
     public boolean isIdle() {
         return target.isIdle();
+    }
+
+    public CompletableFuture<Long> measureLatency() {
+        return target.measureLatency();
     }
 }
