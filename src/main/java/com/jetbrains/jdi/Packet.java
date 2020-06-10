@@ -144,4 +144,11 @@ public class Packet {
          */
         return uID++;
     }
+
+    void notifyReplied() {
+        reply.complete(this);
+        synchronized(this) {
+            notify();
+        }
+    }
 }

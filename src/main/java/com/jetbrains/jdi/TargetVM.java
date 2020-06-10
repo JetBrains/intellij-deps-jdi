@@ -178,11 +178,7 @@ public class TargetVM implements Runnable {
                 p2.errorCode = p.errorCode;
                 p2.data = p.data;
                 p2.replied = true;
-                p2.reply.complete(p2);
-
-                synchronized(p2) {
-                    p2.notify();
-                }
+                p2.notifyReplied();
             }
         }
 
@@ -204,11 +200,7 @@ public class TargetVM implements Runnable {
         // indirectly throw VMDisconnectedException to
         // command requesters.
         synchronized(waitingQueue) {
-            for (Packet packet : waitingQueue.values()) {
-                synchronized (packet) {
-                    packet.notify();
-                }
-            }
+            waitingQueue.values().forEach(Packet::notifyReplied);
             waitingQueue.clear();
         }
 
