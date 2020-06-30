@@ -53,7 +53,7 @@ public class FloatValueImpl extends PrimitiveValueImpl
     }
 
     public boolean equals(Object obj) {
-        if ((obj != null) && (obj instanceof FloatValue)) {
+        if (obj instanceof FloatValue) {
             return (value == ((FloatValue)obj).value()) &&
                    super.equals(obj);
         } else {

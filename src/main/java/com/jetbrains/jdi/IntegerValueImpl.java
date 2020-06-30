@@ -53,7 +53,7 @@ public class IntegerValueImpl extends PrimitiveValueImpl
     }
 
     public boolean equals(Object obj) {
-        if ((obj != null) && (obj instanceof IntegerValue)) {
+        if (obj instanceof IntegerValue) {
             return (value == ((IntegerValue)obj).value()) &&
                    super.equals(obj);
         } else {

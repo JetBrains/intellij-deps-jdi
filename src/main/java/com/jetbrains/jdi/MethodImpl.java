@@ -101,7 +101,7 @@ public abstract class MethodImpl extends TypeComponentImpl
     }
 
     public boolean equals(Object obj) {
-        if ((obj != null) && (obj instanceof MethodImpl)) {
+        if (obj instanceof MethodImpl) {
             MethodImpl other = (MethodImpl)obj;
             return (declaringType().equals(other.declaringType())) &&
                    (ref() == other.ref()) &&

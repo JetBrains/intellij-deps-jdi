@@ -54,7 +54,7 @@ public class FieldImpl extends TypeComponentImpl
     }
 
     public boolean equals(Object obj) {
-        if ((obj != null) && (obj instanceof FieldImpl)) {
+        if (obj instanceof FieldImpl) {
             FieldImpl other = (FieldImpl)obj;
             return (declaringType().equals(other.declaringType())) &&
                    (ref() == other.ref()) &&

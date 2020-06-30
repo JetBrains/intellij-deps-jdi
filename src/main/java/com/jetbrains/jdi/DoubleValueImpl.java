@@ -53,7 +53,7 @@ public class DoubleValueImpl extends PrimitiveValueImpl
     }
 
     public boolean equals(Object obj) {
-        if ((obj != null) && (obj instanceof DoubleValue)) {
+        if (obj instanceof DoubleValue) {
             return (value == ((DoubleValue)obj).value()) &&
                    super.equals(obj);
         } else {
