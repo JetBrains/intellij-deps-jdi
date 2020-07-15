@@ -1473,7 +1473,7 @@ public class VirtualMachineImpl extends MirrorImpl
    }
 
    public List<String> bootClassPath() {
-       return Collections.emptyList();
+       return Arrays.asList(getClasspath().bootclasspaths);
    }
 
    public String baseDirectory() {
