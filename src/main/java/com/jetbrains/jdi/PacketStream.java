@@ -116,7 +116,8 @@ class PacketStream {
     }
 
     <T> CompletableFuture<T> readReply(Function<Packet, T> reader) {
-        return pkt.reply.thenApply(p -> {
+        // Packet processing have to be performed outside of the reader thread to avoid deadlocks
+        return pkt.reply.thenApplyAsync(p -> {
             try {
                 processError();
             } catch (JDWPException e) {
