@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import com.sun.jdi.InternalException;
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.connect.spi.Connection;
@@ -315,6 +316,9 @@ public class TargetVM implements Runnable {
     }
 
     void waitForReply(Packet packet) {
+        if (Thread.currentThread() == readerThread) {
+            throw new InternalException("waitForReply in reader thread");
+        }
         synchronized(packet) {
             while ((!packet.replied) && shouldListen) {
                 try { packet.wait(); } catch (InterruptedException e) {
