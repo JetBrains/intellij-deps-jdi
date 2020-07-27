@@ -38,20 +38,18 @@
 
 package com.jetbrains.jdi;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-
 import com.sun.jdi.InternalException;
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.connect.spi.Connection;
 import com.sun.jdi.event.EventQueue;
 import com.sun.jdi.event.EventSet;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class TargetVM implements Runnable {
     private final Map<Integer, Packet> waitingQueue = new HashMap<>(32,0.75f);
@@ -63,6 +61,9 @@ public class TargetVM implements Runnable {
     private EventController eventController = null;
     private boolean eventsHeld = false;
     private CompletableFuture<Long> latencyRequest = null;
+
+    // this executor used in case sync commands are used in async processing
+    final ExecutorService asyncExecutor;
 
     /*
      * TO DO: The limit numbers below are somewhat arbitrary and should
@@ -77,6 +78,12 @@ public class TargetVM implements Runnable {
         this.readerThread = new Thread(vm.threadGroupForJDI(),
                                        this, "JDI Target VM Interface");
         this.readerThread.setDaemon(true);
+
+        asyncExecutor = Executors.newSingleThreadExecutor(r -> {
+            Thread thread = new Thread(vm.threadGroupForJDI(), r, "JDI Target Async Processor");
+            thread.setDaemon(true);
+            return thread;
+        });
     }
 
     void start() {
@@ -184,6 +191,8 @@ public class TargetVM implements Runnable {
                 p2.notifyReplied();
             }
         }
+
+        asyncExecutor.shutdown();
 
         // inform the VM mamager that this VM is history
         vm.vmManager.disposeVirtualMachine(vm);

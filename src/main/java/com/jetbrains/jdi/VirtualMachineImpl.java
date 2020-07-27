@@ -1547,4 +1547,8 @@ public class VirtualMachineImpl extends MirrorImpl
     public CompletableFuture<Long> measureLatency() {
         return target.measureLatency();
     }
+
+    TargetVM targetVM() {
+        return target;
+    }
 }

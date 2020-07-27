@@ -118,13 +118,16 @@ class PacketStream {
     <T> CompletableFuture<T> readReply(Function<Packet, T> reader) {
         // Packet processing have to be performed outside of the reader thread to avoid deadlocks
         return pkt.reply.thenApplyAsync(p -> {
+            if (!p.replied) {
+                throw new VMDisconnectedException();
+            }
             try {
                 processError();
             } catch (JDWPException e) {
                 throw e.toJDIException();
             }
             return reader.apply(p);
-        });
+        }, vm.targetVM().asyncExecutor);
     }
 
     void writeBoolean(boolean data) {
