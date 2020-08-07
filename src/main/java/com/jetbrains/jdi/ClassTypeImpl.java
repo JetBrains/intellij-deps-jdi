@@ -55,7 +55,7 @@ import com.sun.jdi.ThreadReference;
 import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
 
-final public class ClassTypeImpl extends InvokableTypeImpl
+public class ClassTypeImpl extends InvokableTypeImpl
                                  implements ClassType
 {
     private static class IResult implements InvocationResult {
