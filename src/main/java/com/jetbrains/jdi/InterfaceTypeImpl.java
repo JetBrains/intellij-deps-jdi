@@ -50,7 +50,7 @@ import com.sun.jdi.Method;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.VirtualMachine;
 
-final public class InterfaceTypeImpl extends InvokableTypeImpl
+public class InterfaceTypeImpl extends InvokableTypeImpl
                                      implements InterfaceType {
 
     private static class IResult implements InvocationResult {
