@@ -1260,14 +1260,17 @@ class JDWP {
             final boolean canRedefineClasses;
 
             /**
-             * Can the VM add methods when redefining 
-             * classes?
+             * Can the VM add methods when redefining classes? 
+             * <p>@Deprecated(since="15") A JVM TI based JDWP back-end 
+             * will never set this capability to true.
              */
             final boolean canAddMethod;
 
             /**
              * Can the VM redefine classes 
              * in ways that are normally restricted?
+             * <p>@Deprecated(since="15") A JVM TI based JDWP back-end 
+             * will never set this capability to true.
              */
             final boolean canUnrestrictedlyRedefineClasses;
 
@@ -1543,6 +1546,7 @@ class JDWP {
          * <p>
          * Requires canRedefineClasses capability - see 
          * <a href="#JDWP_VirtualMachine_CapabilitiesNew">CapabilitiesNew</a>. 
+         * <p>@Deprecated(since="15")  
          * In addition to the canRedefineClasses capability, the target VM must 
          * have the canAddMethod capability to add methods when redefining classes, 
          * or the canUnrestrictedlyRedefineClasses capability to redefine classes in ways 
