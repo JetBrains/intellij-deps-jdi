@@ -647,11 +647,10 @@ public class ObjectReferenceImpl extends ValueImpl
          */
 
         JNITypeParser destSig = new JNITypeParser(destination.signature());
-        JNITypeParser sourceSig = new JNITypeParser(type().signature());
         if (destSig.isPrimitive()) {
             throw new InvalidTypeException("Can't assign object value to primitive");
         }
-        if (destSig.isArray() && !sourceSig.isArray()) {
+        if (destSig.isArray() && !new JNITypeParser(type().signature()).isArray()) {
             throw new InvalidTypeException("Can't assign non-array value to an array");
         }
         if (destSig.isVoid()) {
