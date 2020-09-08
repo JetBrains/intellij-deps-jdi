@@ -782,12 +782,14 @@ public class VirtualMachineImpl extends MirrorImpl
             capabilitiesNew().canRedefineClasses;
     }
 
+    @Deprecated//(since="15")
     public boolean canAddMethod() {
         validateVM();
         return hasNewCapabilities() &&
             capabilitiesNew().canAddMethod;
     }
 
+    @Deprecated//(since="15")
     public boolean canUnrestrictedlyRedefineClasses() {
         validateVM();
         return hasNewCapabilities() &&
