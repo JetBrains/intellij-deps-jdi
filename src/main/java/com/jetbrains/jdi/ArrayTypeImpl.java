@@ -142,8 +142,8 @@ public class ArrayTypeImpl extends ReferenceTypeImpl
                 return false;
             }
         } else if (destType instanceof InterfaceType) {
-            // Only valid InterfaceType assignee is Cloneable
-            return destType.name().equals("java.lang.Cloneable");
+            // Valid InterfaceType assignees are Cloneable or Serializable
+            return destType.name().equals("java.lang.Cloneable") || destType.name().equals("java.io.Serializable");
         } else {
             // Only valid ClassType assignee is Object
             return destType.name().equals("java.lang.Object");
