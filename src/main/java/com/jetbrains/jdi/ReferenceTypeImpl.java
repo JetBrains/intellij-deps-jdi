@@ -669,19 +669,20 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return retList;
     }
 
-    List<InterfaceType> getInterfaces() {
-        InterfaceTypeImpl[] intfs;
+    InterfaceType[] getInterfaces() {
         try {
-            intfs = JDWP.ReferenceType.Interfaces.
-                                         process(vm, this).interfaces;
+            return JDWP.ReferenceType.Interfaces.process(vm, this).interfaces;
         } catch (JDWPException exc) {
             throw exc.toJDIException();
         }
-        return Arrays.asList(intfs);
     }
 
-    CompletableFuture<List<InterfaceType>> getInterfacesAsync() {
-        return JDWP.ReferenceType.Interfaces.processAsync(vm, this).thenApply(r -> Arrays.asList(r.interfaces));
+    CompletableFuture<InterfaceType[]> getInterfacesAsync() {
+        return JDWP.ReferenceType.Interfaces.processAsync(vm, this).thenApply(r -> r.interfaces);
+    }
+
+    <T> List<T> unmodifiableList(T[] array) {
+        return Collections.unmodifiableList(Arrays.asList(array));
     }
 
     public List<ReferenceType> nestedTypes() {

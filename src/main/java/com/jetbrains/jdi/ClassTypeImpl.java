@@ -78,7 +78,7 @@ final public class ClassTypeImpl extends InvokableTypeImpl
 
     private volatile boolean cachedSuperclass = false;
     private volatile ClassType superclass = null;
-    private volatile List<InterfaceType> interfaces = null;
+    private volatile InterfaceType[] interfaces = null;
 
     protected ClassTypeImpl(VirtualMachine aVm, long aRef) {
         super(aVm, aRef);
@@ -127,14 +127,17 @@ final public class ClassTypeImpl extends InvokableTypeImpl
         if (interfaces == null) {
             interfaces = getInterfaces();
         }
-        return interfaces;
+        return unmodifiableList(interfaces);
     }
 
     public CompletableFuture<List<InterfaceType>> interfacesAsync()  {
         if (interfaces != null) {
-            return CompletableFuture.completedFuture(interfaces);
+            return CompletableFuture.completedFuture(unmodifiableList(interfaces));
         }
-        return getInterfacesAsync().thenApply(r -> interfaces = r);
+        return getInterfacesAsync().thenApply(r -> {
+            interfaces = r;
+            return unmodifiableList(r);
+        });
     }
 
     @Override

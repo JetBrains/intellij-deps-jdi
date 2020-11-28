@@ -40,7 +40,6 @@ package com.jetbrains.jdi;
 
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -72,31 +71,29 @@ final public class InterfaceTypeImpl extends InvokableTypeImpl
 
     }
 
-    private volatile SoftReference<List<InterfaceType>> superinterfacesRef = null;
+    private volatile SoftReference<InterfaceType[]> superinterfacesRef = null;
 
     protected InterfaceTypeImpl(VirtualMachine aVm,long aRef) {
         super(aVm, aRef);
     }
 
     public List<InterfaceType> superinterfaces() {
-        List<InterfaceType> superinterfaces = (superinterfacesRef == null) ? null :
-                                     superinterfacesRef.get();
+        InterfaceType[] superinterfaces = (superinterfacesRef == null) ? null : superinterfacesRef.get();
         if (superinterfaces == null) {
             superinterfaces = getInterfaces();
-            superinterfaces = Collections.unmodifiableList(superinterfaces);
             superinterfacesRef = new SoftReference<>(superinterfaces);
         }
-        return superinterfaces;
+        return unmodifiableList(superinterfaces);
     }
 
     public CompletableFuture<List<InterfaceType>> superinterfacesAsync() {
-        List<InterfaceType> superinterfaces = (superinterfacesRef == null) ? null : superinterfacesRef.get();
+        InterfaceType[] superinterfaces = (superinterfacesRef == null) ? null : superinterfacesRef.get();
         if (superinterfaces != null) {
-            return CompletableFuture.completedFuture(superinterfaces);
+            return CompletableFuture.completedFuture(unmodifiableList(superinterfaces));
         }
         return getInterfacesAsync().thenApply(r -> {
-            superinterfacesRef = new SoftReference<>(Collections.unmodifiableList(r));
-            return r;
+            superinterfacesRef = new SoftReference<>(r);
+            return unmodifiableList(r);
         });
     }
 
