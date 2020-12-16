@@ -43,6 +43,7 @@ import com.sun.jdi.*;
 import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 //import com.sun.jdi.ModuleReference;
@@ -484,25 +485,30 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     }
 
     CompletableFuture<List<Field>> addAllFieldsAsync(List<Field> fieldList, Set<ReferenceType> typeSet) {
-        /* Continue the recursion only if this type is new */
+        return collectRecursively(ReferenceTypeImpl::fieldsAsync, fieldList, typeSet);
+    }
+
+    CompletableFuture<List<Method>> addAllMethodsAsync(List<Method> methodList, Set<ReferenceType> typeSet) {
+        return collectRecursively(ReferenceTypeImpl::methodsAsync, methodList, typeSet);
+    }
+
+    private <T> CompletableFuture<List<T>> collectRecursively(Function<ReferenceTypeImpl, CompletableFuture<List<T>>> func, List<T> list, Set<ReferenceType> typeSet) {
         if (!typeSet.contains(this)) {
             typeSet.add(this);
 
-            /* Add local fields */
-            return fieldsAsync()
-                    .thenAccept(fieldList::addAll)
-                    /* Add inherited fields */
+            return func.apply(this)
+                    .thenAccept(list::addAll)
                     .thenCompose(__ -> inheritedTypesAsync())
                     .thenCompose(types -> {
-                        CompletableFuture<List<Field>> res = CompletableFuture.completedFuture(fieldList);
+                        CompletableFuture<List<T>> res = CompletableFuture.completedFuture(list);
                         for (ReferenceType referenceType : types) {
-                            res = res.thenCombine(((ReferenceTypeImpl) referenceType).addAllFieldsAsync(fieldList, typeSet),
-                                    (f, f2) -> fieldList);
+                            res = res.thenCombine(((ReferenceTypeImpl) referenceType).collectRecursively(func, list, typeSet),
+                                    (f, f2) -> list);
                         }
                         return res;
                     });
         }
-        return CompletableFuture.completedFuture(fieldList);
+        return CompletableFuture.completedFuture(list);
     }
 
     public List<Field> allFields() {
@@ -643,6 +649,12 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     }
 
     abstract public List<Method> allMethods();
+
+    public CompletableFuture<List<Method>> allMethodsAsync() {
+        List<Method> methodList = Collections.synchronizedList(new ArrayList<>());
+        Set<ReferenceType> typeSet = Collections.synchronizedSet(new HashSet<>());
+        return addAllMethodsAsync(methodList, typeSet);
+    }
 
     public List<Method> methodsByName(String name) {
         List<Method> methods = visibleMethods();
