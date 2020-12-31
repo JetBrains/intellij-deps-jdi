@@ -192,8 +192,6 @@ public class TargetVM implements Runnable {
             }
         }
 
-        asyncExecutor.shutdown();
-
         // inform the VM mamager that this VM is history
         vm.vmManager.disposeVirtualMachine(vm);
         if (eventController != null) {
@@ -215,6 +213,9 @@ public class TargetVM implements Runnable {
             waitingQueue.values().forEach(Packet::notifyReplied);
             waitingQueue.clear();
         }
+
+        // shutdown the executor after invoking all pending packets notifyReplied
+        asyncExecutor.shutdown();
 
         if ((vm.traceFlags & VirtualMachine.TRACE_SENDS) != 0) {
             vm.printTrace("Target VM interface thread exiting");
