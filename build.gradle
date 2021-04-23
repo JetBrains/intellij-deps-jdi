@@ -1,7 +1,6 @@
 import org.gradle.internal.jvm.Jvm
 
 plugins {
-    id "com.jfrog.bintray" version "1.8.5"
     id 'java'
 }
 apply plugin: 'maven-publish'
@@ -32,25 +31,15 @@ publishing {
             }
         }
     }
-}
-
-bintray {
-    user = System.getenv('BINTRAY_USER')
-    key = System.getenv('BINTRAY_KEY')
-
-    publish = true
-
-    pkg {
-        repo = 'intellij-third-party-dependencies'
-        name = 'jb-jdi'
-        userOrg = 'jetbrains'
-
-        version {
-            name = '2.4'
+    repositories {
+        maven {
+            url "https://packages.jetbrains.team/maven/p/ij/intellij-dependencies"
+            credentials {
+                username = System.getenv('INTELLIJ_DEPENDENCIES_BOT')
+                password = System.getenv('INTELLIJ_DEPENDENCIES_TOKEN')
+            }
         }
     }
-
-    publications = ['MyPublication']
 }
 
 dependencies {
