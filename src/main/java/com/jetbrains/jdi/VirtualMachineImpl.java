@@ -1298,11 +1298,7 @@ public class VirtualMachineImpl extends MirrorImpl
             }
         }
         if (requests != null) {
-            try {
-                JDWP.VirtualMachine.DisposeObjects.process(vm, requests);
-            } catch (JDWPException exc) {
-                throw exc.toJDIException();
-            }
+            JDWP.VirtualMachine.DisposeObjects.processAsync(vm, requests);
         }
     }
 
