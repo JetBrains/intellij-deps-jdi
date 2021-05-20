@@ -498,20 +498,23 @@ public class ObjectReferenceImpl extends ValueImpl
     }
 
     /* leave synchronized to keep count accurate */
-    public synchronized void enableCollection() {
-        enableCollection(true);
+    public synchronized CompletableFuture<Void> disableCollectionAsync() {
+        gcDisableCount++;
+        if (gcDisableCount == 1) {
+            return JDWP.ObjectReference.DisableCollection.processAsync(vm, this).thenAccept(__ -> {});
+        }
+        else {
+            return CompletableFuture.completedFuture(null);
+        }
     }
 
     /* leave synchronized to keep count accurate */
-    public synchronized void enableCollection(boolean wait) {
+    public synchronized void enableCollection() {
         gcDisableCount--;
 
         if (gcDisableCount == 0) {
             try {
-                PacketStream ps = JDWP.ObjectReference.EnableCollection.enqueueCommand(vm, this);
-                if (wait) {
-                    JDWP.ObjectReference.EnableCollection.waitForReply(vm, ps);
-                }
+                JDWP.ObjectReference.EnableCollection.process(vm, this);
             } catch (JDWPException exc) {
                 // If already collected, no harm done, no exception
                 if (exc.errorCode() != JDWP.Error.INVALID_OBJECT) {
@@ -519,6 +522,16 @@ public class ObjectReferenceImpl extends ValueImpl
                 }
             }
         }
+    }
+
+    /* leave synchronized to keep count accurate */
+    public synchronized CompletableFuture<Void> enableCollectionAsync() {
+        gcDisableCount--;
+
+        if (gcDisableCount == 0) {
+            return JDWP.ObjectReference.EnableCollection.processAsync(vm, this).thenAccept(__ -> {});
+        }
+        return CompletableFuture.completedFuture(null);
     }
 
     public boolean isCollected() {
