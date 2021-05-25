@@ -74,9 +74,9 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     private int majorVersion;
     private int minorVersion;
 
-    private boolean constantPoolInfoGotten = false;
-    private int constanPoolCount;
-    private SoftReference<byte[]> constantPoolBytesRef = null;
+    private volatile boolean constantPoolInfoGotten = false;
+    private volatile int constanPoolCount;
+    private volatile SoftReference<byte[]> constantPoolBytesRef = null;
 
     /* to mark a SourceFile request that returned a genuine JDWP.Error.ABSENT_INFORMATION */
     private static final String ABSENT_BASE_SOURCE_NAME = "**ABSENT_BASE_SOURCE_NAME**";
@@ -1277,6 +1277,41 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return cpbytes;
     }
 
+    private CompletableFuture<byte[]> getConstantPoolInfoAsync() {
+        if (!vm.canGetConstantPool()) {
+            return CompletableFuture.failedFuture(new UnsupportedOperationException());
+        }
+        if (constantPoolInfoGotten) {
+            if (constantPoolBytesRef == null) {
+                return CompletableFuture.completedFuture(null);
+            }
+            byte[] cpbytes = constantPoolBytesRef.get();
+            if (cpbytes != null) {
+                return CompletableFuture.completedFuture(cpbytes);
+            }
+        }
+
+        return JDWP.ReferenceType.ConstantPool.processAsync(vm, this).handle((jdwpCPool, e) -> {
+            if (e instanceof JDWPException) {
+                JDWPException exc = (JDWPException) e;
+                if (exc.errorCode() == JDWP.Error.ABSENT_INFORMATION) {
+                    constanPoolCount = 0;
+                    constantPoolBytesRef = null;
+                    constantPoolInfoGotten = true;
+                    return null;
+                } else {
+                    throw exc.toJDIException();
+                }
+            }
+            byte[] cpbytes;
+            constanPoolCount = jdwpCPool.count;
+            cpbytes = jdwpCPool.bytes;
+            constantPoolBytesRef = new SoftReference<>(cpbytes);
+            constantPoolInfoGotten = true;
+            return cpbytes;
+        });
+    }
+
     public int constantPoolCount() {
         try {
             getConstantPoolInfo();
@@ -1284,6 +1319,10 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
             throw exc;
         }
         return constanPoolCount;
+    }
+
+    public CompletableFuture<Integer> constantPoolCountAsync() {
+        return getConstantPoolInfoAsync().thenApply((bytes -> constanPoolCount));
     }
 
     public byte[] constantPool() {
@@ -1303,6 +1342,21 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         } else {
             return null;
         }
+    }
+
+    public CompletableFuture<byte[]> constantPoolAsync() {
+        return getConstantPoolInfoAsync().thenApply(bytes -> {
+            if (bytes != null) {
+                /*
+                 * Arrays are always modifiable, so it is a little unsafe
+                 * to return the cached bytecodes directly; instead, we
+                 * make a clone at the cost of using more memory.
+                 */
+                return bytes.clone();
+            } else {
+                return null;
+            }
+        });
     }
 
     // Does not need synchronization, since worst-case

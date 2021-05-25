@@ -138,7 +138,7 @@ public abstract class MethodImpl extends TypeComponentImpl
     }
 
     public CompletableFuture<List<Location>> allLineLocationsAsync(String stratumID, String sourceName) {
-        return allLineLocationsAsync(declaringType.stratum(stratumID), sourceName);
+        return declaringType.stratumAsync(stratumID).thenCompose(stratum -> allLineLocationsAsync(stratum, sourceName));
     }
 
     public final List<Location> locationsOfLine(int lineNumber)
@@ -455,4 +455,6 @@ public abstract class MethodImpl extends TypeComponentImpl
     static boolean isCheckAssignable(int options) {
         return (options & SKIP_ASSIGNABLE_CHECK) == 0;
     }
+
+    public abstract CompletableFuture<byte[]> bytecodesAsync();
 }

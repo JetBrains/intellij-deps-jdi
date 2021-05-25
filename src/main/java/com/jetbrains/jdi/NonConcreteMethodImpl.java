@@ -130,6 +130,11 @@ public class NonConcreteMethodImpl extends MethodImpl {
         return new byte[0];
     }
 
+    @Override
+    public CompletableFuture<byte[]> bytecodesAsync() {
+        return CompletableFuture.completedFuture(new byte[0]);
+    }
+
     int argSlotCount() {
         throw new InternalException("should not get here");
     }

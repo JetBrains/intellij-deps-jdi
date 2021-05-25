@@ -96,7 +96,7 @@ public class ConcreteMethodImpl extends MethodImpl {
     private boolean absentVariableInformation = false;
     private volatile long firstIndex = -1;
     private volatile long lastIndex = -1;
-    private SoftReference<byte[]> bytecodesRef = null;
+    private volatile SoftReference<byte[]> bytecodesRef = null;
     private int argSlotCount = -1;
 
     ConcreteMethodImpl(VirtualMachine vm, ReferenceTypeImpl declaringType,
@@ -311,6 +311,22 @@ public class ConcreteMethodImpl extends MethodImpl {
          * make a clone at the cost of using more memory.
          */
         return bytecodes.clone();
+    }
+
+    public CompletableFuture<byte[]> bytecodesAsync() {
+        byte[] bytecodes = (bytecodesRef == null) ? null : bytecodesRef.get();
+        if (bytecodes != null) {
+            return CompletableFuture.completedFuture(bytecodes.clone());
+        }
+        return JDWP.Method.Bytecodes.processAsync(vm, declaringType, ref).thenApply(b -> {
+            bytecodesRef = new SoftReference<>(b.bytes);
+            /*
+             * Arrays are always modifiable, so it is a little unsafe
+             * to return the cached bytecodes directly; instead, we
+             * make a clone at the cost of using more memory.
+             */
+            return b.bytes.clone();
+        });
     }
 
     int argSlotCount() throws AbsentInformationException {
