@@ -41,7 +41,3 @@ publishing {
         }
     }
 }
-
-dependencies {
-    compile files(Jvm.current().toolsJar)
-}
