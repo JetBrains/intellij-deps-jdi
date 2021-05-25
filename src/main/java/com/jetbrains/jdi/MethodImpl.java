@@ -127,10 +127,18 @@ public abstract class MethodImpl extends TypeComponentImpl
         return allLineLocations(vm.getDefaultStratum(), null);
     }
 
+    public final CompletableFuture<List<Location>> allLineLocationsAsync() {
+        return allLineLocationsAsync(vm.getDefaultStratum(), null);
+    }
+
     public List<Location> allLineLocations(String stratumID,
                                            String sourceName)
                           throws AbsentInformationException {
         return allLineLocations(declaringType.stratum(stratumID), sourceName);
+    }
+
+    public CompletableFuture<List<Location>> allLineLocationsAsync(String stratumID, String sourceName) {
+        return allLineLocationsAsync(declaringType.stratum(stratumID), sourceName);
     }
 
     public final List<Location> locationsOfLine(int lineNumber)
