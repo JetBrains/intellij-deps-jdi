@@ -38,8 +38,9 @@
 
 package com.jetbrains.jdi;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.InternalException;
@@ -77,24 +78,36 @@ public class NonConcreteMethodImpl extends MethodImpl {
 
     public List<Location> allLineLocations(String stratumID,
                                            String sourceName) {
-        return new ArrayList<>(0);
+        return Collections.emptyList();
     }
 
     public List<Location> allLineLocations(SDE.Stratum stratum,
                                            String sourceName) {
-        return new ArrayList<>(0);
+        return Collections.emptyList();
+    }
+
+    @Override
+    CompletableFuture<List<Location>> allLineLocationsAsync(SDE.Stratum stratum, String sourceName) {
+        return CompletableFuture.completedFuture(Collections.emptyList());
     }
 
     public List<Location> locationsOfLine(String stratumID,
                                           String sourceName,
                                           int lineNumber) {
-        return new ArrayList<>(0);
+        return Collections.emptyList();
     }
 
     public List<Location> locationsOfLine(SDE.Stratum stratum,
                                           String sourceName,
                                           int lineNumber) {
-        return new ArrayList<>(0);
+        return Collections.emptyList();
+    }
+
+    @Override
+    CompletableFuture<List<Location>> locationsOfLineAsync(SDE.Stratum stratum,
+                                                           String sourceName,
+                                                           int lineNumber) {
+        return CompletableFuture.completedFuture(Collections.emptyList());
     }
 
     public Location locationOfCodeIndex(long codeIndex) {

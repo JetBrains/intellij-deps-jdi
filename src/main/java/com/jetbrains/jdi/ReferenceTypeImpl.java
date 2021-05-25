@@ -43,6 +43,7 @@ import com.sun.jdi.*;
 import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -59,7 +60,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     protected int modifiers = -1;
     private volatile SoftReference<List<Field>> fieldsRef = null;
     private volatile SoftReference<List<Method>> methodsRef = null;
-    private SoftReference<SDE> sdeRef = null;
+    private volatile SoftReference<SDE> sdeRef = null;
 
     private boolean isClassLoaderCached = false;
     private ClassLoaderReference classLoader = null;
@@ -849,6 +850,15 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return sde.stratum(stratumID);
     }
 
+    CompletableFuture<SDE.Stratum> stratumAsync(String stratumID) {
+        return sourceDebugExtensionInfoAsync().thenApply(sde -> {
+            if (!sde.isValid()) {
+                sde = NO_SDE_INFO_MARK;
+            }
+            return sde.stratum(stratumID);
+        });
+    }
+
     public String sourceName() throws AbsentInformationException {
         return sourceNames(vm.getDefaultStratum()).get(0);
     }
@@ -962,6 +972,31 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return sde;
     }
 
+    private CompletableFuture<SDE> sourceDebugExtensionInfoAsync() {
+        if (!vm.canGetSourceDebugExtension()) {
+            return CompletableFuture.completedFuture(NO_SDE_INFO_MARK);
+        }
+        SDE sde = (sdeRef == null) ? null : sdeRef.get();
+        if (sde != null) {
+            return CompletableFuture.completedFuture(sde);
+        }
+        return JDWP.ReferenceType.SourceDebugExtension.processAsync(vm, this)
+                .handle((e, throwable) -> {
+                    if (throwable instanceof JDWPException) {
+                        sdeRef = new SoftReference<>(NO_SDE_INFO_MARK);
+                        throw ((JDWPException) throwable).toJDIException();
+                    }
+                    SDE res;
+                    if (e == null) {
+                        res = NO_SDE_INFO_MARK;
+                    } else {
+                        res = new SDE(e.extension);
+                    }
+                    sdeRef = new SoftReference<>(res);
+                    return res;
+                });
+    }
+
     public List<String> availableStrata() {
         SDE sde = sourceDebugExtensionInfo();
         if (sde.isValid()) {
@@ -997,6 +1032,10 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return allLineLocations(vm.getDefaultStratum(), null);
     }
 
+    public CompletableFuture<List<Location>> allLineLocationsAsync() {
+        return allLineLocationsAsync(vm.getDefaultStratum(), null);
+    }
+
     public List<Location> allLineLocations(String stratumID, String sourceName)
                             throws AbsentInformationException {
         boolean someAbsent = false; // A method that should have info, didn't
@@ -1023,11 +1062,46 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return list;
     }
 
+    public CompletableFuture<List<Location>> allLineLocationsAsync(String stratumID, String sourceName) {
+        return methodsAsync().thenCombine(stratumAsync(stratumID),
+                        (methods, stratum) ->
+                                methods.stream()
+                                        .map(method -> ((MethodImpl) method).allLineLocationsAsync(stratum, sourceName))
+                                        .collect(Collectors.toList()))
+                .thenCompose(futures ->
+                        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                                .handle((__, ___) -> {
+                                    // A method that should have info, didn't
+                                    boolean someAbsent = false;
+
+                                    List<Location> list = new ArrayList<>();
+                                    for (CompletableFuture<List<Location>> future : futures) {
+                                        try {
+                                            list.addAll(future.join());
+                                        } catch (Exception e) {
+                                            someAbsent = true;
+                                        }
+                                    }
+
+                                    if (someAbsent && list.size() == 0) {
+                                        throw new CompletionException(new AbsentInformationException());
+                                    }
+
+                                    return list;
+                                }));
+    }
+
     public List<Location> locationsOfLine(int lineNumber)
                            throws AbsentInformationException {
         return locationsOfLine(vm.getDefaultStratum(),
                                null,
                                lineNumber);
+    }
+
+    public CompletableFuture<List<Location>> locationsOfLineAsync(int lineNumber) {
+        return locationsOfLineAsync(vm.getDefaultStratum(),
+                null,
+                lineNumber);
     }
 
     public List<Location> locationsOfLine(String stratumID,
@@ -1064,6 +1138,42 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
             throw new AbsentInformationException();
         }
         return list;
+    }
+
+    public CompletableFuture<List<Location>> locationsOfLineAsync(String stratumID,
+                                                                  String sourceName,
+                                                                  int lineNumber) {
+        return methodsAsync().thenCombine(stratumAsync(stratumID),
+                        (methods, stratum) ->
+                                methods.stream()
+                                        .filter(method -> !method.isAbstract() && !method.isNative())
+                                        // eliminate native and abstract to eliminate false positives
+                                        .map(method -> ((MethodImpl) method).locationsOfLineAsync(stratum, sourceName, lineNumber))
+                                        .collect(Collectors.toList()))
+                .thenCompose(futures ->
+                        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                                .handle((__, ___) -> {
+                                    // A method that should have info, didn't
+                                    boolean someAbsent = false;
+                                    // A method that should have info, did
+                                    boolean somePresent = false;
+
+                                    List<Location> list = new ArrayList<>();
+                                    for (CompletableFuture<List<Location>> future : futures) {
+                                        try {
+                                            list.addAll(future.join());
+                                            somePresent = true;
+                                        } catch (Exception e) {
+                                            someAbsent = true;
+                                        }
+                                    }
+
+                                    if (someAbsent && !somePresent) {
+                                        throw new CompletionException(new AbsentInformationException());
+                                    }
+
+                                    return list;
+                                }));
     }
 
     public List<ObjectReference> instances(long maxInstances) {

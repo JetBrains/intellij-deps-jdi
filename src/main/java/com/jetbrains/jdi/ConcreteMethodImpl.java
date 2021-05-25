@@ -45,6 +45,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.LocalVariable;
@@ -87,13 +89,13 @@ public class ConcreteMethodImpl extends MethodImpl {
         }
     }
 
-    private Location location = null;
-    private SoftReference<SoftLocationXRefs> softBaseLocationXRefsRef;
-    private SoftReference<SoftLocationXRefs> softOtherLocationXRefsRef;
+    private volatile Location location = null;
+    private volatile SoftReference<SoftLocationXRefs> softBaseLocationXRefsRef;
+    private volatile SoftReference<SoftLocationXRefs> softOtherLocationXRefsRef;
     private SoftReference<List<LocalVariable>> variablesRef = null;
     private boolean absentVariableInformation = false;
-    private long firstIndex = -1;
-    private long lastIndex = -1;
+    private volatile long firstIndex = -1;
+    private volatile long lastIndex = -1;
     private SoftReference<byte[]> bytecodesRef = null;
     private int argSlotCount = -1;
 
@@ -143,6 +145,21 @@ public class ConcreteMethodImpl extends MethodImpl {
             sourceNameFilter(lineLocations, stratum, sourceName));
     }
 
+    CompletableFuture<List<Location>> allLineLocationsAsync(SDE.Stratum stratum, String sourceName) {
+        return getLocationsAsync(stratum).thenApply(info -> {
+            List<Location> lineLocations = info.lineLocations;
+            if (lineLocations.size() == 0) {
+                throw new CompletionException(new AbsentInformationException());
+            }
+
+            try {
+                return Collections.unmodifiableList(sourceNameFilter(lineLocations, stratum, sourceName));
+            } catch (AbsentInformationException e) {
+                throw new CompletionException(e);
+            }
+        });
+    }
+
     List<Location> locationsOfLine(SDE.Stratum stratum,
                                    String sourceName,
                                    int lineNumber)
@@ -164,6 +181,31 @@ public class ConcreteMethodImpl extends MethodImpl {
         }
         return Collections.unmodifiableList(
             sourceNameFilter(list, stratum, sourceName));
+    }
+
+    CompletableFuture<List<Location>> locationsOfLineAsync(SDE.Stratum stratum,
+                                                           String sourceName,
+                                                           int lineNumber) {
+        return getLocationsAsync(stratum).thenApply(info -> {
+            if (info.lineLocations.size() == 0) {
+                throw new CompletionException(new AbsentInformationException());
+            }
+
+            /*
+             * Find the locations which match the line number
+             * passed in.
+             */
+            List<Location> list = info.lineMapper.get(lineNumber);
+
+            if (list == null) {
+                list = Collections.emptyList();
+            }
+            try {
+                return Collections.unmodifiableList(sourceNameFilter(list, stratum, sourceName));
+            } catch (AbsentInformationException e) {
+                throw new CompletionException(e);
+            }
+        });
     }
 
     public Location locationOfCodeIndex(long codeIndex) {
@@ -342,6 +384,71 @@ public class ConcreteMethodImpl extends MethodImpl {
         return info;
     }
 
+    private CompletableFuture<SoftLocationXRefs> getLocationsAsync(SDE.Stratum stratum) {
+        if (stratum.isJava()) {
+            return getBaseLocationsAsync();
+        }
+        String stratumID = stratum.id();
+        SoftLocationXRefs info =
+                (softOtherLocationXRefsRef == null) ? null :
+                        softOtherLocationXRefsRef.get();
+        if (info != null && info.stratumID.equals(stratumID)) {
+            return CompletableFuture.completedFuture(info);
+        }
+        return declaringType.stratumAsync(SDE.BASE_STRATUM_NAME)
+                .thenCombine(getBaseLocationsAsync(), (baseStratum, softLocationXRefs) -> {
+                    List<Location> lineLocations = new ArrayList<>();
+                    Map<Integer, List<Location>> lineMapper = new HashMap<>();
+                    int lowestLine = -1;
+                    int highestLine = -1;
+                    SDE.LineStratum lastLineStratum = null;
+                    for (Location lineLocation : softLocationXRefs.lineLocations) {
+                        LocationImpl loc = (LocationImpl) lineLocation;
+                        int baseLineNumber = loc.lineNumber(baseStratum);
+                        SDE.LineStratum lineStratum =
+                                stratum.lineStratum(declaringType, baseLineNumber);
+
+                        if (lineStratum == null) {
+                            // location not mapped in this stratum
+                            continue;
+                        }
+
+                        int lineNumber = lineStratum.lineNumber();
+
+                        // remove unmapped and dup lines
+                        if ((lineNumber != -1) &&
+                                (!lineStratum.equals(lastLineStratum))) {
+                            lastLineStratum = lineStratum;
+
+                            // Remember the largest/smallest line number
+                            if (lineNumber > highestLine) {
+                                highestLine = lineNumber;
+                            }
+                            if ((lineNumber < lowestLine) || (lowestLine == -1)) {
+                                lowestLine = lineNumber;
+                            }
+
+                            loc.addStratumLineInfo(
+                                    new StratumLineInfo(stratumID,
+                                            lineNumber,
+                                            lineStratum.sourceName(),
+                                            lineStratum.sourcePath()));
+
+                            // Add to the location list
+                            lineLocations.add(loc);
+
+                            // Add to the line -> locations map
+                            lineMapper.computeIfAbsent(lineNumber, k -> new ArrayList<>(1)).add(loc);
+                        }
+                    }
+
+                    SoftLocationXRefs res = new SoftLocationXRefs(stratumID, lineMapper, lineLocations,
+                            lowestLine, highestLine);
+                    softOtherLocationXRefsRef = new SoftReference<>(res);
+                    return res;
+                });
+    }
+
     private SoftLocationXRefs getBaseLocations() {
         SoftLocationXRefs info = (softBaseLocationXRefsRef == null) ? null :
                                      softBaseLocationXRefsRef.get();
@@ -425,6 +532,83 @@ public class ConcreteMethodImpl extends MethodImpl {
                                      lowestLine, highestLine);
         softBaseLocationXRefsRef = new SoftReference<>(info);
         return info;
+    }
+
+    private CompletableFuture<SoftLocationXRefs> getBaseLocationsAsync() {
+        SoftLocationXRefs info = (softBaseLocationXRefsRef == null) ? null :
+                softBaseLocationXRefsRef.get();
+        if (info != null) {
+            return CompletableFuture.completedFuture(info);
+        }
+
+        return JDWP.Method.LineTable.processAsync(vm, declaringType, ref)
+                .thenApply(lntab -> {
+                    int count = lntab.lines.length;
+
+                    List<Location> lineLocations = new ArrayList<>(count);
+                    Map<Integer, List<Location>> lineMapper = new HashMap<>();
+                    int lowestLine = -1;
+                    int highestLine = -1;
+                    for (int i = 0; i < count; i++) {
+                        long bci = lntab.lines[i].lineCodeIndex;
+                        int lineNumber = lntab.lines[i].lineNumber;
+
+                        /*
+                         * Some compilers will point multiple consecutive
+                         * lines at the same location. We need to choose
+                         * one of them so that we can consistently map back
+                         * and forth between line and location. So we choose
+                         * to record only the last line entry at a particular
+                         * location.
+                         */
+                        if ((i + 1 == count) || (bci != lntab.lines[i + 1].lineCodeIndex)) {
+                            // Remember the largest/smallest line number
+                            if (lineNumber > highestLine) {
+                                highestLine = lineNumber;
+                            }
+                            if ((lineNumber < lowestLine) || (lowestLine == -1)) {
+                                lowestLine = lineNumber;
+                            }
+                            LocationImpl loc =
+                                    new LocationImpl(virtualMachine(), this, bci);
+                            loc.addBaseLineInfo(
+                                    new BaseLineInfo(lineNumber, declaringType));
+
+                            // Add to the location list
+                            lineLocations.add(loc);
+
+                            // Add to the line -> locations map
+                            lineMapper.computeIfAbsent(lineNumber, k -> new ArrayList<>(1)).add(loc);
+                        }
+                    }
+
+                    /*
+                     * firstIndex, lastIndex, and startLocation need to be
+                     * retrieved only once since they are strongly referenced.
+                     */
+                    if (location == null) {
+                        firstIndex = lntab.start;
+                        lastIndex = lntab.end;
+                        /*
+                         * The startLocation is the first one in the
+                         * location list if we have one;
+                         * otherwise, we construct a location for a
+                         * method start with no line info
+                         */
+                        if (count > 0) {
+                            location = lineLocations.get(0);
+                        } else {
+                            location = new LocationImpl(virtualMachine(), this,
+                                    firstIndex);
+                        }
+                    }
+
+                    SoftLocationXRefs res = new SoftLocationXRefs(SDE.BASE_STRATUM_NAME,
+                            lineMapper, lineLocations,
+                            lowestLine, highestLine);
+                    softBaseLocationXRefsRef = new SoftReference<>(res);
+                    return res;
+                });
     }
 
     private List<LocalVariable> getVariables1_4() throws AbsentInformationException {

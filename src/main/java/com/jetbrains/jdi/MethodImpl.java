@@ -40,6 +40,7 @@ package com.jetbrains.jdi;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.ArrayReference;
@@ -67,10 +68,16 @@ public abstract class MethodImpl extends TypeComponentImpl
                                              String sourceName)
                             throws AbsentInformationException;
 
+    abstract CompletableFuture<List<Location>> allLineLocationsAsync(SDE.Stratum stratum, String sourceName);
+
     abstract List<Location> locationsOfLine(SDE.Stratum stratum,
                                             String sourceName,
                                             int lineNumber)
                             throws AbsentInformationException;
+
+    abstract CompletableFuture<List<Location>> locationsOfLineAsync(SDE.Stratum stratum,
+                                                              String sourceName,
+                                                              int lineNumber);
 
     MethodImpl(VirtualMachine vm, ReferenceTypeImpl declaringType,
                long ref, String name, String signature,
