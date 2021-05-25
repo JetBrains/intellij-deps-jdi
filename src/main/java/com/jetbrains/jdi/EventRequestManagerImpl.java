@@ -122,6 +122,10 @@ public class EventRequestManagerImpl extends MirrorImpl
         return System.identityHashCode(this);
     }
 
+    public CompletableFuture<Void> setEnabledAsync(EventRequest eventRequest, boolean val) {
+        return ((EventRequestImpl) eventRequest).setEnabledAsync(val);
+    }
+
     private abstract class EventRequestImpl extends MirrorImpl implements EventRequest {
         volatile int id;
 
