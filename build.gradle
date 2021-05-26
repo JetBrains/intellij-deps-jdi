@@ -1,11 +1,9 @@
-import org.gradle.internal.jvm.Jvm
-
 plugins {
     id 'java'
 }
 apply plugin: 'maven-publish'
 
-sourceCompatibility = 1.8
+sourceCompatibility = 11
 
 task mainJar(type: Jar) {
     from sourceSets.main.output
