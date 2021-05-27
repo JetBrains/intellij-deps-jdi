@@ -93,7 +93,7 @@ public class VirtualMachineImpl extends MirrorImpl
     // be set synchronously
     private final Map<Long, ReferenceType> typesByID = new LinkedHashMap<>(300);
     private final Map<String, List<ReferenceType>> typesBySignature = new HashMap<>(300);
-    private boolean retrievedAllTypes = false;
+    private volatile boolean retrievedAllTypes = false;
 
 //    private Map<Long, ModuleReference> modulesByID;
 
@@ -384,6 +384,23 @@ public class VirtualMachineImpl extends MirrorImpl
             a = new ArrayList<>(typesByID.values());
         }
         return Collections.unmodifiableList(a);
+    }
+
+    public CompletableFuture<List<ReferenceType>> allClassesAsync() {
+        validateVM();
+
+        CompletableFuture<Void> res;
+
+        if (retrievedAllTypes) {
+            res = CompletableFuture.completedFuture(null);
+        } else {
+            res = retrieveAllClassesAsync();
+        }
+        return res.thenApply(unused -> {
+            synchronized (this) {
+                return Collections.unmodifiableList(new ArrayList<>(typesByID.values()));
+            }
+        });
     }
 
     /**
@@ -1145,6 +1162,22 @@ public class VirtualMachineImpl extends MirrorImpl
         }
     }
 
+    private CompletableFuture<Void> retrieveAllClasses1_4Async() {
+        return JDWP.VirtualMachine.AllClasses.processAsync(vm).thenAccept(allClasses -> {
+            // Hold lock during processing to improve performance
+            // and to have safe check/set of retrievedAllTypes
+            synchronized (VirtualMachineImpl.this) {
+                if (!retrievedAllTypes) {
+                    for (JDWP.VirtualMachine.AllClasses.ClassInfo ci : allClasses.classes) {
+                        ReferenceTypeImpl type = referenceType(ci.typeID, ci.refTypeTag, ci.signature);
+                        type.setStatus(ci.status);
+                    }
+                    retrievedAllTypes = true;
+                }
+            }
+        });
+    }
+
     private void retrieveAllClasses() {
         if ((vm.traceFlags & VirtualMachine.TRACE_REFTYPES) != 0) {
             vm.printTrace("Retrieving all ReferenceTypes");
@@ -1182,6 +1215,31 @@ public class VirtualMachineImpl extends MirrorImpl
                 retrievedAllTypes = true;
             }
         }
+    }
+
+    private CompletableFuture<Void> retrieveAllClassesAsync() {
+        if ((vm.traceFlags & VirtualMachine.TRACE_REFTYPES) != 0) {
+            vm.printTrace("Retrieving all ReferenceTypes");
+        }
+
+        if (!vm.canGet1_5LanguageFeatures()) {
+            return retrieveAllClasses1_4Async();
+        }
+
+        return JDWP.VirtualMachine.AllClassesWithGeneric.processAsync(vm).thenAccept(allClassesWithGeneric -> {
+            // Hold lock during processing to improve performance
+            // and to have safe check/set of retrievedAllTypes
+            synchronized (this) {
+                if (!retrievedAllTypes) {
+                    for (JDWP.VirtualMachine.AllClassesWithGeneric.ClassInfo ci : allClassesWithGeneric.classes) {
+                        ReferenceTypeImpl type = referenceType(ci.typeID, ci.refTypeTag, ci.signature);
+                        type.setGenericSignature(ci.genericSignature);
+                        type.setStatus(ci.status);
+                    }
+                    retrievedAllTypes = true;
+                }
+            }
+        });
     }
 
     void sendToTarget(Packet packet) {
