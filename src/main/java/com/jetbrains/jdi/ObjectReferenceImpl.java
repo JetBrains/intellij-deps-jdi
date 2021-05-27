@@ -42,6 +42,7 @@ import com.sun.jdi.*;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 public class ObjectReferenceImpl extends ValueImpl
              implements ObjectReference, VMListener
@@ -440,11 +441,8 @@ public class ObjectReferenceImpl extends ValueImpl
         ThreadReferenceImpl thread = (ThreadReferenceImpl)threadIntf;
 
         if (method.isStatic()) {
-            if (referenceType() instanceof InterfaceType) {
-                InterfaceType type = (InterfaceType)referenceType();
-                return type.invokeMethod(thread, method, origArguments, options);
-            } else if (referenceType() instanceof ClassType) {
-                ClassType type = (ClassType)referenceType();
+            if (referenceType() instanceof InvokableTypeImpl) {
+                InvokableTypeImpl type = (InvokableTypeImpl) referenceType();
                 return type.invokeMethod(thread, method, origArguments, options);
             } else {
                 throw new IllegalArgumentException("Invalid type for static method invocation");
@@ -483,6 +481,61 @@ public class ObjectReferenceImpl extends ValueImpl
         } else {
             return ret.returnValue;
         }
+    }
+
+    public CompletableFuture<Value> invokeMethodAsync(ThreadReference threadIntf, Method methodIntf,
+                                                      List<? extends Value> origArguments, int options)
+            throws InvalidTypeException,
+            IncompatibleThreadStateException,
+            InvocationException,
+            ClassNotLoadedException {
+
+        validateMirror(threadIntf);
+        validateMirror(methodIntf);
+        validateMirrorsOrNulls(origArguments);
+
+        MethodImpl method = (MethodImpl) methodIntf;
+        ThreadReferenceImpl thread = (ThreadReferenceImpl) threadIntf;
+
+        if (method.isStatic()) {
+            if (referenceType() instanceof InvokableTypeImpl) {
+                InvokableTypeImpl type = (InvokableTypeImpl) referenceType();
+                return type.invokeMethodAsync(thread, method, origArguments, options);
+            } else {
+                throw new IllegalArgumentException("Invalid type for static method invocation");
+            }
+        }
+
+        validateMethodInvocation(method, options);
+
+        List<Value> arguments = method.validateAndPrepareArgumentsForInvoke(origArguments, options);
+
+        ValueImpl[] args = arguments.toArray(new ValueImpl[0]);
+        PacketStream stream =
+                sendInvokeCommand(thread, invokableReferenceType(method),
+                        method, args, options);
+        return stream.readReply(packet -> new JDWP.ObjectReference.InvokeMethod(vm, stream)).handle((ret, exc) -> {
+            if (exc instanceof JDWPException) {
+                if (((JDWPException) exc).errorCode() == JDWP.Error.INVALID_THREAD) {
+                    throw new CompletionException(new IncompatibleThreadStateException());
+                } else {
+                    throw ((JDWPException) exc).toJDIException();
+                }
+            } else {
+                /*
+                 * There is an implict VM-wide suspend at the conclusion
+                 * of a normal (non-single-threaded) method invoke
+                 */
+                if ((options & ClassType.INVOKE_SINGLE_THREADED) == 0) {
+                    vm.notifySuspend();
+                }
+                if (ret.exception != null) {
+                    throw new CompletionException(new InvocationException(ret.exception));
+                } else {
+                    return ret.returnValue;
+                }
+            }
+        });
     }
 
     /* leave synchronized to keep count accurate */

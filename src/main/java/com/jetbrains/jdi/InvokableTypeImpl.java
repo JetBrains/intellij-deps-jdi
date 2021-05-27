@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 import com.sun.jdi.ClassNotLoadedException;
 import com.sun.jdi.ClassType;
@@ -143,6 +144,46 @@ abstract class InvokableTypeImpl extends ReferenceTypeImpl {
         } else {
             return ret.getResult();
         }
+    }
+
+    public CompletableFuture<Value> invokeMethodAsync(ThreadReference threadIntf, Method methodIntf,
+                              List<? extends Value> origArguments, int options)
+            throws InvalidTypeException,
+            ClassNotLoadedException,
+            IncompatibleThreadStateException,
+            InvocationException {
+        validateMirror(threadIntf);
+        validateMirror(methodIntf);
+        validateMirrorsOrNulls(origArguments);
+        MethodImpl method = (MethodImpl) methodIntf;
+        ThreadReferenceImpl thread = (ThreadReferenceImpl) threadIntf;
+        validateMethodInvocation(method);
+        List<? extends Value> arguments = method.validateAndPrepareArgumentsForInvoke(origArguments, options);
+        ValueImpl[] args = arguments.toArray(new ValueImpl[0]);
+        PacketStream stream = sendInvokeCommand(thread, method, args, options);
+        return readReply(stream).handle((ret, exc) -> {
+            if (exc instanceof JDWPException) {
+                if (((JDWPException) exc).errorCode() == JDWP.Error.INVALID_THREAD) {
+                    throw new CompletionException(new IncompatibleThreadStateException());
+                } else {
+                    throw ((JDWPException) exc).toJDIException();
+                }
+            }
+            else {
+                /*
+                 * There is an implict VM-wide suspend at the conclusion
+                 * of a normal (non-single-threaded) method invoke
+                 */
+                if ((options & ClassType.INVOKE_SINGLE_THREADED) == 0) {
+                    vm.notifySuspend();
+                }
+                if (ret.getException() != null) {
+                    throw new CompletionException(new InvocationException(ret.getException()));
+                } else {
+                    return ret.getResult();
+                }
+            }
+        });
     }
 
     @Override
@@ -302,6 +343,8 @@ abstract class InvokableTypeImpl extends ReferenceTypeImpl {
      * @throws JDWPException when something goes wrong in JDWP
      */
     abstract InvocationResult waitForReply(PacketStream stream) throws JDWPException;
+
+    abstract CompletableFuture<InvocationResult> readReply(PacketStream stream);
 
     /**
      * Get the {@linkplain ReferenceType} superclass

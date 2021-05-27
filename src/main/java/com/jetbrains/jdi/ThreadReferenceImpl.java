@@ -63,6 +63,7 @@ import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.request.BreakpointRequest;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 public class ThreadReferenceImpl extends ObjectReferenceImpl
                                  implements ThreadReference {
@@ -279,6 +280,23 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
             JDWP.ThreadReference.Resume.waitForReply(vm, stream);
         } catch (JDWPException exc) {
             throw exc.toJDIException();
+        }
+    }
+
+    public CompletableFuture<Void> resumeAsync() {
+        /*
+         * If it's a zombie, we can just update internal state without
+         * going to back end.
+         */
+        if (suspendedZombieCount > 0) {
+            suspendedZombieCount--;
+            return CompletableFuture.completedFuture(null);
+        }
+
+        synchronized (vm.state()) {
+            processThreadAction(new ThreadAction(this,
+                    ThreadAction.THREAD_RESUMABLE));
+            return JDWP.ThreadReference.Resume.processAsync(vm, this).thenAccept(__ -> {});
         }
     }
 
@@ -728,15 +746,12 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
         synchronized (vm.state()) {
             Iterator<WeakReference<ThreadListener>> iter = listeners.iterator();
             while (iter.hasNext()) {
-                WeakReference<ThreadListener> ref = iter.next();
-                ThreadListener listener = ref.get();
+                ThreadListener listener = iter.next().get();
                 if (listener != null) {
-                    switch (action.id()) {
-                        case ThreadAction.THREAD_RESUMABLE:
-                            if (!listener.threadResumable(action)) {
-                                iter.remove();
-                            }
-                            break;
+                    if (action.id() == ThreadAction.THREAD_RESUMABLE) {
+                        if (!listener.threadResumable(action)) {
+                            iter.remove();
+                        }
                     }
                 } else {
                     // Listener is unreachable; clean up

@@ -90,7 +90,7 @@ abstract class AbstractTypeListNode extends AbstractNamedNode {
         genJavaClassBodyComponents(writer, depth);
         writer.println();
         indent(writer, depth);
-        if (!context.inEvent()) {
+        if (!context.inEvent() && !className.equals("Resume") && !className.contains("Invoke")) {
             writer.print("private ");
         }
         writer.println(className +

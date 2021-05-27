@@ -137,6 +137,11 @@ public class InterfaceTypeImpl extends InvokableTypeImpl
     }
 
     @Override
+    CompletableFuture<InvocationResult> readReply(PacketStream stream) {
+        return stream.readReply(packet -> new JDWP.InterfaceType.InvokeMethod(vm, stream)).thenApply(IResult::new);
+    }
+
+    @Override
     CommandSender getInvokeMethodSender(final ThreadReferenceImpl thread,
                                         final MethodImpl method,
                                         final ValueImpl[] args,

@@ -326,6 +326,11 @@ public class ClassTypeImpl extends InvokableTypeImpl
     }
 
     @Override
+    CompletableFuture<InvocationResult> readReply(PacketStream stream) {
+        return stream.readReply(packet -> new JDWP.ClassType.InvokeMethod(vm, stream)).thenApply(IResult::new);
+    }
+
+    @Override
     boolean canInvoke(Method method) {
         // Method must be in this class or a superclass.
         return ((ReferenceTypeImpl)method.declaringType()).isAssignableFrom(this);

@@ -44,6 +44,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.concurrent.CompletableFuture;
 
 import com.sun.jdi.Field;
 import com.sun.jdi.InternalException;
@@ -843,6 +844,24 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
             case EventRequest.SUSPEND_NONE:
                 // Do nothing
                 break;
+            default:
+                throw new InternalException("Invalid suspend policy");
+        }
+    }
+
+    public CompletableFuture<Void> resumeAsync() {
+        switch (suspendPolicy()) {
+            case EventRequest.SUSPEND_ALL:
+                return vm.resumeAsync();
+            case EventRequest.SUSPEND_EVENT_THREAD:
+                ThreadReference thread = eventThread();
+                if (thread == null) {
+                    throw new InternalException("Inconsistent suspend policy");
+                }
+                return ((ThreadReferenceImpl) thread).resumeAsync();
+            case EventRequest.SUSPEND_NONE:
+                // Do nothing
+                return CompletableFuture.completedFuture(null);
             default:
                 throw new InternalException("Invalid suspend policy");
         }

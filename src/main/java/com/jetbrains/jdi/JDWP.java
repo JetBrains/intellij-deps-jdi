@@ -658,7 +658,7 @@ class JDWP {
             }
 
 
-            private Resume(VirtualMachineImpl vm, PacketStream ps) {
+            Resume(VirtualMachineImpl vm, PacketStream ps) {
                 if (vm.traceReceives) {
                     vm.printTrace("Receiving Command(id=" + ps.pkt.id + ") JDWP.VirtualMachine.Resume"+(ps.pkt.flags!=0?", FLAGS=" + ps.pkt.flags:"")+(ps.pkt.errorCode!=0?", ERROR CODE=" + ps.pkt.errorCode:""));
                 }
@@ -3638,7 +3638,7 @@ class JDWP {
              */
             final ObjectReferenceImpl exception;
 
-            private InvokeMethod(VirtualMachineImpl vm, PacketStream ps) {
+            InvokeMethod(VirtualMachineImpl vm, PacketStream ps) {
                 if (vm.traceReceives) {
                     vm.printTrace("Receiving Command(id=" + ps.pkt.id + ") JDWP.ClassType.InvokeMethod"+(ps.pkt.flags!=0?", FLAGS=" + ps.pkt.flags:"")+(ps.pkt.errorCode!=0?", ERROR CODE=" + ps.pkt.errorCode:""));
                 }
@@ -4013,7 +4013,7 @@ class JDWP {
              */
             final ObjectReferenceImpl exception;
 
-            private InvokeMethod(VirtualMachineImpl vm, PacketStream ps) {
+            InvokeMethod(VirtualMachineImpl vm, PacketStream ps) {
                 if (vm.traceReceives) {
                     vm.printTrace("Receiving Command(id=" + ps.pkt.id + ") JDWP.InterfaceType.InvokeMethod"+(ps.pkt.flags!=0?", FLAGS=" + ps.pkt.flags:"")+(ps.pkt.errorCode!=0?", ERROR CODE=" + ps.pkt.errorCode:""));
                 }
@@ -5098,7 +5098,7 @@ class JDWP {
              */
             final ObjectReferenceImpl exception;
 
-            private InvokeMethod(VirtualMachineImpl vm, PacketStream ps) {
+            InvokeMethod(VirtualMachineImpl vm, PacketStream ps) {
                 if (vm.traceReceives) {
                     vm.printTrace("Receiving Command(id=" + ps.pkt.id + ") JDWP.ObjectReference.InvokeMethod"+(ps.pkt.flags!=0?", FLAGS=" + ps.pkt.flags:"")+(ps.pkt.errorCode!=0?", ERROR CODE=" + ps.pkt.errorCode:""));
                 }
@@ -5599,7 +5599,7 @@ class JDWP {
             }
 
 
-            private Resume(VirtualMachineImpl vm, PacketStream ps) {
+            Resume(VirtualMachineImpl vm, PacketStream ps) {
                 if (vm.traceReceives) {
                     vm.printTrace("Receiving Command(id=" + ps.pkt.id + ") JDWP.ThreadReference.Resume"+(ps.pkt.flags!=0?", FLAGS=" + ps.pkt.flags:"")+(ps.pkt.errorCode!=0?", ERROR CODE=" + ps.pkt.errorCode:""));
                 }

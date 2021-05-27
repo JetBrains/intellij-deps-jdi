@@ -566,6 +566,12 @@ public class VirtualMachineImpl extends MirrorImpl
         }
     }
 
+    public CompletableFuture<Void> resumeAsync() {
+        validateVM();
+        PacketStream stream = state.thawCommand(() -> JDWP.VirtualMachine.Resume.enqueueCommand(vm));
+        return stream.readReply(p -> new JDWP.VirtualMachine.Resume(vm, stream)).thenAccept(__ -> {});
+    }
+
     public EventQueue eventQueue() {
         /*
          * No VM validation here. We allow access to the event queue
