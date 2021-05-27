@@ -260,6 +260,10 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
         // will be called.
     }
 
+    public CompletableFuture<Void> suspendAsync() {
+        return JDWP.ThreadReference.Suspend.processAsync(vm, this).thenAccept(r -> {});
+    }
+
     public void resume() {
         /*
          * If it's a zombie, we can just update internal state without

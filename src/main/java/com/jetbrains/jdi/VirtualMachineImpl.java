@@ -533,6 +533,11 @@ public class VirtualMachineImpl extends MirrorImpl
         notifySuspend();
     }
 
+    public CompletableFuture<Void> suspendAsync() {
+        validateVM();
+        return JDWP.VirtualMachine.Suspend.processAsync(vm).thenAccept(suspend -> notifySuspend());
+    }
+
     public void resume() {
         validateVM();
         try {
