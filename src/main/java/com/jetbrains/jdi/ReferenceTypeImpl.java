@@ -54,7 +54,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     private String signature = null;
     private String genericSignature = null;
     private boolean genericSignatureGotten;
-    private String baseSourceName = null;
+    private volatile String baseSourceName = null;
     private String baseSourceDir = null;
     private String baseSourcePath = null;
     protected int modifiers = -1;
@@ -863,24 +863,33 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return sourceNames(vm.getDefaultStratum()).get(0);
     }
 
+    public CompletableFuture<String> sourceNameAsync() throws AbsentInformationException {
+        return sourceNamesAsync(vm.getDefaultStratum()).thenApply(strings -> strings.get(0));
+    }
+
     public List<String> sourceNames(String stratumID)
-                                throws AbsentInformationException {
+            throws AbsentInformationException {
         SDE.Stratum stratum = stratum(stratumID);
         if (stratum.isJava()) {
-            List<String> result = new ArrayList<>(1);
-            result.add(baseSourceName());
-            return result;
+            return List.of(baseSourceName());
         }
         return stratum.sourceNames(this);
     }
 
+    public CompletableFuture<List<String>> sourceNamesAsync(String stratumID) {
+        return stratumAsync(stratumID).thenCompose(stratum -> {
+            if (stratum.isJava()) {
+                return baseSourceNameAsync().thenApply(List::of);
+            }
+            return CompletableFuture.completedFuture(stratum.sourceNames(this));
+        });
+    }
+
     public List<String> sourcePaths(String stratumID)
-                                throws AbsentInformationException {
+            throws AbsentInformationException {
         SDE.Stratum stratum = stratum(stratumID);
         if (stratum.isJava()) {
-            List<String> result = new ArrayList<>(1);
-            result.add(baseSourceDir() + baseSourceName());
-            return result;
+            return List.of(baseSourceDir() + baseSourceName());
         }
         return stratum.sourcePaths(this);
     }
@@ -906,6 +915,30 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
             throw new AbsentInformationException();
         }
         return bsn;
+    }
+
+    CompletableFuture<String> baseSourceNameAsync() {
+        String bsn = baseSourceName;
+        if (bsn == null) {
+            // Does not need synchronization, since worst-case
+            // static info is fetched twice
+            return JDWP.ReferenceType.SourceFile.processAsync(vm, this)
+                    .exceptionally(throwable -> {
+                        if (JDWPException.isOfType(throwable, JDWP.Error.ABSENT_INFORMATION)) {
+                            baseSourceName = ABSENT_BASE_SOURCE_NAME;
+                            throw new CompletionException(new AbsentInformationException());
+                        }
+                        throw (RuntimeException) throwable;
+                    })
+                    .thenApply(s -> {
+                        baseSourceName = s.sourceFile;
+                        return s.sourceFile;
+                    });
+        }
+        if (bsn == ABSENT_BASE_SOURCE_NAME) {
+            return CompletableFuture.failedFuture(new AbsentInformationException());
+        }
+        return CompletableFuture.completedFuture(bsn);
     }
 
     String baseSourcePath() throws AbsentInformationException {
