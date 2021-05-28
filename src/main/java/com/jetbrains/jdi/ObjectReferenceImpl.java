@@ -514,28 +514,28 @@ public class ObjectReferenceImpl extends ValueImpl
         PacketStream stream =
                 sendInvokeCommand(thread, invokableReferenceType(method),
                         method, args, options);
-        return stream.readReply(packet -> new JDWP.ObjectReference.InvokeMethod(vm, stream)).handle((ret, exc) -> {
-            if (exc instanceof JDWPException) {
-                if (((JDWPException) exc).errorCode() == JDWP.Error.INVALID_THREAD) {
-                    throw new CompletionException(new IncompatibleThreadStateException());
-                } else {
-                    throw ((JDWPException) exc).toJDIException();
-                }
-            } else {
-                /*
-                 * There is an implict VM-wide suspend at the conclusion
-                 * of a normal (non-single-threaded) method invoke
-                 */
-                if ((options & ClassType.INVOKE_SINGLE_THREADED) == 0) {
-                    vm.notifySuspend();
-                }
-                if (ret.exception != null) {
-                    throw new CompletionException(new InvocationException(ret.exception));
-                } else {
-                    return ret.returnValue;
-                }
-            }
-        });
+        return stream.readReply(packet -> new JDWP.ObjectReference.InvokeMethod(vm, stream))
+                .exceptionally(throwable -> {
+                    throwable = JDWPException.unwrap(throwable);
+                    if (throwable instanceof IllegalThreadStateException) {
+                        throw new CompletionException(new IncompatibleThreadStateException());
+                    }
+                    throw (RuntimeException) throwable;
+                })
+                .thenApply(ret -> {
+                    /*
+                     * There is an implict VM-wide suspend at the conclusion
+                     * of a normal (non-single-threaded) method invoke
+                     */
+                    if ((options & ClassType.INVOKE_SINGLE_THREADED) == 0) {
+                        vm.notifySuspend();
+                    }
+                    if (ret.exception != null) {
+                        throw new CompletionException(new InvocationException(ret.exception));
+                    } else {
+                        return ret.returnValue;
+                    }
+                });
     }
 
     /* leave synchronized to keep count accurate */
@@ -582,7 +582,15 @@ public class ObjectReferenceImpl extends ValueImpl
         gcDisableCount--;
 
         if (gcDisableCount == 0) {
-            return JDWP.ObjectReference.EnableCollection.processAsync(vm, this).thenAccept(__ -> {});
+            return JDWP.ObjectReference.EnableCollection.processAsync(vm, this)
+                    .exceptionally(throwable -> {
+                        Throwable exc = JDWPException.unwrap(throwable);
+                        if (exc instanceof ObjectCollectedException) {
+                            throw ((ObjectCollectedException) exc);
+                        }
+                        return null;
+                    })
+                    .thenAccept(__ -> {});
         }
         return CompletableFuture.completedFuture(null);
     }

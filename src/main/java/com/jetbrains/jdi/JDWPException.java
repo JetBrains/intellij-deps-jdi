@@ -47,6 +47,8 @@ import com.sun.jdi.ObjectCollectedException;
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.VMOutOfMemoryException;
 
+import java.util.concurrent.CompletionException;
+
 class JDWPException extends Exception {
 
     private static final long serialVersionUID = -6321344442751299874L;
@@ -93,5 +95,17 @@ class JDWPException extends Exception {
                 }
                 return internalException;
         }
+    }
+
+    public static boolean isOfType(Throwable throwable, int type) {
+        throwable = unwrap(throwable);
+        if (throwable instanceof InternalException) {
+            return ((InternalException) throwable).errorCode() == type;
+        }
+        return false;
+    }
+
+    public static Throwable unwrap(Throwable throwable) {
+        return throwable instanceof CompletionException ? throwable.getCause() : throwable;
     }
 }

@@ -63,7 +63,7 @@ import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.request.BreakpointRequest;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
+import java.util.concurrent.CompletionException;
 
 public class ThreadReferenceImpl extends ObjectReferenceImpl
                                  implements ThreadReference {
@@ -468,6 +468,14 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
             return CompletableFuture.completedFuture(snapshot.frameCount);
         }
         return JDWP.ThreadReference.FrameCount.processAsync(vm, this)
+                .exceptionally(throwable -> {
+                    throwable = JDWPException.unwrap(throwable);
+                    if (JDWPException.isOfType(throwable, JDWP.Error.THREAD_NOT_SUSPENDED)
+                            || throwable instanceof IllegalThreadStateException) {
+                        throw new CompletionException(new IncompatibleThreadStateException());
+                    }
+                    throw (RuntimeException)throwable;
+                })
                 .thenApply(res -> localCache.frameCount = res.frameCount);
     }
 

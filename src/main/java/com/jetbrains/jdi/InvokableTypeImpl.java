@@ -161,29 +161,28 @@ abstract class InvokableTypeImpl extends ReferenceTypeImpl {
         List<? extends Value> arguments = method.validateAndPrepareArgumentsForInvoke(origArguments, options);
         ValueImpl[] args = arguments.toArray(new ValueImpl[0]);
         PacketStream stream = sendInvokeCommand(thread, method, args, options);
-        return readReply(stream).handle((ret, exc) -> {
-            if (exc instanceof JDWPException) {
-                if (((JDWPException) exc).errorCode() == JDWP.Error.INVALID_THREAD) {
-                    throw new CompletionException(new IncompatibleThreadStateException());
-                } else {
-                    throw ((JDWPException) exc).toJDIException();
-                }
-            }
-            else {
-                /*
-                 * There is an implict VM-wide suspend at the conclusion
-                 * of a normal (non-single-threaded) method invoke
-                 */
-                if ((options & ClassType.INVOKE_SINGLE_THREADED) == 0) {
-                    vm.notifySuspend();
-                }
-                if (ret.getException() != null) {
-                    throw new CompletionException(new InvocationException(ret.getException()));
-                } else {
-                    return ret.getResult();
-                }
-            }
-        });
+        return readReply(stream)
+                .exceptionally(throwable -> {
+                    throwable = JDWPException.unwrap(throwable);
+                    if (throwable instanceof IllegalThreadStateException) {
+                        throw new CompletionException(new IncompatibleThreadStateException());
+                    }
+                    throw (RuntimeException) throwable;
+                })
+                .thenApply(ret -> {
+                    /*
+                     * There is an implict VM-wide suspend at the conclusion
+                     * of a normal (non-single-threaded) method invoke
+                     */
+                    if ((options & ClassType.INVOKE_SINGLE_THREADED) == 0) {
+                        vm.notifySuspend();
+                    }
+                    if (ret.getException() != null) {
+                        throw new CompletionException(new InvocationException(ret.getException()));
+                    } else {
+                        return ret.getResult();
+                    }
+                });
     }
 
     @Override

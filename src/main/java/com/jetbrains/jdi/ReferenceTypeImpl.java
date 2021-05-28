@@ -981,17 +981,14 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
             return CompletableFuture.completedFuture(sde);
         }
         return JDWP.ReferenceType.SourceDebugExtension.processAsync(vm, this)
-                .handle((e, throwable) -> {
-                    if (throwable instanceof JDWPException) {
-                        sdeRef = new SoftReference<>(NO_SDE_INFO_MARK);
-                        throw ((JDWPException) throwable).toJDIException();
+                .exceptionally(throwable -> {
+                    if (!JDWPException.isOfType(throwable, JDWP.Error.ABSENT_INFORMATION)) {
+                        throw (RuntimeException) throwable;
                     }
-                    SDE res;
-                    if (e == null) {
-                        res = NO_SDE_INFO_MARK;
-                    } else {
-                        res = new SDE(e.extension);
-                    }
+                    return null;
+                })
+                .thenApply(e -> {
+                    SDE res = (e == null) ? NO_SDE_INFO_MARK : new SDE(e.extension);
                     sdeRef = new SoftReference<>(res);
                     return res;
                 });
@@ -1292,20 +1289,17 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         }
 
         return JDWP.ReferenceType.ConstantPool.processAsync(vm, this).handle((jdwpCPool, e) -> {
-            if (e instanceof JDWPException) {
-                JDWPException exc = (JDWPException) e;
-                if (exc.errorCode() == JDWP.Error.ABSENT_INFORMATION) {
+            if (e != null) {
+                if (JDWPException.isOfType(e, JDWP.Error.ABSENT_INFORMATION)) {
                     constanPoolCount = 0;
                     constantPoolBytesRef = null;
                     constantPoolInfoGotten = true;
                     return null;
-                } else {
-                    throw exc.toJDIException();
                 }
+                throw (RuntimeException)e;
             }
-            byte[] cpbytes;
             constanPoolCount = jdwpCPool.count;
-            cpbytes = jdwpCPool.bytes;
+            byte[] cpbytes = jdwpCPool.bytes;
             constantPoolBytesRef = new SoftReference<>(cpbytes);
             constantPoolInfoGotten = true;
             return cpbytes;

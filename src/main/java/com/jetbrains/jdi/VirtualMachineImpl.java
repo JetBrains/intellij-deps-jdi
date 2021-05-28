@@ -591,7 +591,14 @@ public class VirtualMachineImpl extends MirrorImpl
     public CompletableFuture<Void> resumeAsync() {
         validateVM();
         PacketStream stream = state.thawCommand(() -> JDWP.VirtualMachine.Resume.enqueueCommand(vm));
-        return stream.readReply(p -> new JDWP.VirtualMachine.Resume(vm, stream)).thenAccept(__ -> {});
+        return stream.readReply(p -> new JDWP.VirtualMachine.Resume(vm, stream))
+                .exceptionally(throwable -> {
+                    if (JDWPException.unwrap(throwable) instanceof VMDisconnectedException) {
+                        return null;
+                    }
+                    throw (RuntimeException)throwable;
+                })
+                .thenAccept(__ -> {});
     }
 
     public EventQueue eventQueue() {
