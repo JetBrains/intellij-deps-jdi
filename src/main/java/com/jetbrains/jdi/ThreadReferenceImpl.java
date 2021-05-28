@@ -64,6 +64,7 @@ import com.sun.jdi.request.BreakpointRequest;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.stream.Collectors;
 
 public class ThreadReferenceImpl extends ObjectReferenceImpl
                                  implements ThreadReference {
@@ -132,7 +133,7 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
      * could be suspended again and have a different number of frames, eg, 24,
      * but this call will still return 5.
      */
-    private LocalCache localCache;
+    private volatile LocalCache localCache;
 
     private void resetLocalCache() {
         localCache = new LocalCache();
@@ -483,9 +484,17 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
         return privateFrames(0, -1);
     }
 
+    public CompletableFuture<List<StackFrame>> framesAsync() {
+        return privateFramesAsync(0, -1);
+    }
+
     public StackFrame frame(int index) throws IncompatibleThreadStateException {
         List<StackFrame> list = privateFrames(index, 1);
         return list.get(0);
+    }
+
+    public CompletableFuture<StackFrame> frameAsync(int index) {
+        return privateFramesAsync(index, 1).thenApply(list -> list.get(0));
     }
 
     /**
@@ -518,6 +527,14 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
                 "length must be greater than or equal to zero");
         }
         return privateFrames(start, length);
+    }
+
+    public CompletableFuture<List<StackFrame>> framesAsync(int start, int length) {
+        if (length < 0) {
+            throw new IndexOutOfBoundsException(
+                    "length must be greater than or equal to zero");
+        }
+        return privateFramesAsync(start, length);
     }
 
     void setFrame0(StackFrame frame) {
@@ -576,6 +593,46 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
             default:
                 throw exc.toJDIException();
             }
+        }
+    }
+
+    synchronized private CompletableFuture<List<StackFrame>> privateFramesAsync(int start, int length) {
+        // Lock must be held while creating stack frames so if that two threads
+        // do this at the same time, one won't clobber the subset created by the other.
+        LocalCache snapshot = localCache;
+        if (snapshot.frames == null || !isSubrange(snapshot, start, length)) {
+            return JDWP.ThreadReference.Frames.processAsync(vm, this, start, length)
+                    .exceptionally(throwable -> {
+                        throwable = JDWPException.unwrap(throwable);
+                        if (JDWPException.isOfType(throwable, JDWP.Error.THREAD_NOT_SUSPENDED) ||
+                                throwable instanceof IllegalThreadStateException) {
+                            throw new CompletionException(new IncompatibleThreadStateException());
+                        }
+                        throw (RuntimeException) throwable;
+                    })
+                    .thenApply(jdwpFrames -> {
+                        // TODO: sync?
+                        snapshot.frames = Arrays.stream(jdwpFrames.frames)
+                                .map(jdwpFrame -> {
+                                    if (jdwpFrame.location == null) {
+                                        throw new InternalException("Invalid frame location");
+                                    }
+                                    return new StackFrameImpl(vm, this, jdwpFrame.frameID, jdwpFrame.location);
+                                })
+                                .collect(Collectors.toList());
+                        snapshot.framesStart = start;
+                        snapshot.framesLength = length;
+                        return Collections.unmodifiableList(snapshot.frames);
+                    });
+        } else {
+            int fromIndex = start - snapshot.framesStart;
+            int toIndex;
+            if (length == -1) {
+                toIndex = snapshot.frames.size() - fromIndex;
+            } else {
+                toIndex = fromIndex + length;
+            }
+            return CompletableFuture.completedFuture(Collections.unmodifiableList(snapshot.frames.subList(fromIndex, toIndex)));
         }
     }
 
