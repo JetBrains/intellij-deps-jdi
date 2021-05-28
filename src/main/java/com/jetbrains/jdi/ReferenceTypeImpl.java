@@ -1029,13 +1029,12 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
 
     public List<String> availableStrata() {
         SDE sde = sourceDebugExtensionInfo();
-        if (sde.isValid()) {
-            return sde.availableStrata();
-        } else {
-            List<String> strata = new ArrayList<>();
-            strata.add(SDE.BASE_STRATUM_NAME);
-            return strata;
-        }
+        return sde.isValid() ? sde.availableStrata() : List.of(SDE.BASE_STRATUM_NAME);
+    }
+
+    public CompletableFuture<List<String>> availableStrataAsync() {
+        return sourceDebugExtensionInfoAsync()
+                .thenApply(sde -> sde.isValid() ? sde.availableStrata() : List.of(SDE.BASE_STRATUM_NAME));
     }
 
     /**
