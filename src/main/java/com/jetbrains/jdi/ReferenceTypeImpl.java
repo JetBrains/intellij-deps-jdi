@@ -863,7 +863,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return sourceNames(vm.getDefaultStratum()).get(0);
     }
 
-    public CompletableFuture<String> sourceNameAsync() throws AbsentInformationException {
+    public CompletableFuture<String> sourceNameAsync() {
         return sourceNamesAsync(vm.getDefaultStratum()).thenApply(strings -> strings.get(0));
     }
 
