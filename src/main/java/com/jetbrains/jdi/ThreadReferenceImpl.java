@@ -611,18 +611,19 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
                         throw (RuntimeException) throwable;
                     })
                     .thenApply(jdwpFrames -> {
-                        // TODO: sync?
-                        snapshot.frames = Arrays.stream(jdwpFrames.frames)
-                                .map(jdwpFrame -> {
-                                    if (jdwpFrame.location == null) {
-                                        throw new InternalException("Invalid frame location");
-                                    }
-                                    return new StackFrameImpl(vm, this, jdwpFrame.frameID, jdwpFrame.location);
-                                })
-                                .collect(Collectors.toList());
-                        snapshot.framesStart = start;
-                        snapshot.framesLength = length;
-                        return Collections.unmodifiableList(snapshot.frames);
+                        synchronized (this) {
+                            snapshot.frames = Arrays.stream(jdwpFrames.frames)
+                                    .map(jdwpFrame -> {
+                                        if (jdwpFrame.location == null) {
+                                            throw new InternalException("Invalid frame location");
+                                        }
+                                        return new StackFrameImpl(vm, this, jdwpFrame.frameID, jdwpFrame.location);
+                                    })
+                                    .collect(Collectors.toList());
+                            snapshot.framesStart = start;
+                            snapshot.framesLength = length;
+                            return Collections.unmodifiableList(snapshot.frames);
+                        }
                     });
         } else {
             int fromIndex = start - snapshot.framesStart;

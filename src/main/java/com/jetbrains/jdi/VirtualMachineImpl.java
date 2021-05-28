@@ -1173,7 +1173,7 @@ public class VirtualMachineImpl extends MirrorImpl
         return JDWP.VirtualMachine.AllClasses.processAsync(vm).thenAccept(allClasses -> {
             // Hold lock during processing to improve performance
             // and to have safe check/set of retrievedAllTypes
-            synchronized (VirtualMachineImpl.this) {
+            synchronized (this) {
                 if (!retrievedAllTypes) {
                     for (JDWP.VirtualMachine.AllClasses.ClassInfo ci : allClasses.classes) {
                         ReferenceTypeImpl type = referenceType(ci.typeID, ci.refTypeTag, ci.signature);
