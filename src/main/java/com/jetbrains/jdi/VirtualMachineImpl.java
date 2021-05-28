@@ -246,10 +246,10 @@ public class VirtualMachineImpl extends MirrorImpl
         internalEventRequestManager = new EventRequestManagerImpl(this);
         EventRequest er = internalEventRequestManager.createClassPrepareRequest();
         er.setSuspendPolicy(EventRequest.SUSPEND_NONE);
-        er.enable();
+        internalEventRequestManager.setEnabledAsync(er, true);
         er = internalEventRequestManager.createClassUnloadRequest();
         er.setSuspendPolicy(EventRequest.SUSPEND_NONE);
-        er.enable();
+        internalEventRequestManager.setEnabledAsync(er, true);
 
         theBooleanType = new BooleanTypeImpl(this);
         theByteType = new ByteTypeImpl(this);
