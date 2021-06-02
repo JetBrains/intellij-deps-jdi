@@ -40,6 +40,7 @@ package com.jetbrains.jdi;
 
 import java.lang.ref.WeakReference;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.ThreadGroupReference;
@@ -241,6 +242,31 @@ class VMState {
         return threads;
     }
 
+    CompletableFuture<List<ThreadReference>> allThreadsAsync() {
+        Cache local = getCache();
+
+        List<ThreadReference> threads = null;
+        if (local != null) {
+            // may be stale when returned, but not provably so
+            threads = local.threads;
+        }
+        if (threads != null) {
+            return CompletableFuture.completedFuture(threads);
+        }
+
+        return JDWP.VirtualMachine.AllThreads.processAsync(vm).thenApply(t -> {
+            List<ThreadReference> res = Arrays.asList(t.threads);
+            Cache cache = getCache();
+            if (cache != null) {
+                cache.threads = res;
+                if ((vm.traceFlags & VirtualMachine.TRACE_OBJREFS) != 0) {
+                    vm.printTrace("Caching all res (count = " +
+                            res.size() + ") while VM suspended");
+                }
+            }
+            return res;
+        });
+    }
 
     List<ThreadGroupReference> topLevelThreadGroups() {
         List<ThreadGroupReference> groups = null;

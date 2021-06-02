@@ -518,6 +518,11 @@ public class VirtualMachineImpl extends MirrorImpl
         return state.allThreads();
     }
 
+    public CompletableFuture<List<ThreadReference>> allThreadsAsync() {
+        validateVM();
+        return state.allThreadsAsync();
+    }
+
     public List<ThreadGroupReference> topLevelThreadGroups() {
         validateVM();
         return state.topLevelThreadGroups();
