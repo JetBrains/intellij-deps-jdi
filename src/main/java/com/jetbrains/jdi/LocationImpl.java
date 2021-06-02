@@ -77,9 +77,19 @@ public class LocationImpl extends MirrorImpl implements Location {
     public boolean equals(Object obj) {
         if (obj instanceof Location) {
             Location other = (Location)obj;
-            return (method().equals(other.method())) &&
-                   (codeIndex() == other.codeIndex()) &&
-                   super.equals(obj);
+            // try to avoid populating the method
+            if (!declaringType.equals(other.declaringType())) {
+                return false;
+            }
+            Method otherMethod = other.method();
+            if (method == null && otherMethod instanceof MethodImpl) {
+                if (methodRef != ((MethodImpl) otherMethod).ref()) {
+                    return false;
+                }
+            }
+            return (method().equals(otherMethod)) &&
+                    (codeIndex() == other.codeIndex()) &&
+                    super.equals(obj);
         } else {
             return false;
         }
