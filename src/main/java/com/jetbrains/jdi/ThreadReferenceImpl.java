@@ -94,7 +94,7 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
      */
 
     // This is cached for the life of the thread
-    private ThreadGroupReference threadGroup;
+    private volatile ThreadGroupReference threadGroup;
 
     // This is cached only while this one thread is suspended.  Each time
     // the thread is resumed, we abandon the current cache object and
@@ -425,6 +425,32 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
         }
     }
 
+    public CompletableFuture<Boolean> isAtBreakpointAsync() {
+        /*
+         * TO DO: This fails to take filters into account.
+         */
+        return frameAsync(0)
+                .thenApply(frame -> {
+                    Location location = frame.location();
+                    for (BreakpointRequest request : vm.eventRequestManager().breakpointRequests()) {
+                        if (location.equals(request.location())) {
+                            return true;
+                        }
+                    }
+                    return false;
+                })
+                .exceptionally(throwable -> {
+                    throwable = JDWPException.unwrap(throwable);
+                    if (throwable instanceof IndexOutOfBoundsException) {
+                        return false;
+                    }
+                    else if (throwable instanceof IncompatibleThreadStateException) {
+                        return false;
+                    }
+                    throw (RuntimeException)throwable;
+                });
+    }
+
     public ThreadGroupReference threadGroup() {
         /*
          * Thread group can't change, so it's cached once and for all.
@@ -438,6 +464,13 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
             }
         }
         return threadGroup;
+    }
+
+    public CompletableFuture<ThreadGroupReference> threadGroupAsync() {
+        if (threadGroup != null) {
+            return CompletableFuture.completedFuture(threadGroup);
+        }
+        return JDWP.ThreadReference.ThreadGroup.processAsync(vm, this).thenApply(tg -> threadGroup = tg.group);
     }
 
     void setFrameCount(int count) {

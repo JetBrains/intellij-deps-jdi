@@ -40,6 +40,7 @@ package com.jetbrains.jdi;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import com.sun.jdi.ThreadGroupReference;
 import com.sun.jdi.ThreadReference;
@@ -49,7 +50,7 @@ public class ThreadGroupReferenceImpl extends ObjectReferenceImpl
     implements ThreadGroupReference
 {
     // Cached components that cannot change
-    String name;
+    volatile String name;
     ThreadGroupReference parent;
     boolean triedParent;
 
@@ -84,6 +85,13 @@ public class ThreadGroupReferenceImpl extends ObjectReferenceImpl
             }
         }
         return name;
+    }
+
+    public CompletableFuture<String> nameAsync() {
+        if (name != null) {
+            return CompletableFuture.completedFuture(name);
+        }
+        return JDWP.ThreadGroupReference.Name.processAsync(vm, this).thenApply(n -> name = n.groupName);
     }
 
     public ThreadGroupReference parent() {
