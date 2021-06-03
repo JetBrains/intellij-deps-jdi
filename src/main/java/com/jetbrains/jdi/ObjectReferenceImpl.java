@@ -604,6 +604,10 @@ public class ObjectReferenceImpl extends ValueImpl
         }
     }
 
+    public CompletableFuture<Boolean> isCollectedAsync() {
+        return JDWP.ObjectReference.IsCollected.processAsync(vm, this).thenApply(r -> r.isCollected);
+    }
+
     public long uniqueID() {
         return ref();
     }
