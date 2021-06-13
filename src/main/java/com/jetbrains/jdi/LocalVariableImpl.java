@@ -167,6 +167,14 @@ public class LocalVariableImpl extends MirrorImpl
         }
     }
 
+    public Location getScopeStart() {
+        return scopeStart;
+    }
+
+    public Location getScopeEnd() {
+        return scopeEnd;
+    }
+
     int slot() {
         return slot;
     }
