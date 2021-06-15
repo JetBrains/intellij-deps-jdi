@@ -598,7 +598,7 @@ public class VirtualMachineImpl extends MirrorImpl
         PacketStream stream = state.thawCommand(() -> JDWP.VirtualMachine.Resume.enqueueCommand(vm));
         return stream.readReply(p -> new JDWP.VirtualMachine.Resume(vm, stream))
                 .exceptionally(throwable -> {
-                    if (JDWPException.unwrap(throwable) instanceof VMDisconnectedException) {
+                    if (AsyncUtils.unwrap(throwable) instanceof VMDisconnectedException) {
                         return null;
                     }
                     throw (RuntimeException)throwable;

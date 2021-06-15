@@ -163,7 +163,7 @@ abstract class InvokableTypeImpl extends ReferenceTypeImpl {
         PacketStream stream = sendInvokeCommand(thread, method, args, options);
         return readReply(stream)
                 .exceptionally(throwable -> {
-                    throwable = JDWPException.unwrap(throwable);
+                    throwable = AsyncUtils.unwrap(throwable);
                     if (throwable instanceof IllegalThreadStateException) {
                         throw new CompletionException(new IncompatibleThreadStateException());
                     }

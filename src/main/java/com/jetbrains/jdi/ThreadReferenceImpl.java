@@ -440,7 +440,7 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
                     return false;
                 })
                 .exceptionally(throwable -> {
-                    throwable = JDWPException.unwrap(throwable);
+                    throwable = AsyncUtils.unwrap(throwable);
                     if (throwable instanceof IndexOutOfBoundsException) {
                         return false;
                     }
@@ -503,7 +503,7 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
         }
         return JDWP.ThreadReference.FrameCount.processAsync(vm, this)
                 .exceptionally(throwable -> {
-                    throwable = JDWPException.unwrap(throwable);
+                    throwable = AsyncUtils.unwrap(throwable);
                     if (JDWPException.isOfType(throwable, JDWP.Error.THREAD_NOT_SUSPENDED)
                             || throwable instanceof IllegalThreadStateException) {
                         throw new CompletionException(new IncompatibleThreadStateException());
@@ -636,7 +636,7 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
         if (snapshot.frames == null || !isSubrange(snapshot, start, length)) {
             return JDWP.ThreadReference.Frames.processAsync(vm, this, start, length)
                     .exceptionally(throwable -> {
-                        throwable = JDWPException.unwrap(throwable);
+                        throwable = AsyncUtils.unwrap(throwable);
                         if (JDWPException.isOfType(throwable, JDWP.Error.THREAD_NOT_SUSPENDED) ||
                                 throwable instanceof IllegalThreadStateException) {
                             throw new CompletionException(new IncompatibleThreadStateException());
@@ -666,7 +666,7 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
             } else {
                 toIndex = fromIndex + length;
             }
-            return CompletableFuture.completedFuture(Collections.unmodifiableList(snapshot.frames.subList(fromIndex, toIndex)));
+            return AsyncUtils.toCompletableFuture(() -> Collections.unmodifiableList(snapshot.frames.subList(fromIndex, toIndex)));
         }
     }
 

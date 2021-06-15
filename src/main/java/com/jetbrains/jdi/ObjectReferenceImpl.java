@@ -516,7 +516,7 @@ public class ObjectReferenceImpl extends ValueImpl
                         method, args, options);
         return stream.readReply(packet -> new JDWP.ObjectReference.InvokeMethod(vm, stream))
                 .exceptionally(throwable -> {
-                    throwable = JDWPException.unwrap(throwable);
+                    throwable = AsyncUtils.unwrap(throwable);
                     if (throwable instanceof IllegalThreadStateException) {
                         throw new CompletionException(new IncompatibleThreadStateException());
                     }
@@ -584,7 +584,7 @@ public class ObjectReferenceImpl extends ValueImpl
         if (gcDisableCount == 0) {
             return JDWP.ObjectReference.EnableCollection.processAsync(vm, this)
                     .exceptionally(throwable -> {
-                        Throwable exc = JDWPException.unwrap(throwable);
+                        Throwable exc = AsyncUtils.unwrap(throwable);
                         if (exc instanceof ObjectCollectedException) {
                             throw ((ObjectCollectedException) exc);
                         }
