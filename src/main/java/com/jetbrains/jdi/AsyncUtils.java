@@ -15,8 +15,7 @@
 
 package com.jetbrains.jdi;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
+import java.util.concurrent.*;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
@@ -37,5 +36,30 @@ public class AsyncUtils {
     @FunctionalInterface
     public interface ThrowingSupplier<T> {
         T get() throws Exception;
+    }
+
+    public static class JDWPCompletableFuture<T> extends CompletableFuture<T> {
+        @Override
+        public <U> CompletableFuture<U> newIncompleteFuture() {
+            return new JDWPCompletableFuture<>();
+        }
+
+        @Override
+        public T get() throws InterruptedException, ExecutionException {
+            assertNotReaderThread();
+            return super.get();
+        }
+
+        @Override
+        public T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+            assertNotReaderThread();
+            return super.get(timeout, unit);
+        }
+
+        private static void assertNotReaderThread() {
+            if (Thread.currentThread() instanceof TargetVM.ReaderThread) {
+                throw new IllegalStateException("Should not happen in JDWP reader thread");
+            }
+        }
     }
 }

@@ -59,7 +59,7 @@ public class Packet {
     short errorCode;
     byte[] data;
     volatile boolean replied = false;
-    final CompletableFuture<Packet> reply = new CompletableFuture<>();
+    final CompletableFuture<Packet> reply = new AsyncUtils.JDWPCompletableFuture<>();
 
     /**
      * Return byte representation of the packet

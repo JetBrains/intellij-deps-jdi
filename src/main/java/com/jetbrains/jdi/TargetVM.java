@@ -51,7 +51,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class TargetVM implements Runnable {
+public class TargetVM {
     private final Map<Integer, Packet> waitingQueue = new HashMap<>(32,0.75f);
     private volatile boolean shouldListen = true;
     private final List<EventQueue> eventQueues = Collections.synchronizedList(new ArrayList<>(2));
@@ -75,15 +75,14 @@ public class TargetVM implements Runnable {
     TargetVM(VirtualMachineImpl vm, Connection connection) {
         this.vm = vm;
         this.connection = connection;
-        this.readerThread = new Thread(vm.threadGroupForJDI(),
-                                       this, "JDI Target VM Interface");
-        this.readerThread.setDaemon(true);
+        this.readerThread = new ReaderThread();
 
-        asyncExecutor = Executors.newSingleThreadExecutor(r -> {
-            Thread thread = new Thread(vm.threadGroupForJDI(), r, "JDI Target Async Processor");
-            thread.setDaemon(true);
-            return thread;
-        });
+        asyncExecutor = null;
+//        asyncExecutor = Executors.newSingleThreadExecutor(r -> {
+//            Thread thread = new Thread(vm.threadGroupForJDI(), r, "JDI Target Async Processor");
+//            thread.setDaemon(true);
+//            return thread;
+//        });
     }
 
     void start() {
@@ -132,93 +131,102 @@ public class TargetVM implements Runnable {
         }
     }
 
-    public void run() {
-        if ((vm.traceFlags & VirtualMachine.TRACE_SENDS) != 0) {
-            vm.printTrace("Target VM interface thread running");
+    class ReaderThread extends Thread {
+        public ReaderThread() {
+            super(vm.threadGroupForJDI(), "JDI Target VM Interface");
+            setDaemon(true);
         }
-        Packet p=null,p2;
-        String idString;
 
-        while (shouldListen) {
+        public void run() {
+            if ((vm.traceFlags & VirtualMachine.TRACE_SENDS) != 0) {
+                vm.printTrace("Target VM interface thread running");
+            }
+            Packet p=null,p2;
+            String idString;
 
-            boolean done = false;
-            try {
-                byte b[] = connection.readPacket();
-                if (b.length == 0) {
+            while (shouldListen) {
+
+                boolean done = false;
+                try {
+                    byte b[] = connection.readPacket();
+                    if (b.length == 0) {
+                        done = true;
+                    }
+                    p = Packet.fromByteArray(b);
+                } catch (IOException e) {
                     done = true;
                 }
-                p = Packet.fromByteArray(b);
-            } catch (IOException e) {
-                done = true;
-            }
 
-            if (done) {
-                shouldListen = false;
-                try {
-                    connection.close();
-                } catch (IOException ioe) { }
-                break;
-            }
+                if (done) {
+                    shouldListen = false;
+                    try {
+                        connection.close();
+                    } catch (IOException ioe) { }
+                    break;
+                }
 
-            if ((vm.traceFlags & VirtualMachineImpl.TRACE_RAW_RECEIVES) != 0)  {
-                dumpPacket(p, false);
-            }
+                if ((vm.traceFlags & VirtualMachineImpl.TRACE_RAW_RECEIVES) != 0)  {
+                    dumpPacket(p, false);
+                }
 
-            if ((p.flags & Packet.Reply) == 0) {
-                // It's a command
-                handleVMCommand(p);
-            } else {
+                if ((p.flags & Packet.Reply) == 0) {
+                    // It's a command
+                    handleVMCommand(p);
+                } else {
                 /*if(p.errorCode != Packet.ReplyNoError) {
                     System.err.println("Packet " + p.id + " returned failure = " + p.errorCode);
                 }*/
 
-                vm.state().notifyCommandComplete(p.id);
+                    vm.state().notifyCommandComplete(p.id);
 
-                synchronized(waitingQueue) {
-                    p2 = waitingQueue.remove(p.id);
+                    synchronized(waitingQueue) {
+                        p2 = waitingQueue.remove(p.id);
+                    }
+
+                    if (p2 == null) {
+                        // Whoa! a reply without a sender. Problem.
+                        // FIX ME! Need to post an error.
+
+                        System.err.println("Recieved reply with no sender!");
+                        continue;
+                    }
+                    p2.errorCode = p.errorCode;
+                    p2.data = p.data;
+                    p2.replied = true;
+                    p2.notifyReplied();
                 }
+            }
 
-                if (p2 == null) {
-                    // Whoa! a reply without a sender. Problem.
-                    // FIX ME! Need to post an error.
+            // inform the VM mamager that this VM is history
+            vm.vmManager.disposeVirtualMachine(vm);
+            if (eventController != null) {
+                eventController.release();
+            }
 
-                    System.err.println("Recieved reply with no sender!");
-                    continue;
+            // close down all the event queues
+            // Closing a queue causes a VMDisconnectEvent to
+            // be put onto the queue.
+            synchronized(eventQueues) {
+                for (EventQueue eventQueue : eventQueues) {
+                    ((EventQueueImpl) eventQueue).close();
                 }
-                p2.errorCode = p.errorCode;
-                p2.data = p.data;
-                p2.replied = true;
-                p2.notifyReplied();
             }
-        }
 
-        // inform the VM mamager that this VM is history
-        vm.vmManager.disposeVirtualMachine(vm);
-        if (eventController != null) {
-            eventController.release();
-        }
-
-        // close down all the event queues
-        // Closing a queue causes a VMDisconnectEvent to
-        // be put onto the queue.
-        synchronized(eventQueues) {
-            for (EventQueue eventQueue : eventQueues) {
-                ((EventQueueImpl) eventQueue).close();
+            // indirectly throw VMDisconnectedException to
+            // command requesters.
+            synchronized(waitingQueue) {
+                waitingQueue.values().forEach(Packet::notifyReplied);
+                waitingQueue.clear();
             }
-        }
 
-        // indirectly throw VMDisconnectedException to
-        // command requesters.
-        synchronized(waitingQueue) {
-            waitingQueue.values().forEach(Packet::notifyReplied);
-            waitingQueue.clear();
-        }
+            // shutdown the executor after invoking all pending packets notifyReplied
+            if (asyncExecutor != null) {
+                asyncExecutor.shutdown();
+            }
 
-        // shutdown the executor after invoking all pending packets notifyReplied
-        asyncExecutor.shutdown();
-
-        if ((vm.traceFlags & VirtualMachine.TRACE_SENDS) != 0) {
-            vm.printTrace("Target VM interface thread exiting");
+            if ((vm.traceFlags & VirtualMachine.TRACE_SENDS) != 0) {
+                vm.printTrace("Target VM interface thread exiting");
+            }
         }
     }
 
