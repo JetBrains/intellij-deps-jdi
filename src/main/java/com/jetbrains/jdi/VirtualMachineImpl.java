@@ -968,32 +968,39 @@ public class VirtualMachineImpl extends MirrorImpl
         return type;
     }
 
-    void cacheTypeBySignature(ReferenceTypeImpl type, String signature) {
+    synchronized void cacheTypeBySignature(ReferenceTypeImpl type, String signature) {
         typesBySignature.computeIfAbsent(signature, s -> new ArrayList<>(1)).add(type);
     }
 
-    synchronized void removeReferenceType(String signature) {
+    void removeReferenceType(String signature) {
         /*
          * There can be multiple classes with the same name. Since
-         * we can't differentiate here, we first remove all
-         * matching classes from our cache...
+         * we can't differentiate here, we first request actual info
+         * and then remove all obsolete
          */
-        List<ReferenceType> referenceTypes = typesBySignature.remove(signature);
+
+        List<ReferenceType> toRemove = new ArrayList<>(findReferenceTypes(signature));
+        if (toRemove.size() > 1) {
+            // no synchronization while waiting for retrieveClassesBySignature
+            toRemove.removeAll(retrieveClassesBySignature(signature));
+        }
+        removeReferenceTypes(signature, toRemove);
+    }
+
+    private synchronized void removeReferenceTypes(String signature, List<ReferenceType> toRemove) {
+        List<ReferenceType> referenceTypes = typesBySignature.get(signature);
         if (referenceTypes != null) {
-            for (ReferenceType t : referenceTypes) {
+            for (ReferenceType t : toRemove) {
                 ReferenceTypeImpl type = (ReferenceTypeImpl) t;
+                referenceTypes.remove(t);
                 typesByID.remove(type.ref());
                 state.referenceTypeRemoved(type);
                 if ((vm.traceFlags & VirtualMachine.TRACE_REFTYPES) != 0) {
                     vm.printTrace("Uncaching ReferenceType, sig=" + signature + ", id=" + type.ref());
                 }
             }
-            /*
-             * ...and if there was more than one, re-retrieve the classes
-             * with that name
-             */
-            if (referenceTypes.size() > 1) {
-                retrieveClassesBySignature(signature);
+            if (referenceTypes.isEmpty()) {
+                typesBySignature.remove(signature);
             }
         }
     }
