@@ -69,8 +69,7 @@ public class ShortValueImpl extends PrimitiveValueImpl
     }
 
     public int compareTo(ShortValue obj) {
-        short other = obj.value();
-        return value() - other;
+        return Short.compare(value(), obj.value());
     }
 
     public Type type() {

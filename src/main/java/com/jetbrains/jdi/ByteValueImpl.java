@@ -70,8 +70,7 @@ public class ByteValueImpl extends PrimitiveValueImpl
     }
 
     public int compareTo(ByteValue obj) {
-        byte other = obj.value();
-        return value() - other;
+        return Byte.compare(value, obj.value());
     }
 
     public Type type() {
