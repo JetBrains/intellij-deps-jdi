@@ -248,7 +248,8 @@ class PacketStream {
         }
         writeByte(tag);
         writeClassRef(refType.ref());
-        writeMethodRef(((MethodImpl)location.method()).ref());
+        long methodRef = location instanceof LocationImpl ? ((LocationImpl) location).methodRef() : ((MethodImpl)location.method()).ref();
+        writeMethodRef(methodRef);
         writeLong(location.codeIndex());
     }
 

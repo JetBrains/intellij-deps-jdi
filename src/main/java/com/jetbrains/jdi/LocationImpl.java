@@ -44,19 +44,22 @@ import com.sun.jdi.Method;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.VirtualMachine;
 
+import java.util.Objects;
+
 public class LocationImpl extends MirrorImpl implements Location {
     private final ReferenceTypeImpl declaringType;
     private Method method;
-    private long methodRef;
-    private long codeIndex;
+    private final long methodRef;
+    private final long codeIndex;
     private LineInfo baseLineInfo = null;
     private LineInfo otherLineInfo = null;
 
     LocationImpl(VirtualMachine vm, Method method, long codeIndex) {
         super(vm);
         this.method = method;
-        this.codeIndex = method.isNative()? -1 : codeIndex;
-        this.declaringType = (ReferenceTypeImpl)method.declaringType();
+        this.codeIndex = method.isNative() ? -1 : codeIndex;
+        this.declaringType = (ReferenceTypeImpl) method.declaringType();
+        this.methodRef = ((MethodImpl) method).ref();
     }
 
     /*
@@ -75,31 +78,28 @@ public class LocationImpl extends MirrorImpl implements Location {
     }
 
     public boolean equals(Object obj) {
-        if (obj instanceof Location) {
-            Location other = (Location)obj;
-            // try to avoid populating the method
-            if (!declaringType.equals(other.declaringType())) {
-                return false;
-            }
-            Method otherMethod = other.method();
-            if (method == null && otherMethod instanceof MethodImpl) {
-                if (methodRef != ((MethodImpl) otherMethod).ref()) {
-                    return false;
-                }
-            }
-            return (method().equals(otherMethod)) &&
-                    (codeIndex() == other.codeIndex()) &&
-                    super.equals(obj);
-        } else {
+        if (this == obj) return true;
+        if (!(obj instanceof Location)) return false;
+        Location other = (Location) obj;
+        if (!declaringType().equals(other.declaringType())) {
             return false;
         }
+        // do not populate method if possible
+        if (other instanceof LocationImpl) {
+            if (methodRef != ((LocationImpl) other).methodRef) {
+                return false;
+            }
+        }
+        else {
+            if (!method().equals(other.method())) {
+                return false;
+            }
+        }
+        return codeIndex() == other.codeIndex() && super.equals(obj);
     }
 
     public int hashCode() {
-        /*
-         * TO DO: better hash code?
-         */
-        return method().hashCode() + (int)codeIndex();
+        return Objects.hash(declaringType, methodRef, codeIndex);
     }
 
     public int compareTo(Location other) {
@@ -123,15 +123,15 @@ public class LocationImpl extends MirrorImpl implements Location {
     public Method method() {
         if (method == null) {
             method = declaringType.getMethodMirror(methodRef);
-            if (method.isNative()) {
-                codeIndex = -1;
-            }
         }
         return method;
     }
 
+    long methodRef() {
+        return methodRef;
+    }
+
     public long codeIndex() {
-        method();  // be sure information is up-to-date
         return codeIndex;
     }
 
