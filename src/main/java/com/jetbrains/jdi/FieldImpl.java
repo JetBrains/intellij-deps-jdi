@@ -69,6 +69,7 @@ public class FieldImpl extends TypeComponentImpl
     }
 
     public int compareTo(Field field) {
+        if (this == field) return 0;
         ReferenceTypeImpl declaringType = (ReferenceTypeImpl)declaringType();
         int rc = declaringType.compareTo(field.declaringType());
         if (rc == 0) {

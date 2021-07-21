@@ -211,6 +211,7 @@ public abstract class MethodImpl extends TypeComponentImpl
     }
 
     public int compareTo(Method method) {
+        if (this == method) return 0;
         ReferenceTypeImpl declaringType = (ReferenceTypeImpl)declaringType();
         int rc = declaringType.compareTo(method.declaringType());
         if (rc == 0) {
