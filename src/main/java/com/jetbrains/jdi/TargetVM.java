@@ -180,7 +180,7 @@ public class TargetVM {
                     vm.state().notifyCommandComplete(p.id);
 
                     synchronized(waitingQueue) {
-                        p2 = waitingQueue.remove(p.id);
+                        p2 = waitingQueue.get(p.id);
                     }
 
                     if (p2 == null) {
@@ -194,6 +194,11 @@ public class TargetVM {
                     p2.data = p.data;
                     p2.replied = true;
                     p2.notifyReplied();
+
+                    // remove late to have more correct isIdle
+                    synchronized(waitingQueue) {
+                        waitingQueue.remove(p.id);
+                    }
                 }
             }
 
