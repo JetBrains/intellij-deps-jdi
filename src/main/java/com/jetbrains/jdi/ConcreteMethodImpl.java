@@ -38,20 +38,16 @@
 
 package com.jetbrains.jdi;
 
-import java.lang.ref.SoftReference;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
 import com.sun.jdi.VirtualMachine;
+
+import java.lang.ref.SoftReference;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.stream.Collectors;
 
 /**
  * Represents methods with method bodies.
@@ -92,12 +88,12 @@ public class ConcreteMethodImpl extends MethodImpl {
     private volatile Location location = null;
     private volatile SoftReference<SoftLocationXRefs> softBaseLocationXRefsRef;
     private volatile SoftReference<SoftLocationXRefs> softOtherLocationXRefsRef;
-    private SoftReference<List<LocalVariable>> variablesRef = null;
-    private boolean absentVariableInformation = false;
+    private volatile SoftReference<List<LocalVariable>> variablesRef = null;
+    private volatile boolean absentVariableInformation = false;
     private volatile long firstIndex = -1;
     private volatile long lastIndex = -1;
     private volatile SoftReference<byte[]> bytecodesRef = null;
-    private int argSlotCount = -1;
+    private volatile int argSlotCount = -1;
 
     ConcreteMethodImpl(VirtualMachine vm, ReferenceTypeImpl declaringType,
                        long ref, String name, String signature,
@@ -269,28 +265,26 @@ public class ConcreteMethodImpl extends MethodImpl {
         return getVariables();
     }
 
-    public List<LocalVariable> variablesByName(String name) throws AbsentInformationException {
-        List<LocalVariable> variables = getVariables();
+    public CompletableFuture<List<LocalVariable>> variablesAsync() {
+        return getVariablesAsync();
+    }
 
-        List<LocalVariable> retList = new ArrayList<>(2);
-        for (LocalVariable variable : variables) {
-            if (variable.name().equals(name)) {
-                retList.add(variable);
-            }
-        }
-        return retList;
+    public List<LocalVariable> variablesByName(String name) throws AbsentInformationException {
+        return getVariables().stream().filter(v -> v.name().equals(name)).collect(Collectors.toList());
+    }
+
+    public CompletableFuture<List<LocalVariable>> variablesByNameAsync(String name) {
+        return getVariablesAsync().thenApply(variables ->
+                variables.stream().filter(v -> v.name().equals(name)).collect(Collectors.toList()));
     }
 
     public List<LocalVariable> arguments() throws AbsentInformationException {
-        List<LocalVariable> variables = getVariables();
+        return getVariables().stream().filter(LocalVariable::isArgument).collect(Collectors.toList());
+    }
 
-        List<LocalVariable> retList = new ArrayList<>(variables.size());
-        for (LocalVariable variable : variables) {
-            if (variable.isArgument()) {
-                retList.add(variable);
-            }
-        }
-        return retList;
+    public CompletableFuture<List<LocalVariable>> argumentsAsync() {
+        return getVariablesAsync().thenApply(variables ->
+                variables.stream().filter(LocalVariable::isArgument).collect(Collectors.toList()));
     }
 
     public byte[] bytecodes() {
@@ -641,6 +635,22 @@ public class ConcreteMethodImpl extends MethodImpl {
             }
         }
 
+        return createVariables1_4(vartab);
+    }
+
+    private CompletableFuture<List<LocalVariable>> getVariables1_4Async() {
+        return JDWP.Method.VariableTable.processAsync(vm, declaringType, ref)
+                .exceptionally(throwable -> {
+                    if (JDWPException.isOfType(throwable, JDWP.Error.ABSENT_INFORMATION)) {
+                        absentVariableInformation = true;
+                        throw new CompletionException(new AbsentInformationException());
+                    }
+                    throw (RuntimeException) throwable;
+                })
+                .thenApply(this::createVariables1_4);
+    }
+
+    private List<LocalVariable> createVariables1_4(JDWP.Method.VariableTable vartab) {
         // Get the number of slots used by argument variables
         argSlotCount = vartab.argCnt;
         int count = vartab.slots.length;
@@ -688,6 +698,26 @@ public class ConcreteMethodImpl extends MethodImpl {
             }
         }
 
+        return createVariables(vartab);
+    }
+
+    private CompletableFuture<List<LocalVariable>> getVariables1Async() {
+        if (!vm.canGet1_5LanguageFeatures()) {
+            return getVariables1_4Async();
+        }
+
+        return JDWP.Method.VariableTableWithGeneric.processAsync(vm, declaringType, ref)
+                .exceptionally(throwable -> {
+                    if (JDWPException.isOfType(throwable, JDWP.Error.ABSENT_INFORMATION)) {
+                        absentVariableInformation = true;
+                        throw new CompletionException(new AbsentInformationException());
+                    }
+                    throw (RuntimeException) throwable;
+                })
+                .thenApply(this::createVariables);
+    }
+
+    private List<LocalVariable> createVariables(JDWP.Method.VariableTableWithGeneric vartab) {
         // Get the number of slots used by argument variables
         argSlotCount = vartab.argCnt;
         int count = vartab.slots.length;
@@ -731,5 +761,21 @@ public class ConcreteMethodImpl extends MethodImpl {
         variables = Collections.unmodifiableList(variables);
         variablesRef = new SoftReference<>(variables);
         return variables;
+    }
+
+    private CompletableFuture<List<LocalVariable>> getVariablesAsync() {
+        if (absentVariableInformation) {
+            return CompletableFuture.failedFuture(new AbsentInformationException());
+        }
+
+        List<LocalVariable> variables = (variablesRef == null) ? null : variablesRef.get();
+        if (variables != null) {
+            return CompletableFuture.completedFuture(variables);
+        }
+        return getVariables1Async().thenApply(v -> {
+            List<LocalVariable> res = Collections.unmodifiableList(v);
+            variablesRef = new SoftReference<>(res);
+            return res;
+        });
     }
 }

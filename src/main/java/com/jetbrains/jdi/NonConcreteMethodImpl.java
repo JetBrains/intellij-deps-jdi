@@ -118,6 +118,11 @@ public class NonConcreteMethodImpl extends MethodImpl {
         throw new AbsentInformationException();
     }
 
+    @Override
+    public CompletableFuture<List<LocalVariable>> variablesAsync() {
+        return CompletableFuture.failedFuture(new AbsentInformationException());
+    }
+
     public List<LocalVariable> variablesByName(String name) throws AbsentInformationException {
         throw new AbsentInformationException();
     }

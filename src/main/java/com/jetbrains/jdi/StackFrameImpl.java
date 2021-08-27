@@ -59,7 +59,7 @@ public class StackFrameImpl extends MirrorImpl
     private final ThreadReferenceImpl thread;
     private final long id;
     private final Location location;
-    private Map<String, LocalVariable> visibleVariables =  null;
+    private volatile Map<String, LocalVariable> visibleVariables = null;
     private ObjectReference thisObject = null;
 
     StackFrameImpl(VirtualMachine vm, ThreadReferenceImpl thread,
@@ -194,23 +194,36 @@ public class StackFrameImpl extends MirrorImpl
      * Build the visible variable map.
      * Need not be synchronized since it cannot be provably stale.
      */
-    private void createVisibleVariables() throws AbsentInformationException {
+    private Map<String, LocalVariable> createVisibleVariables() throws AbsentInformationException {
         if (visibleVariables == null) {
-            List<LocalVariable> allVariables = location.method().variables();
-            Map<String, LocalVariable> map = new HashMap<>(allVariables.size());
+            createVisibleVariablesImpl(location.method().variables());
+        }
+        return visibleVariables;
+    }
 
-            for (LocalVariable variable : allVariables) {
-                String name = variable.name();
-                if (variable.isVisible(this)) {
-                    LocalVariable existing = map.get(name);
-                    if ((existing == null) ||
-                        ((LocalVariableImpl)variable).hides(existing)) {
-                        map.put(name, variable);
-                    }
+    private CompletableFuture<Map<String, LocalVariable>> createVisibleVariablesAsync() {
+        if (visibleVariables == null) {
+            return ((LocationImpl) location).methodAsync()
+                    .thenCompose(method -> ((MethodImpl) method).variablesAsync())
+                    .thenApply(this::createVisibleVariablesImpl);
+        }
+        return CompletableFuture.completedFuture(visibleVariables);
+    }
+
+    private Map<String, LocalVariable> createVisibleVariablesImpl(List<LocalVariable> allVariables) {
+        Map<String, LocalVariable> map = new HashMap<>(allVariables.size());
+
+        for (LocalVariable variable : allVariables) {
+            String name = variable.name();
+            if (variable.isVisible(this)) {
+                LocalVariable existing = map.get(name);
+                if ((existing == null) ||
+                        ((LocalVariableImpl) variable).hides(existing)) {
+                    map.put(name, variable);
                 }
             }
-            visibleVariables = map;
         }
+        return visibleVariables = map;
     }
 
     /**
@@ -219,10 +232,18 @@ public class StackFrameImpl extends MirrorImpl
      */
     public List<LocalVariable> visibleVariables() throws AbsentInformationException {
         validateStackFrame();
-        createVisibleVariables();
-        List<LocalVariable> mapAsList = new ArrayList<>(visibleVariables.values());
+        List<LocalVariable> mapAsList = new ArrayList<>(createVisibleVariables().values());
         Collections.sort(mapAsList);
         return mapAsList;
+    }
+
+    public CompletableFuture<List<LocalVariable>> visibleVariablesAsync() {
+        validateStackFrame();
+        return createVisibleVariablesAsync().thenApply(v -> {
+            List<LocalVariable> mapAsList = new ArrayList<>(v.values());
+            Collections.sort(mapAsList);
+            return mapAsList;
+        });
     }
 
     /**
@@ -231,14 +252,20 @@ public class StackFrameImpl extends MirrorImpl
      */
     public LocalVariable visibleVariableByName(String name) throws AbsentInformationException  {
         validateStackFrame();
-        createVisibleVariables();
-        return visibleVariables.get(name);
+        return createVisibleVariables().get(name);
+    }
+
+    public CompletableFuture<LocalVariable> visibleVariableByNameAsync(String name) {
+        validateStackFrame();
+        return createVisibleVariablesAsync().thenApply(variables -> variables.get(name));
     }
 
     public Value getValue(LocalVariable variable) {
-        List<LocalVariable> list = new ArrayList<>(1);
-        list.add(variable);
-        return getValues(list).get(variable);
+        return getValues(List.of(variable)).get(variable);
+    }
+
+    public CompletableFuture<Value> getValueAsync(LocalVariable variable) {
+        return getValuesAsync(List.of(variable)).thenApply(res -> res.get(variable));
     }
 
     public Value[] getSlotsValues(List<? extends SlotLocalVariable> slotsVariables) {
@@ -283,11 +310,64 @@ public class StackFrameImpl extends MirrorImpl
         return values;
     }
 
+    private CompletableFuture<ValueImpl[]> getSlotsValuesAsync(JDWP.StackFrame.GetValues.SlotInfo[] slots) {
+        /* protect against defunct frame id */
+        synchronized (vm.state()) {
+            validateStackFrame();
+            return JDWP.StackFrame.GetValues.processAsync(vm, thread, id, slots)
+                    .exceptionally(throwable -> {
+                        if (JDWPException.isOfType(throwable,
+                                JDWP.Error.INVALID_FRAMEID,
+                                JDWP.Error.THREAD_NOT_SUSPENDED,
+                                JDWP.Error.INVALID_THREAD)) {
+                            throw new InvalidStackFrameException();
+                        }
+                        throw (RuntimeException) throwable;
+                    })
+                    .thenApply(v -> {
+                        ValueImpl[] values = v.values;
+                        if (slots.length != values.length) {
+                            throw new InternalException(
+                                    "Wrong number of values returned from target VM");
+                        }
+                        return values;
+                    });
+        }
+    }
+
     public Map<LocalVariable, Value> getValues(List<? extends LocalVariable> variables) {
         validateStackFrame();
         validateMirrors(variables);
 
         int count = variables.size();
+        JDWP.StackFrame.GetValues.SlotInfo[] slots = createSlots(variables, count);
+
+        ValueImpl[] values = getSlotsValues(slots);
+
+        Map<LocalVariable, Value> map = new HashMap<>(count);
+        for (int i = 0; i < count; ++i) {
+            map.put(variables.get(i), values[i]);
+        }
+        return map;
+    }
+
+    public CompletableFuture<Map<LocalVariable, Value>> getValuesAsync(List<? extends LocalVariable> variables) {
+        validateStackFrame();
+        validateMirrors(variables);
+
+        int count = variables.size();
+        JDWP.StackFrame.GetValues.SlotInfo[] slots = createSlots(variables, count);
+
+        return getSlotsValuesAsync(slots).thenApply(values -> {
+            Map<LocalVariable, Value> map = new HashMap<>(count);
+            for (int i = 0; i < count; ++i) {
+                map.put(variables.get(i), values[i]);
+            }
+            return map;
+        });
+    }
+
+    private JDWP.StackFrame.GetValues.SlotInfo[] createSlots(List<? extends LocalVariable> variables, int count) {
         JDWP.StackFrame.GetValues.SlotInfo[] slots =
                 new JDWP.StackFrame.GetValues.SlotInfo[count];
 
@@ -300,15 +380,7 @@ public class StackFrameImpl extends MirrorImpl
             slots[i] = new JDWP.StackFrame.GetValues.SlotInfo(variable.slot(),
                     (byte) variable.signature().charAt(0));
         }
-
-        ValueImpl[] values = getSlotsValues(slots);
-
-        Map<LocalVariable, Value> map = new HashMap<>(count);
-        for (int i = 0; i < count; ++i) {
-            LocalVariableImpl variable = (LocalVariableImpl)variables.get(i);
-            map.put(variable, values[i]);
-        }
-        return map;
+        return slots;
     }
 
     public void setSlotValue(SlotLocalVariable variable, Value value) {
