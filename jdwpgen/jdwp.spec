@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -83,7 +83,8 @@ JDWP "Java(tm) Debug Wire Protocol"
     )
     (Command AllClasses=3
         "Returns reference types for all classes currently loaded by the "
-        "target VM."
+        "target VM. "
+        "See <a href=\"../jvmti.html#GetLoadedClasses\">JVM TI GetLoadedClasses</a>."
         (Out
         )
         (Reply
@@ -476,16 +477,9 @@ JDWP "Java(tm) Debug Wire Protocol"
         "<a href=\"#JDWP_StackFrame_PopFrames\">PopFrames</a> command can be used "
         "to pop frames with obsolete methods."
         "<p>"
-        "Unless the canUnrestrictedlyRedefineClasses capability is present the following "
-        "redefinitions are restricted: "
-        "<ul>"
-        "<li>changing the schema (the fields)</li>"
-        "<li>changing the hierarchy (superclasses, interfaces)</li>"
-        "<li>deleting a method</li>"
-        "<li>changing class modifiers</li>"
-        "<li>changing method modifiers</li>"
-        "<li>changing the <code>NestHost</code> or <code>NestMembers</code> class attributes</li>"
-        "</ul>"
+        "Unless the canUnrestrictedlyRedefineClasses capability is present "
+        "the redefinition must follow the restrictions described in "
+        "<a href=\"../jvmti.html#RedefineClasses\">JVM TI RedefineClasses</a>."
         "<p>"
         "Requires canRedefineClasses capability - see "
         "<a href=\"#JDWP_VirtualMachine_CapabilitiesNew\">CapabilitiesNew</a>. "
@@ -549,7 +543,7 @@ JDWP "Java(tm) Debug Wire Protocol"
         "returned for each class.  "
         "Generic signatures are described in the signature attribute "
         "section in "
-        "<cite>The Java&trade; Virtual Machine Specification</cite>. "
+        "<cite>The Java Virtual Machine Specification</cite>. "
         "Since JDWP version 1.5."
         (Out
         )
@@ -598,33 +592,28 @@ JDWP "Java(tm) Debug Wire Protocol"
             (Error VM_DEAD)
         )
     )
-//    (Command AllModules=22
-//        "Returns all modules in the target VM."
-//        "<p>Since JDWP version 9."
-//        (Out
-//        )
-//        (Reply
-//            (Repeat modules "The number of the modules that follow."
-//                (moduleID module "One of the modules.")
-//            )
-//        )
-//        (ErrorSet
-//            (Error NOT_IMPLEMENTED)
-//            (Error VM_DEAD)
-//        )
-//    )
+    (Command AllModules=22
+        "Returns all modules in the target VM."
+        "<p>Since JDWP version 9."
+        (Out
+        )
+        (Reply
+            (Repeat modules "The number of the modules that follow."
+                (moduleID module "One of the modules.")
+            )
+        )
+        (ErrorSet
+            (Error NOT_IMPLEMENTED)
+            (Error VM_DEAD)
+        )
+    )
 )
 
 (CommandSet ReferenceType=2
     (Command Signature=1
-        "Returns the JNI signature of a reference type. "
-        "JNI signature formats are described in the "
-        "<a href=\"https://docs.oracle.com/en/java/javase/13/docs/specs/jni/index.html\">Java Native Inteface Specification</a>"
-        "<p>
-        "For primitive classes "
-        "the returned signature is the signature of the corresponding primitive "
-        "type; for example, \"I\" is returned as the signature of the class "
-        "represented by java.lang.Integer.TYPE."
+        "Returns the type signature of a reference type. "
+        "Type signature formats are the same as specified in "
+        "<a href=\"../jvmti.html#GetClassSignature\">JVM TI GetClassSignature</a>."
         (Out
             (referenceType refType "The reference type ID.")
         )
@@ -667,7 +656,7 @@ JDWP "Java(tm) Debug Wire Protocol"
         )
         (Reply
             (int modBits "Modifier bits as defined in Chapter 4 of "
-                         "<cite>The Java&trade; Virtual Machine Specification</cite>")
+                         "<cite>The Java Virtual Machine Specification</cite>")
         )
         (ErrorSet
             (Error INVALID_CLASS     "refType is not the ID of a reference "
@@ -695,7 +684,7 @@ JDWP "Java(tm) Debug Wire Protocol"
                                  "which provide additional information on the  "
                                  "field declaration. Individual flag values are "
                                  "defined in Chapter 4 of "
-                                 "<cite>The Java&trade; Virtual Machine Specification</cite>. "
+                                 "<cite>The Java Virtual Machine Specification</cite>. "
                                  "In addition, The <code>0xf0000000</code> bit identifies "
                                  "the field as synthetic, if the synthetic attribute "
                                  "<a href=\"#JDWP_VirtualMachine_Capabilities\">capability</a> is available.")
@@ -730,7 +719,7 @@ JDWP "Java(tm) Debug Wire Protocol"
                                  "which provide additional information on the  "
                                  "method declaration. Individual flag values are "
                                  "defined in Chapter 4 of "
-                                 "<cite>The Java&trade; Virtual Machine Specification</cite>. "
+                                 "<cite>The Java Virtual Machine Specification</cite>. "
                                  "In addition, The <code>0xf0000000</code> bit identifies "
                                  "the method as synthetic, if the synthetic attribute "
                                  "<a href=\"#JDWP_VirtualMachine_Capabilities\">capability</a> is available.")
@@ -817,7 +806,7 @@ JDWP "Java(tm) Debug Wire Protocol"
         "Returns the current status of the reference type. The status "
         "indicates the extent to which the reference type has been "
         "initialized, as described in section 2.1.6 of "
-        "<cite>The Java&trade; Virtual Machine Specification</cite>. "
+        "<cite>The Java Virtual Machine Specification</cite>. "
         "If the class is linked the PREPARED and VERIFIED bits in the returned status bits "
         "will be set. If the class is initialized the INITIALIZED bit in the returned "
         "status bits will be set. If an error occured during initialization then the "
@@ -896,7 +885,7 @@ JDWP "Java(tm) Debug Wire Protocol"
         "generic signature if there is one.  "
         "Generic signatures are described in the signature attribute "
         "section in "
-        "<cite>The Java&trade; Virtual Machine Specification</cite>. "
+        "<cite>The Java Virtual Machine Specification</cite>. "
         "Since JDWP version 1.5."
         (Out
             (referenceType refType "The reference type ID.")
@@ -924,7 +913,7 @@ JDWP "Java(tm) Debug Wire Protocol"
         "Fields are returned in the order they occur in the class file.  "
         "Generic signatures are described in the signature attribute "
         "section in "
-        "<cite>The Java&trade; Virtual Machine Specification</cite>. "
+        "<cite>The Java Virtual Machine Specification</cite>. "
         "Since JDWP version 1.5."
         (Out
             (referenceType refType "The reference type ID.")
@@ -941,7 +930,7 @@ JDWP "Java(tm) Debug Wire Protocol"
                                  "which provide additional information on the  "
                                  "field declaration. Individual flag values are "
                                  "defined in Chapter 4 of "
-                                 "<cite>The Java&trade; Virtual Machine Specification</cite>. "
+                                 "<cite>The Java Virtual Machine Specification</cite>. "
                                  "In addition, The <code>0xf0000000</code> bit identifies "
                                  "the field as synthetic, if the synthetic attribute "
                                  "<a href=\"#JDWP_VirtualMachine_Capabilities\">capability</a> is available.")
@@ -966,7 +955,7 @@ JDWP "Java(tm) Debug Wire Protocol"
         "Methods are returned in the order they occur in the class file.  "
         "Generic signatures are described in the signature attribute "
         "section in "
-        "<cite>The Java&trade; Virtual Machine Specification</cite>. "
+        "<cite>The Java Virtual Machine Specification</cite>. "
         "Since JDWP version 1.5."
         (Out
             (referenceType refType "The reference type ID.")
@@ -983,7 +972,7 @@ JDWP "Java(tm) Debug Wire Protocol"
                                  "which provide additional information on the  "
                                  "method declaration. Individual flag values are "
                                  "defined in Chapter 4 of "
-                                 "<cite>The Java&trade; Virtual Machine Specification</cite>. "
+                                 "<cite>The Java Virtual Machine Specification</cite>. "
                                  "In addition, The <code>0xf0000000</code> bit identifies "
                                  "the method as synthetic, if the synthetic attribute "
                                  "<a href=\"#JDWP_VirtualMachine_Capabilities\">capability</a> is available.")
@@ -1046,7 +1035,7 @@ JDWP "Java(tm) Debug Wire Protocol"
     (Command ConstantPool=18
         "Return the raw bytes of the constant pool in the format of the "
         "constant_pool item of the Class File Format in "
-        "<cite>The Java&trade; Virtual Machine Specification</cite>. "
+        "<cite>The Java Virtual Machine Specification</cite>. "
         "<p>Since JDWP version 1.6. Requires canGetConstantPool capability - see "
         "<a href=\"#JDWP_VirtualMachine_CapabilitiesNew\">CapabilitiesNew</a>.""
         (Out
@@ -1056,7 +1045,7 @@ JDWP "Java(tm) Debug Wire Protocol"
             (int count "Total number of constant pool entries plus one. This "
                        "corresponds to the constant_pool_count item of the "
                        "Class File Format in "
-                       "<cite>The Java&trade; Virtual Machine Specification</cite>. ")
+                       "<cite>The Java Virtual Machine Specification</cite>. ")
             (Repeat bytes
                 (byte cpbytes "Raw bytes of constant pool")
             )
@@ -1072,22 +1061,22 @@ JDWP "Java(tm) Debug Wire Protocol"
             (Error VM_DEAD)
         )
     )
-//    (Command Module=19
-//        "Returns the module that this reference type belongs to."
-//        "<p>Since JDWP version 9."
-//        (Out
-//            (referenceType refType "The reference type.")
-//        )
-//        (Reply
-//            (moduleID module "The module this reference type belongs to.")
-//        )
-//        (ErrorSet
-//            (Error INVALID_CLASS   "refType is not the ID of a reference type.")
-//            (Error INVALID_OBJECT  "refType is not a known ID.")
-//            (Error NOT_IMPLEMENTED)
-//            (Error VM_DEAD)
-//        )
-//    )
+    (Command Module=19
+        "Returns the module that this reference type belongs to."
+        "<p>Since JDWP version 9."
+        (Out
+            (referenceType refType "The reference type.")
+        )
+        (Reply
+            (moduleID module "The module this reference type belongs to.")
+        )
+        (ErrorSet
+            (Error INVALID_CLASS   "refType is not the ID of a reference type.")
+            (Error INVALID_OBJECT  "refType is not a known ID.")
+            (Error NOT_IMPLEMENTED)
+            (Error VM_DEAD)
+        )
+    )
 )
 (CommandSet ClassType=3
     (Command Superclass=1
@@ -1459,7 +1448,7 @@ JDWP "Java(tm) Debug Wire Protocol"
     )
     (Command Bytecodes=3
         "Retrieve the method's bytecodes as defined in "
-        "<cite>The Java&trade; Virtual Machine Specification</cite>. "
+        "<cite>The Java Virtual Machine Specification</cite>. "
         "Requires canGetBytecodes capability - see "
         "<a href=\"#JDWP_VirtualMachine_CapabilitiesNew\">CapabilitiesNew</a>."
         (Out
@@ -1515,7 +1504,7 @@ JDWP "Java(tm) Debug Wire Protocol"
         "table. Also, synthetic variables may be present. "
         "Generic signatures are described in the signature attribute "
         "section in "
-        "<cite>The Java&trade; Virtual Machine Specification</cite>. "
+        "<cite>The Java Virtual Machine Specification</cite>. "
         "Since JDWP version 1.5."
         (Out
             (referenceType refType "The class.")
@@ -2106,7 +2095,7 @@ JDWP "Java(tm) Debug Wire Protocol"
         "The method which will return early is referred to as the "
         "called method. The called method is the current method (as "
         "defined by the Frames section in "
-        "<cite>The Java&trade; Virtual Machine Specification</cite>) "
+        "<cite>The Java Virtual Machine Specification</cite>) "
         "for the specified thread at the time this command "
         "is received. "
         "<p>"
@@ -2202,7 +2191,7 @@ JDWP "Java(tm) Debug Wire Protocol"
         "in this thread group. Threads and thread groups in child "
         "thread groups are not included. "
         "A thread is alive if it has been started and has not yet been stopped. "
-        "See <a href=../../../api/java/lang/ThreadGroup.html>java.lang.ThreadGroup </a>
+        "See <a href=../../api/java.base/java/lang/ThreadGroup.html>java.lang.ThreadGroup </a>
         "for information about active ThreadGroups.
         (Out
             (threadGroupObject group "The thread group object ID. ")
@@ -2283,11 +2272,12 @@ JDWP "Java(tm) Debug Wire Protocol"
 )
 (CommandSet ClassLoaderReference=14
     (Command VisibleClasses=1
-        "Returns a list of all classes which this class loader has "
-        "been requested to load. This class loader is considered to be "
-        "an <i>initiating</i> class loader for each class in the returned "
-        "list. The list contains each "
-        "reference type defined by this loader and any types for which "
+        "Returns a list of all classes which this class loader can find "
+        "by name via <code>ClassLoader::loadClass</code>, "
+        "<code>Class::forName</code> and bytecode linkage. That is, "
+        "all classes for which this class loader has been recorded as an "
+        "<i>initiating</i> loader. The list contains each "
+        "reference type created by this loader and any types for which "
         "loading was delegated by this class loader to another class loader. "
         "<p>"
         "The visible class list has useful properties with respect to "
@@ -2297,6 +2287,8 @@ JDWP "Java(tm) Debug Wire Protocol"
         "this class loader must be resolved to that single type. "
         "<p>"
         "No ordering of the returned list is guaranteed. "
+        "<p>"
+        "See <a href=\"../jvmti.html#GetClassLoaderClasses\">JVM TI GetClassLoaderClasses</a>. "
         (Out
             (classLoaderObject classLoaderObject "The class loader object ID. ")
         )
@@ -2705,38 +2697,38 @@ JDWP "Java(tm) Debug Wire Protocol"
         )
     )
 )
-//(CommandSet ModuleReference=18
-//    (Command Name=1
-//        "Returns the name of this module."
-//        "<p>Since JDWP version 9."
-//        (Out
-//            (moduleID module "This module.")
-//        )
-//        (Reply
-//            (string name  "The module's name.")
-//        )
-//        (ErrorSet
-//            (Error INVALID_MODULE)
-//            (Error NOT_IMPLEMENTED)
-//            (Error VM_DEAD)
-//        )
-//    )
-//    (Command ClassLoader=2
-//        "Returns the class loader of this module."
-//        "<p>Since JDWP version 9."
-//        (Out
-//            (moduleID module "This module.")
-//        )
-//        (Reply
-//            (classLoaderObject classLoader  "The module's class loader.")
-//        )
-//        (ErrorSet
-//            (Error INVALID_MODULE)
-//            (Error NOT_IMPLEMENTED)
-//            (Error VM_DEAD)
-//        )
-//    )
-//)
+(CommandSet ModuleReference=18
+    (Command Name=1
+        "Returns the name of this module."
+        "<p>Since JDWP version 9."
+        (Out
+            (moduleID module "This module.")
+        )
+        (Reply
+            (string name  "The module's name.")
+        )
+        (ErrorSet
+            (Error INVALID_MODULE)
+            (Error NOT_IMPLEMENTED)
+            (Error VM_DEAD)
+        )
+    )
+    (Command ClassLoader=2
+        "Returns the class loader of this module."
+        "<p>Since JDWP version 9."
+        (Out
+            (moduleID module "This module.")
+        )
+        (Reply
+            (classLoaderObject classLoader  "The module's class loader.")
+        )
+        (ErrorSet
+            (Error INVALID_MODULE)
+            (Error NOT_IMPLEMENTED)
+            (Error VM_DEAD)
+        )
+    )
+)
 (CommandSet Event=64
     (Command Composite=100
         "Several events may occur at a given time in the target VM. "
@@ -3184,9 +3176,9 @@ JDWP "Java(tm) Debug Wire Protocol"
                                           "than its counterpart in the old class version and "
                                           "canUnrestrictedlyRedefineClasses is false.")
     (Constant CLASS_ATTRIBUTE_CHANGE_NOT_IMPLEMENTED
-                                     =72  "The new class version has different NestHost or "
-                                          "NestMembers class attribute and "
-                                          "canUnrestrictedlyRedefineClasses is false.")
+                                     =72  "The new class version has a different NestHost, "
+                                          "NestMembers, PermittedSubclasses, or Record class attribute "
+                                          "and canUnrestrictedlyRedefineClasses is false.")
     (Constant NOT_IMPLEMENTED        =99  "The functionality is not implemented in "
                                           "this virtual machine.")
     (Constant NULL_POINTER           =100 "Invalid pointer.")

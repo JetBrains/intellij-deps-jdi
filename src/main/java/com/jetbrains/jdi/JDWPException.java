@@ -41,7 +41,7 @@ package com.jetbrains.jdi;
 import com.sun.jdi.ClassNotPreparedException;
 import com.sun.jdi.InconsistentDebugInfoException;
 import com.sun.jdi.InternalException;
-//import com.sun.jdi.InvalidModuleException;
+import com.sun.jdi.InvalidModuleException;
 import com.sun.jdi.InvalidStackFrameException;
 import com.sun.jdi.ObjectCollectedException;
 import com.sun.jdi.VMDisconnectedException;
@@ -68,8 +68,8 @@ class JDWPException extends Exception {
         switch (errorCode) {
             case JDWP.Error.INVALID_OBJECT:
                 return new ObjectCollectedException();
-//            case JDWP.Error.INVALID_MODULE:
-//                return new InvalidModuleException();
+            case JDWP.Error.INVALID_MODULE:
+                return new InvalidModuleException();
             case JDWP.Error.VM_DEAD:
                 return new VMDisconnectedException();
             case JDWP.Error.OUT_OF_MEMORY:

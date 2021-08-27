@@ -54,7 +54,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-//import com.sun.jdi.ModuleReference;
+import com.sun.jdi.ModuleReference;
 
 public class VirtualMachineImpl extends MirrorImpl
              implements PathSearchingVirtualMachine, ThreadListener {
@@ -95,7 +95,7 @@ public class VirtualMachineImpl extends MirrorImpl
     private final Map<String, List<ReferenceType>> typesBySignature = new HashMap<>(300);
     private volatile boolean retrievedAllTypes = false;
 
-//    private Map<Long, ModuleReference> modulesByID;
+    private Map<Long, ModuleReference> modulesByID;
 
     // For other languages support
     private String defaultStratum = null;
@@ -351,11 +351,11 @@ public class VirtualMachineImpl extends MirrorImpl
         return System.identityHashCode(this);
     }
 
-//    public List<ModuleReference> allModules() {
-//        validateVM();
-//        List<ModuleReference> modules = retrieveAllModules();
-//        return Collections.unmodifiableList(modules);
-//    }
+    public List<ModuleReference> allModules() {
+        validateVM();
+        List<ModuleReference> modules = retrieveAllModules();
+        return Collections.unmodifiableList(modules);
+    }
 
     public List<ReferenceType> classesByName(String className) {
         validateVM();
@@ -1086,47 +1086,47 @@ public class VirtualMachineImpl extends MirrorImpl
         return capabilitiesNew;
     }
 
-//    private synchronized ModuleReference addModule(long id) {
-//        if (modulesByID == null) {
-//            modulesByID = new HashMap<>(77);
-//        }
-//        ModuleReference module = new ModuleReferenceImpl(vm, id);
-//        modulesByID.put(id, module);
-//        return module;
-//    }
+    private synchronized ModuleReference addModule(long id) {
+        if (modulesByID == null) {
+            modulesByID = new HashMap<>(77);
+        }
+        ModuleReference module = new ModuleReferenceImpl(vm, id);
+        modulesByID.put(id, module);
+        return module;
+    }
 
-//    ModuleReference getModule(long id) {
-//        if (id == 0) {
-//            return null;
-//        } else {
-//            ModuleReference module = null;
-//            synchronized (this) {
-//                if (modulesByID != null) {
-//                    module = modulesByID.get(id);
-//                }
-//                if (module == null) {
-//                    module = addModule(id);
-//                }
-//            }
-//            return module;
-//        }
-//    }
+    ModuleReference getModule(long id) {
+        if (id == 0) {
+            return null;
+        } else {
+            ModuleReference module = null;
+            synchronized (this) {
+                if (modulesByID != null) {
+                    module = modulesByID.get(id);
+                }
+                if (module == null) {
+                    module = addModule(id);
+                }
+            }
+            return module;
+        }
+    }
 
-//    private synchronized List<ModuleReference> retrieveAllModules() {
-//        ModuleReferenceImpl[] reqModules;
-//        try {
-//            reqModules = JDWP.VirtualMachine.AllModules.process(vm).modules;
-//        } catch (JDWPException exc) {
-//            throw exc.toJDIException();
-//        }
-//        ArrayList<ModuleReference> modules = new ArrayList<>();
-//        for (int i = 0; i < reqModules.length; i++) {
-//            long moduleRef = reqModules[i].ref();
-//            ModuleReference module = getModule(moduleRef);
-//            modules.add(module);
-//        }
-//        return modules;
-//    }
+    private synchronized List<ModuleReference> retrieveAllModules() {
+        ModuleReferenceImpl[] reqModules;
+        try {
+            reqModules = JDWP.VirtualMachine.AllModules.process(vm).modules;
+        } catch (JDWPException exc) {
+            throw exc.toJDIException();
+        }
+        ArrayList<ModuleReference> modules = new ArrayList<>();
+        for (int i = 0; i < reqModules.length; i++) {
+            long moduleRef = reqModules[i].ref();
+            ModuleReference module = getModule(moduleRef);
+            modules.add(module);
+        }
+        return modules;
+    }
 
     private List<ReferenceType> retrieveClassesBySignature(String signature) {
         if ((vm.traceFlags & VirtualMachine.TRACE_REFTYPES) != 0) {
@@ -1536,9 +1536,9 @@ public class VirtualMachineImpl extends MirrorImpl
                                                       JDWP.Tag.CLASS_OBJECT);
     }
 
-//    ModuleReferenceImpl moduleMirror(long id) {
-//        return (ModuleReferenceImpl)getModule(id);
-//    }
+    ModuleReferenceImpl moduleMirror(long id) {
+        return (ModuleReferenceImpl)getModule(id);
+    }
 
     /*
      * Implementation of PathSearchingVirtualMachine

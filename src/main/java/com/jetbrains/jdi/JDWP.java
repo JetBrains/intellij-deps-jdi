@@ -205,7 +205,8 @@ class JDWP {
 
         /**
          * Returns reference types for all classes currently loaded by the 
-         * target VM.
+         * target VM. 
+         * See <a href="../jvmti.html#GetLoadedClasses">JVM TI GetLoadedClasses</a>.
          */
         static class AllClasses {
             static final int COMMAND = 3;
@@ -1533,16 +1534,9 @@ class JDWP {
          * <a href="#JDWP_StackFrame_PopFrames">PopFrames</a> command can be used 
          * to pop frames with obsolete methods.
          * <p>
-         * Unless the canUnrestrictedlyRedefineClasses capability is present the following 
-         * redefinitions are restricted: 
-         * <ul>
-         * <li>changing the schema (the fields)</li>
-         * <li>changing the hierarchy (superclasses, interfaces)</li>
-         * <li>deleting a method</li>
-         * <li>changing class modifiers</li>
-         * <li>changing method modifiers</li>
-         * <li>changing the <code>NestHost</code> or <code>NestMembers</code> class attributes</li>
-         * </ul>
+         * Unless the canUnrestrictedlyRedefineClasses capability is present 
+         * the redefinition must follow the restrictions described in 
+         * <a href="../jvmti.html#RedefineClasses">JVM TI RedefineClasses</a>.
          * <p>
          * Requires canRedefineClasses capability - see 
          * <a href="#JDWP_VirtualMachine_CapabilitiesNew">CapabilitiesNew</a>. 
@@ -1692,7 +1686,7 @@ class JDWP {
          * returned for each class.  
          * Generic signatures are described in the signature attribute 
          * section in 
-         * <cite>The Java&trade; Virtual Machine Specification</cite>. 
+         * <cite>The Java Virtual Machine Specification</cite>. 
          * Since JDWP version 1.5.
          */
         static class AllClassesWithGeneric {
@@ -1875,6 +1869,63 @@ class JDWP {
                 }
             }
         }
+
+        /**
+         * Returns all modules in the target VM.
+         * <p>Since JDWP version 9.
+         */
+        static class AllModules {
+            static final int COMMAND = 22;
+
+            static AllModules process(VirtualMachineImpl vm)
+                                    throws JDWPException {
+                PacketStream ps = enqueueCommand(vm);
+                return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<AllModules> processAsync(VirtualMachineImpl vm) {
+                PacketStream ps = enqueueCommand(vm);
+                return ps.readReply(p -> new AllModules(vm, ps));
+            }
+
+            static PacketStream enqueueCommand(VirtualMachineImpl vm) {
+                PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
+                if ((vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
+                    vm.printTrace("Sending Command(id=" + ps.pkt.id + ") JDWP.VirtualMachine.AllModules"+(ps.pkt.flags!=0?", FLAGS=" + ps.pkt.flags:""));
+                }
+                ps.send();
+                return ps;
+            }
+
+            static AllModules waitForReply(VirtualMachineImpl vm, PacketStream ps)
+                                    throws JDWPException {
+                ps.waitForReply();
+                return new AllModules(vm, ps);
+            }
+
+
+            /**
+             * The number of the modules that follow.
+             */
+            final ModuleReferenceImpl[] modules;
+
+            private AllModules(VirtualMachineImpl vm, PacketStream ps) {
+                if (vm.traceReceives) {
+                    vm.printTrace("Receiving Command(id=" + ps.pkt.id + ") JDWP.VirtualMachine.AllModules"+(ps.pkt.flags!=0?", FLAGS=" + ps.pkt.flags:"")+(ps.pkt.errorCode!=0?", ERROR CODE=" + ps.pkt.errorCode:""));
+                }
+                if (vm.traceReceives) {
+                    vm.printReceiveTrace(4, "modules(ModuleReferenceImpl[]): " + "");
+                }
+                int modulesCount = ps.readInt();
+                modules = new ModuleReferenceImpl[modulesCount];
+                for (int i = 0; i < modulesCount; i++) {
+                    modules[i] = ps.readModule();
+                    if (vm.traceReceives) {
+                        vm.printReceiveTrace(5, "modules[i](ModuleReferenceImpl): " + (modules[i]==null?"NULL":"ref="+modules[i].ref()));
+                    }
+                }
+            }
+        }
     }
 
     static class ReferenceType {
@@ -1882,14 +1933,9 @@ class JDWP {
         private ReferenceType() {}  // hide constructor
 
         /**
-         * Returns the JNI signature of a reference type. 
-         * JNI signature formats are described in the 
-         * <a href="https://docs.oracle.com/en/java/javase/13/docs/specs/jni/index.html">Java Native Inteface Specification</a>
-         * <p>
-         * For primitive classes 
-         * the returned signature is the signature of the corresponding primitive 
-         * type; for example, "I" is returned as the signature of the class 
-         * represented by java.lang.Integer.TYPE.
+         * Returns the type signature of a reference type. 
+         * Type signature formats are the same as specified in 
+         * <a href="../jvmti.html#GetClassSignature">JVM TI GetClassSignature</a>.
          */
         static class Signature {
             static final int COMMAND = 1;
@@ -2048,7 +2094,7 @@ class JDWP {
 
             /**
              * Modifier bits as defined in Chapter 4 of 
-             * <cite>The Java&trade; Virtual Machine Specification</cite>
+             * <cite>The Java Virtual Machine Specification</cite>
              */
             final int modBits;
 
@@ -2128,7 +2174,7 @@ class JDWP {
                  * which provide additional information on the  
                  * field declaration. Individual flag values are 
                  * defined in Chapter 4 of 
-                 * <cite>The Java&trade; Virtual Machine Specification</cite>. 
+                 * <cite>The Java Virtual Machine Specification</cite>. 
                  * In addition, The <code>0xf0000000</code> bit identifies 
                  * the field as synthetic, if the synthetic attribute 
                  * <a href="#JDWP_VirtualMachine_Capabilities">capability</a> is available.
@@ -2245,7 +2291,7 @@ class JDWP {
                  * which provide additional information on the  
                  * method declaration. Individual flag values are 
                  * defined in Chapter 4 of 
-                 * <cite>The Java&trade; Virtual Machine Specification</cite>. 
+                 * <cite>The Java Virtual Machine Specification</cite>. 
                  * In addition, The <code>0xf0000000</code> bit identifies 
                  * the method as synthetic, if the synthetic attribute 
                  * <a href="#JDWP_VirtualMachine_Capabilities">capability</a> is available.
@@ -2547,7 +2593,7 @@ class JDWP {
          * Returns the current status of the reference type. The status 
          * indicates the extent to which the reference type has been 
          * initialized, as described in section 2.1.6 of 
-         * <cite>The Java&trade; Virtual Machine Specification</cite>. 
+         * <cite>The Java Virtual Machine Specification</cite>. 
          * If the class is linked the PREPARED and VERIFIED bits in the returned status bits 
          * will be set. If the class is initialized the INITIALIZED bit in the returned 
          * status bits will be set. If an error occured during initialization then the 
@@ -2793,7 +2839,7 @@ class JDWP {
          * generic signature if there is one.  
          * Generic signatures are described in the signature attribute 
          * section in 
-         * <cite>The Java&trade; Virtual Machine Specification</cite>. 
+         * <cite>The Java Virtual Machine Specification</cite>. 
          * Since JDWP version 1.5.
          */
         static class SignatureWithGeneric {
@@ -2868,7 +2914,7 @@ class JDWP {
          * Fields are returned in the order they occur in the class file.  
          * Generic signatures are described in the signature attribute 
          * section in 
-         * <cite>The Java&trade; Virtual Machine Specification</cite>. 
+         * <cite>The Java Virtual Machine Specification</cite>. 
          * Since JDWP version 1.5.
          */
         static class FieldsWithGeneric {
@@ -2935,7 +2981,7 @@ class JDWP {
                  * which provide additional information on the  
                  * field declaration. Individual flag values are 
                  * defined in Chapter 4 of 
-                 * <cite>The Java&trade; Virtual Machine Specification</cite>. 
+                 * <cite>The Java Virtual Machine Specification</cite>. 
                  * In addition, The <code>0xf0000000</code> bit identifies 
                  * the field as synthetic, if the synthetic attribute 
                  * <a href="#JDWP_VirtualMachine_Capabilities">capability</a> is available.
@@ -3000,7 +3046,7 @@ class JDWP {
          * Methods are returned in the order they occur in the class file.  
          * Generic signatures are described in the signature attribute 
          * section in 
-         * <cite>The Java&trade; Virtual Machine Specification</cite>. 
+         * <cite>The Java Virtual Machine Specification</cite>. 
          * Since JDWP version 1.5.
          */
         static class MethodsWithGeneric {
@@ -3067,7 +3113,7 @@ class JDWP {
                  * which provide additional information on the  
                  * method declaration. Individual flag values are 
                  * defined in Chapter 4 of 
-                 * <cite>The Java&trade; Virtual Machine Specification</cite>. 
+                 * <cite>The Java Virtual Machine Specification</cite>. 
                  * In addition, The <code>0xf0000000</code> bit identifies 
                  * the method as synthetic, if the synthetic attribute 
                  * <a href="#JDWP_VirtualMachine_Capabilities">capability</a> is available.
@@ -3266,7 +3312,7 @@ class JDWP {
         /**
          * Return the raw bytes of the constant pool in the format of the 
          * constant_pool item of the Class File Format in 
-         * <cite>The Java&trade; Virtual Machine Specification</cite>. 
+         * <cite>The Java Virtual Machine Specification</cite>. 
          * <p>Since JDWP version 1.6. Requires canGetConstantPool capability - see 
          * <a href="#JDWP_VirtualMachine_CapabilitiesNew">CapabilitiesNew</a>.
          * 
@@ -3312,7 +3358,7 @@ class JDWP {
              * Total number of constant pool entries plus one. This 
              * corresponds to the constant_pool_count item of the 
              * Class File Format in 
-             * <cite>The Java&trade; Virtual Machine Specification</cite>. 
+             * <cite>The Java Virtual Machine Specification</cite>. 
              */
             final int count;
 
@@ -3336,6 +3382,63 @@ class JDWP {
                     if (vm.traceReceives) {
                         vm.printReceiveTrace(5, "bytes[i](byte): " + bytes[i]);
                     }
+                }
+            }
+        }
+
+        /**
+         * Returns the module that this reference type belongs to.
+         * <p>Since JDWP version 9.
+         */
+        static class Module {
+            static final int COMMAND = 19;
+
+            static Module process(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType)
+                                    throws JDWPException {
+                PacketStream ps = enqueueCommand(vm, refType);
+                return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<Module> processAsync(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType) {
+                PacketStream ps = enqueueCommand(vm, refType);
+                return ps.readReply(p -> new Module(vm, ps));
+            }
+
+            static PacketStream enqueueCommand(VirtualMachineImpl vm, 
+                                ReferenceTypeImpl refType) {
+                PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
+                if ((vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
+                    vm.printTrace("Sending Command(id=" + ps.pkt.id + ") JDWP.ReferenceType.Module"+(ps.pkt.flags!=0?", FLAGS=" + ps.pkt.flags:""));
+                }
+                if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
+                    ps.vm.printTrace("Sending:                 refType(ReferenceTypeImpl): " + (refType==null?"NULL":"ref="+refType.ref()));
+                }
+                ps.writeClassRef(refType.ref());
+                ps.send();
+                return ps;
+            }
+
+            static Module waitForReply(VirtualMachineImpl vm, PacketStream ps)
+                                    throws JDWPException {
+                ps.waitForReply();
+                return new Module(vm, ps);
+            }
+
+
+            /**
+             * The module this reference type belongs to.
+             */
+            final ModuleReferenceImpl module;
+
+            private Module(VirtualMachineImpl vm, PacketStream ps) {
+                if (vm.traceReceives) {
+                    vm.printTrace("Receiving Command(id=" + ps.pkt.id + ") JDWP.ReferenceType.Module"+(ps.pkt.flags!=0?", FLAGS=" + ps.pkt.flags:"")+(ps.pkt.errorCode!=0?", ERROR CODE=" + ps.pkt.errorCode:""));
+                }
+                module = ps.readModule();
+                if (vm.traceReceives) {
+                    vm.printReceiveTrace(4, "module(ModuleReferenceImpl): " + (module==null?"NULL":"ref="+module.ref()));
                 }
             }
         }
@@ -4295,7 +4398,7 @@ class JDWP {
 
         /**
          * Retrieve the method's bytecodes as defined in 
-         * <cite>The Java&trade; Virtual Machine Specification</cite>. 
+         * <cite>The Java Virtual Machine Specification</cite>. 
          * Requires canGetBytecodes capability - see 
          * <a href="#JDWP_VirtualMachine_CapabilitiesNew">CapabilitiesNew</a>.
          */
@@ -4441,7 +4544,7 @@ class JDWP {
          * table. Also, synthetic variables may be present. 
          * Generic signatures are described in the signature attribute 
          * section in 
-         * <cite>The Java&trade; Virtual Machine Specification</cite>. 
+         * <cite>The Java Virtual Machine Specification</cite>. 
          * Since JDWP version 1.5.
          */
         static class VariableTableWithGeneric {
@@ -6288,7 +6391,7 @@ class JDWP {
          * The method which will return early is referred to as the 
          * called method. The called method is the current method (as 
          * defined by the Frames section in 
-         * <cite>The Java&trade; Virtual Machine Specification</cite>) 
+         * <cite>The Java Virtual Machine Specification</cite>) 
          * for the specified thread at the time this command 
          * is received. 
          * <p>
@@ -6499,7 +6602,7 @@ class JDWP {
          * in this thread group. Threads and thread groups in child 
          * thread groups are not included. 
          * A thread is alive if it has been started and has not yet been stopped. 
-         * See <a href=../../../api/java/lang/ThreadGroup.html>java.lang.ThreadGroup </a>
+         * See <a href=../../api/java.base/java/lang/ThreadGroup.html>java.lang.ThreadGroup </a>
          * for information about active ThreadGroups.
          */
         static class Children {
@@ -6790,11 +6893,12 @@ class JDWP {
         private ClassLoaderReference() {}  // hide constructor
 
         /**
-         * Returns a list of all classes which this class loader has 
-         * been requested to load. This class loader is considered to be 
-         * an <i>initiating</i> class loader for each class in the returned 
-         * list. The list contains each 
-         * reference type defined by this loader and any types for which 
+         * Returns a list of all classes which this class loader can find 
+         * by name via <code>ClassLoader::loadClass</code>, 
+         * <code>Class::forName</code> and bytecode linkage. That is, 
+         * all classes for which this class loader has been recorded as an 
+         * <i>initiating</i> loader. The list contains each 
+         * reference type created by this loader and any types for which 
          * loading was delegated by this class loader to another class loader. 
          * <p>
          * The visible class list has useful properties with respect to 
@@ -6804,6 +6908,8 @@ class JDWP {
          * this class loader must be resolved to that single type. 
          * <p>
          * No ordering of the returned list is guaranteed. 
+         * <p>
+         * See <a href="../jvmti.html#GetClassLoaderClasses">JVM TI GetClassLoaderClasses</a>. 
          */
         static class VisibleClasses {
             static final int COMMAND = 1;
@@ -7985,6 +8091,125 @@ class JDWP {
                 typeID = ps.readClassRef();
                 if (vm.traceReceives) {
                     vm.printReceiveTrace(4, "typeID(long): " + "ref="+typeID);
+                }
+            }
+        }
+    }
+
+    static class ModuleReference {
+        static final int COMMAND_SET = 18;
+        private ModuleReference() {}  // hide constructor
+
+        /**
+         * Returns the name of this module.
+         * <p>Since JDWP version 9.
+         */
+        static class Name {
+            static final int COMMAND = 1;
+
+            static Name process(VirtualMachineImpl vm, 
+                                ModuleReferenceImpl module)
+                                    throws JDWPException {
+                PacketStream ps = enqueueCommand(vm, module);
+                return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<Name> processAsync(VirtualMachineImpl vm, 
+                                ModuleReferenceImpl module) {
+                PacketStream ps = enqueueCommand(vm, module);
+                return ps.readReply(p -> new Name(vm, ps));
+            }
+
+            static PacketStream enqueueCommand(VirtualMachineImpl vm, 
+                                ModuleReferenceImpl module) {
+                PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
+                if ((vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
+                    vm.printTrace("Sending Command(id=" + ps.pkt.id + ") JDWP.ModuleReference.Name"+(ps.pkt.flags!=0?", FLAGS=" + ps.pkt.flags:""));
+                }
+                if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
+                    ps.vm.printTrace("Sending:                 module(ModuleReferenceImpl): " + (module==null?"NULL":"ref="+module.ref()));
+                }
+                ps.writeModuleRef(module.ref());
+                ps.send();
+                return ps;
+            }
+
+            static Name waitForReply(VirtualMachineImpl vm, PacketStream ps)
+                                    throws JDWPException {
+                ps.waitForReply();
+                return new Name(vm, ps);
+            }
+
+
+            /**
+             * The module's name.
+             */
+            final String name;
+
+            private Name(VirtualMachineImpl vm, PacketStream ps) {
+                if (vm.traceReceives) {
+                    vm.printTrace("Receiving Command(id=" + ps.pkt.id + ") JDWP.ModuleReference.Name"+(ps.pkt.flags!=0?", FLAGS=" + ps.pkt.flags:"")+(ps.pkt.errorCode!=0?", ERROR CODE=" + ps.pkt.errorCode:""));
+                }
+                name = ps.readString();
+                if (vm.traceReceives) {
+                    vm.printReceiveTrace(4, "name(String): " + name);
+                }
+            }
+        }
+
+        /**
+         * Returns the class loader of this module.
+         * <p>Since JDWP version 9.
+         */
+        static class ClassLoader {
+            static final int COMMAND = 2;
+
+            static ClassLoader process(VirtualMachineImpl vm, 
+                                ModuleReferenceImpl module)
+                                    throws JDWPException {
+                PacketStream ps = enqueueCommand(vm, module);
+                return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<ClassLoader> processAsync(VirtualMachineImpl vm, 
+                                ModuleReferenceImpl module) {
+                PacketStream ps = enqueueCommand(vm, module);
+                return ps.readReply(p -> new ClassLoader(vm, ps));
+            }
+
+            static PacketStream enqueueCommand(VirtualMachineImpl vm, 
+                                ModuleReferenceImpl module) {
+                PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
+                if ((vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
+                    vm.printTrace("Sending Command(id=" + ps.pkt.id + ") JDWP.ModuleReference.ClassLoader"+(ps.pkt.flags!=0?", FLAGS=" + ps.pkt.flags:""));
+                }
+                if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
+                    ps.vm.printTrace("Sending:                 module(ModuleReferenceImpl): " + (module==null?"NULL":"ref="+module.ref()));
+                }
+                ps.writeModuleRef(module.ref());
+                ps.send();
+                return ps;
+            }
+
+            static ClassLoader waitForReply(VirtualMachineImpl vm, PacketStream ps)
+                                    throws JDWPException {
+                ps.waitForReply();
+                return new ClassLoader(vm, ps);
+            }
+
+
+            /**
+             * The module's class loader.
+             */
+            final ClassLoaderReferenceImpl classLoader;
+
+            private ClassLoader(VirtualMachineImpl vm, PacketStream ps) {
+                if (vm.traceReceives) {
+                    vm.printTrace("Receiving Command(id=" + ps.pkt.id + ") JDWP.ModuleReference.ClassLoader"+(ps.pkt.flags!=0?", FLAGS=" + ps.pkt.flags:"")+(ps.pkt.errorCode!=0?", ERROR CODE=" + ps.pkt.errorCode:""));
+                }
+                classLoader = ps.readClassLoaderReference();
+                if (vm.traceReceives) {
+                    vm.printReceiveTrace(4, "classLoader(ClassLoaderReferenceImpl): " + (classLoader==null?"NULL":"ref="+classLoader.ref()));
                 }
             }
         }

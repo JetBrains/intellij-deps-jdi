@@ -511,10 +511,10 @@ class PacketStream {
         return vm.referenceType(ref, tag);
     }
 
-//    ModuleReferenceImpl readModule() {
-//        long ref = readModuleRef();
-//        return vm.moduleMirror(ref);
-//    }
+    ModuleReferenceImpl readModule() {
+        long ref = readModuleRef();
+        return vm.moduleMirror(ref);
+    }
 
     /**
      * Read method reference represented as vm specific byte sequence.

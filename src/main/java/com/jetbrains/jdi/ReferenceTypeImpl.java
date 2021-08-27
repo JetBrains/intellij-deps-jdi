@@ -47,7 +47,7 @@ import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-//import com.sun.jdi.ModuleReference;
+import com.sun.jdi.ModuleReference;
 
 public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceType {
     protected final long ref;
@@ -65,7 +65,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     private boolean isClassLoaderCached = false;
     private ClassLoaderReference classLoader = null;
     private ClassObjectReference classObject = null;
-//    private ModuleReference module = null;
+    private ModuleReference module = null;
 
     private int status = 0;
     private boolean isPrepared = false;
@@ -255,21 +255,21 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return classLoader;
     }
 
-//    public ModuleReference module() {
-//        if (module != null) {
-//            return module;
-//        }
-//        // Does not need synchronization, since worst-case
-//        // static info is fetched twice
-//        try {
-//            ModuleReferenceImpl m = JDWP.ReferenceType.Module.
-//                process(vm, this).module;
-//            module = vm.getModule(m.ref());
-//        } catch (JDWPException exc) {
-//            throw exc.toJDIException();
-//        }
-//        return module;
-//    }
+    public ModuleReference module() {
+        if (module != null) {
+            return module;
+        }
+        // Does not need synchronization, since worst-case
+        // static info is fetched twice
+        try {
+            ModuleReferenceImpl m = JDWP.ReferenceType.Module.
+                process(vm, this).module;
+            module = vm.getModule(m.ref());
+        } catch (JDWPException exc) {
+            throw exc.toJDIException();
+        }
+        return module;
+    }
 
     public boolean isPublic() {
         if (modifiers == -1)
