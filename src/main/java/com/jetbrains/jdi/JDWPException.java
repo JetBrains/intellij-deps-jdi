@@ -47,6 +47,8 @@ import com.sun.jdi.ObjectCollectedException;
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.VMOutOfMemoryException;
 
+import java.util.stream.IntStream;
+
 class JDWPException extends Exception {
 
     private static final long serialVersionUID = -6321344442751299874L;
@@ -95,10 +97,11 @@ class JDWPException extends Exception {
         }
     }
 
-    public static boolean isOfType(Throwable throwable, int type) {
+    public static boolean isOfType(Throwable throwable, int... types) {
         throwable = AsyncUtils.unwrap(throwable);
         if (throwable instanceof InternalException) {
-            return ((InternalException) throwable).errorCode() == type;
+            int errorCode = ((InternalException) throwable).errorCode();
+            return IntStream.of(types).anyMatch(t -> t == errorCode);
         }
         return false;
     }

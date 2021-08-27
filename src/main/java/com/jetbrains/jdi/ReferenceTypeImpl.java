@@ -132,6 +132,22 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         throw new IllegalArgumentException("Invalid method id: " + ref);
     }
 
+    CompletableFuture<Method> getMethodMirrorAsync(long ref) {
+        if (ref == 0) {
+            // obsolete method
+            return CompletableFuture.completedFuture(new ObsoleteMethodImpl(vm, this));
+        }
+        return methodsAsync().thenApply(methods -> {
+            for (Method value : methods) {
+                MethodImpl method = (MethodImpl) value;
+                if (method.ref() == ref) {
+                    return method;
+                }
+            }
+            throw new IllegalArgumentException("Invalid method id: " + ref);
+        });
+    }
+
     Field getFieldMirror(long ref) {
         // Fetch all fields for the class, check performance impact
         // Needs no synchronization now, since fields() returns

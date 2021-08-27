@@ -44,20 +44,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
-import com.sun.jdi.AbsentInformationException;
-import com.sun.jdi.ClassNotLoadedException;
-import com.sun.jdi.IncompatibleThreadStateException;
-import com.sun.jdi.InternalException;
-import com.sun.jdi.InvalidStackFrameException;
-import com.sun.jdi.InvalidTypeException;
-import com.sun.jdi.LocalVariable;
-import com.sun.jdi.Location;
-import com.sun.jdi.ObjectReference;
-import com.sun.jdi.StackFrame;
-import com.sun.jdi.ThreadReference;
-import com.sun.jdi.Value;
-import com.sun.jdi.VirtualMachine;
+import com.sun.jdi.*;
 
 public class StackFrameImpl extends MirrorImpl
                             implements StackFrame, ThreadListener
@@ -172,6 +161,33 @@ public class StackFrameImpl extends MirrorImpl
             }
         }
         return thisObject;
+    }
+
+    public CompletableFuture<ObjectReference> thisObjectAsync() {
+        validateStackFrame();
+        return ((LocationImpl) location).methodAsync().thenCompose(currentMethod -> {
+            if (currentMethod.isStatic() || currentMethod.isNative()) {
+                return CompletableFuture.completedFuture(null);
+            }
+            if (thisObject == null) {
+                /* protect against defunct frame id */
+                synchronized (vm.state()) {
+                    validateStackFrame();
+                    return JDWP.StackFrame.ThisObject.processAsync(vm, thread, id)
+                            .exceptionally(throwable -> {
+                                if (JDWPException.isOfType(throwable,
+                                        JDWP.Error.INVALID_FRAMEID,
+                                        JDWP.Error.THREAD_NOT_SUSPENDED,
+                                        JDWP.Error.INVALID_THREAD)) {
+                                    throw new InvalidStackFrameException();
+                                }
+                                throw (RuntimeException) throwable;
+                            })
+                            .thenApply(to -> thisObject = to.objectThis);
+                }
+            }
+            return CompletableFuture.completedFuture(thisObject);
+        });
     }
 
     /**
