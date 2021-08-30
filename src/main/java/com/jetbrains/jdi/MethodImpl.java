@@ -50,7 +50,7 @@ public abstract class MethodImpl extends TypeComponentImpl
     public static final int SKIP_ASSIGNABLE_CHECK = 1 << 10;
 
     private final JNITypeParser signatureParser;
-    private Boolean obsolete = null;
+    private volatile Boolean obsolete = null;
 
     abstract int argSlotCount() throws AbsentInformationException;
 
@@ -258,6 +258,13 @@ public abstract class MethodImpl extends TypeComponentImpl
             }
         }
         return obsolete;
+    }
+
+    public CompletableFuture<Boolean> isObsoleteAsync() {
+        if (obsolete == null) {
+            return JDWP.Method.IsObsolete.processAsync(vm, declaringType, ref).thenApply(r -> obsolete = r.isObsolete);
+        }
+        return CompletableFuture.completedFuture(obsolete);
     }
 
     /*
