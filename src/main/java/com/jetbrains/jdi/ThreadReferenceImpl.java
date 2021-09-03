@@ -581,34 +581,13 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
      * Private version of frames() allows "-1" to specify all
      * remaining frames.
      */
-    synchronized private List<StackFrame> privateFrames(int start, int length)
-                              throws IncompatibleThreadStateException  {
-
-        // Lock must be held while creating stack frames so if that two threads
-        // do this at the same time, one won't clobber the subset created by the other.
-        LocalCache snapshot = localCache;
-        try {
-            if (snapshot.frames == null || !isSubrange(snapshot, start, length)) {
-                JDWP.ThreadReference.Frames.Frame[] jdwpFrames
-                    = JDWP.ThreadReference.Frames.
-                    process(vm, this, start, length).frames;
-                int count = jdwpFrames.length;
-                snapshot.frames = new ArrayList<>(count);
-
-                for (JDWP.ThreadReference.Frames.Frame jdwpFrame : jdwpFrames) {
-                    if (jdwpFrame.location == null) {
-                        throw new InternalException("Invalid frame location");
-                    }
-                    StackFrame frame = new StackFrameImpl(vm, this,
-                            jdwpFrame.frameID,
-                            jdwpFrame.location);
-                    // Add to the frame list
-                    snapshot.frames.add(frame);
-                }
-                snapshot.framesStart = start;
-                snapshot.framesLength = length;
-                return Collections.unmodifiableList(snapshot.frames);
-            } else {
+    private List<StackFrame> privateFrames(int start, int length) throws IncompatibleThreadStateException {
+        LocalCache snapshot;
+        synchronized (this) {
+            // Lock must be held while creating stack frames so if that two threads
+            // do this at the same time, one won't clobber the subset created by the other.
+            snapshot = localCache;
+            if (snapshot.frames != null && isSubrange(snapshot, start, length)) {
                 int fromIndex = start - snapshot.framesStart;
                 int toIndex;
                 if (length == -1) {
@@ -618,13 +597,18 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
                 }
                 return Collections.unmodifiableList(snapshot.frames.subList(fromIndex, toIndex));
             }
+        }
+
+        try {
+            JDWP.ThreadReference.Frames jdwpFrames = JDWP.ThreadReference.Frames.process(vm, this, start, length);
+            return cacheFrames(start, length, snapshot, jdwpFrames);
         } catch (JDWPException exc) {
             switch (exc.errorCode()) {
-            case JDWP.Error.THREAD_NOT_SUSPENDED:
-            case JDWP.Error.INVALID_THREAD:   /* zombie */
-                throw new IncompatibleThreadStateException();
-            default:
-                throw exc.toJDIException();
+                case JDWP.Error.THREAD_NOT_SUSPENDED:
+                case JDWP.Error.INVALID_THREAD:   /* zombie */
+                    throw new IncompatibleThreadStateException();
+                default:
+                    throw exc.toJDIException();
             }
         }
     }
@@ -643,21 +627,7 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
                         }
                         throw (RuntimeException) throwable;
                     })
-                    .thenApply(jdwpFrames -> {
-                        synchronized (this) {
-                            snapshot.frames = Arrays.stream(jdwpFrames.frames)
-                                    .map(jdwpFrame -> {
-                                        if (jdwpFrame.location == null) {
-                                            throw new InternalException("Invalid frame location");
-                                        }
-                                        return new StackFrameImpl(vm, this, jdwpFrame.frameID, jdwpFrame.location);
-                                    })
-                                    .collect(Collectors.toList());
-                            snapshot.framesStart = start;
-                            snapshot.framesLength = length;
-                            return Collections.unmodifiableList(snapshot.frames);
-                        }
-                    });
+                    .thenApply(jdwpFrames -> cacheFrames(start, length, snapshot, jdwpFrames));
         } else {
             int fromIndex = start - snapshot.framesStart;
             int toIndex;
@@ -667,6 +637,22 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
                 toIndex = fromIndex + length;
             }
             return AsyncUtils.toCompletableFuture(() -> Collections.unmodifiableList(snapshot.frames.subList(fromIndex, toIndex)));
+        }
+    }
+
+    private List<StackFrame> cacheFrames(int start, int length, LocalCache snapshot, JDWP.ThreadReference.Frames jdwpFrames) {
+        synchronized (this) {
+            snapshot.frames = Arrays.stream(jdwpFrames.frames)
+                    .map(jdwpFrame -> {
+                        if (jdwpFrame.location == null) {
+                            throw new InternalException("Invalid frame location");
+                        }
+                        return new StackFrameImpl(vm, this, jdwpFrame.frameID, jdwpFrame.location);
+                    })
+                    .collect(Collectors.toList());
+            snapshot.framesStart = start;
+            snapshot.framesLength = length;
+            return Collections.unmodifiableList(snapshot.frames);
         }
     }
 
