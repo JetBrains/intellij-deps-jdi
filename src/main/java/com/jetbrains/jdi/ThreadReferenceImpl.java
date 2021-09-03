@@ -582,23 +582,11 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
      * remaining frames.
      */
     private List<StackFrame> privateFrames(int start, int length) throws IncompatibleThreadStateException {
-        LocalCache snapshot;
-        synchronized (this) {
-            // Lock must be held while creating stack frames so if that two threads
-            // do this at the same time, one won't clobber the subset created by the other.
-            snapshot = localCache;
-            if (snapshot.frames != null && isSubrange(snapshot, start, length)) {
-                int fromIndex = start - snapshot.framesStart;
-                int toIndex;
-                if (length == -1) {
-                    toIndex = snapshot.frames.size() - fromIndex;
-                } else {
-                    toIndex = fromIndex + length;
-                }
-                return Collections.unmodifiableList(snapshot.frames.subList(fromIndex, toIndex));
-            }
+        LocalCache snapshot = localCache;
+        List<StackFrame> frames = getCachedFrames(start, length, snapshot);
+        if (frames != null) {
+            return frames;
         }
-
         try {
             JDWP.ThreadReference.Frames jdwpFrames = JDWP.ThreadReference.Frames.process(vm, this, start, length);
             return cacheFrames(start, length, snapshot, jdwpFrames);
@@ -614,30 +602,39 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
     }
 
     synchronized private CompletableFuture<List<StackFrame>> privateFramesAsync(int start, int length) {
-        // Lock must be held while creating stack frames so if that two threads
-        // do this at the same time, one won't clobber the subset created by the other.
         LocalCache snapshot = localCache;
-        if (snapshot.frames == null || !isSubrange(snapshot, start, length)) {
-            return JDWP.ThreadReference.Frames.processAsync(vm, this, start, length)
-                    .exceptionally(throwable -> {
-                        throwable = AsyncUtils.unwrap(throwable);
-                        if (JDWPException.isOfType(throwable, JDWP.Error.THREAD_NOT_SUSPENDED) ||
-                                throwable instanceof IllegalThreadStateException) {
-                            throw new CompletionException(new IncompatibleThreadStateException());
-                        }
-                        throw (RuntimeException) throwable;
-                    })
-                    .thenApply(jdwpFrames -> cacheFrames(start, length, snapshot, jdwpFrames));
-        } else {
-            int fromIndex = start - snapshot.framesStart;
-            int toIndex;
-            if (length == -1) {
-                toIndex = snapshot.frames.size() - fromIndex;
-            } else {
-                toIndex = fromIndex + length;
-            }
-            return AsyncUtils.toCompletableFuture(() -> Collections.unmodifiableList(snapshot.frames.subList(fromIndex, toIndex)));
+        List<StackFrame> frames = getCachedFrames(start, length, snapshot);
+        if (frames != null) {
+            return CompletableFuture.completedFuture(frames);
         }
+        return JDWP.ThreadReference.Frames.processAsync(vm, this, start, length)
+                .exceptionally(throwable -> {
+                    throwable = AsyncUtils.unwrap(throwable);
+                    if (JDWPException.isOfType(throwable, JDWP.Error.THREAD_NOT_SUSPENDED) ||
+                            throwable instanceof IllegalThreadStateException) {
+                        throw new CompletionException(new IncompatibleThreadStateException());
+                    }
+                    throw (RuntimeException) throwable;
+                })
+                .thenApply(jdwpFrames -> cacheFrames(start, length, snapshot, jdwpFrames));
+    }
+
+    private List<StackFrame> getCachedFrames(int start, int length, LocalCache snapshot) {
+        synchronized (this) {
+            // Lock must be held while creating stack frames so if that two threads
+            // do this at the same time, one won't clobber the subset created by the other.
+            if (snapshot.frames != null && isSubrange(snapshot, start, length)) {
+                int fromIndex = start - snapshot.framesStart;
+                int toIndex;
+                if (length == -1) {
+                    toIndex = snapshot.frames.size() - fromIndex;
+                } else {
+                    toIndex = fromIndex + length;
+                }
+                return Collections.unmodifiableList(snapshot.frames.subList(fromIndex, toIndex));
+            }
+        }
+        return null;
     }
 
     private List<StackFrame> cacheFrames(int start, int length, LocalCache snapshot, JDWP.ThreadReference.Frames jdwpFrames) {
