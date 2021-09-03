@@ -105,7 +105,7 @@ public class EventQueueImpl extends MirrorImpl implements EventQueue {
             throw new IllegalArgumentException("Timeout cannot be negative");
         }
 
-        EventSetImpl eventSet;
+        EventSet eventSet;
         while (true) {
             EventSetImpl fullEventSet = removeUnfiltered(timeout);
             if (fullEventSet == null) {
@@ -126,10 +126,6 @@ public class EventQueueImpl extends MirrorImpl implements EventQueue {
 
         if ((eventSet != null) && (eventSet.suspendPolicy() == JDWP.SuspendPolicy.ALL)) {
             vm.notifySuspend();
-        }
-
-        if (eventSet != null) {
-            eventSet.applyExtendedState();
         }
 
         return eventSet;

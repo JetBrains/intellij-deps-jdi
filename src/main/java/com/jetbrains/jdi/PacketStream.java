@@ -84,9 +84,7 @@ class PacketStream {
             throw new InternalException("waitForReply without send");
         }
 
-        if (vm != null) {
-            vm.waitForTargetReply(pkt);
-        }
+        vm.waitForTargetReply(pkt);
 
         processError();
     }
@@ -665,10 +663,6 @@ class PacketStream {
     int skipBytes(int n) {
         inCursor += n;
         return n;
-    }
-
-    int available() {
-        return pkt.data.length - inCursor;
     }
 
     byte command() {

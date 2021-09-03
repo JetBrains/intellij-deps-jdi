@@ -82,7 +82,6 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
     private Packet pkt;
     private byte suspendPolicy;
     private EventSetImpl internalEventSet;
-    private ExtendedState extendedState = ExtendedState.EMPTY;
 
     public String toString() {
         String string = "event set, policy:" + suspendPolicy +
@@ -97,10 +96,6 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
         }
         string += "}";
         return string;
-    }
-
-    void applyExtendedState() {
-        extendedState.apply(this);
     }
 
     abstract class EventImpl extends MirrorImpl implements Event {
@@ -640,7 +635,6 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
         }
         PacketStream ps = new PacketStream(vm, pkt);
         JDWP.Event.Composite compEvt = new JDWP.Event.Composite(vm, ps);
-        extendedState = ExtendedState.read(ps);
         suspendPolicy = compEvt.suspendPolicy;
         if ((vm.traceFlags & VirtualMachine.TRACE_EVENTS) != 0) {
             switch(suspendPolicy) {
@@ -718,7 +712,7 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
     /**
      * Filter out internal events
      */
-    EventSetImpl userFilter() {
+    EventSet userFilter() {
         return this;
     }
 
@@ -928,59 +922,5 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
     }
     public void clear() {
         throw new UnsupportedOperationException();
-    }
-
-    private static class ExtendedState {
-        final int frameCount;
-        final JDWP.ThreadReference.Status status;
-        final String name;
-        final JDWP.ThreadReference.Frames.Frame frame0;
-
-        static final ExtendedState EMPTY = new ExtendedState(0, null, null, null) {
-            @Override
-            void apply(EventSetImpl eventSet) {
-            }
-        };
-
-        private ExtendedState(int frameCount,
-                              JDWP.ThreadReference.Status status,
-                              String name,
-                              JDWP.ThreadReference.Frames.Frame frame0) {
-            this.frameCount = frameCount;
-            this.status = status;
-            this.name = name;
-            this.frame0 = frame0;
-        }
-
-        static ExtendedState read(PacketStream ps) {
-            if (ps.available() > 0) {
-                try {
-                    ps.pkt.replied = true;
-                    return new ExtendedState(
-                            JDWP.ThreadReference.FrameCount.waitForReply(ps.vm, ps).frameCount,
-                            JDWP.ThreadReference.Status.waitForReply(ps.vm, ps),
-                            JDWP.ThreadReference.Name.waitForReply(ps.vm, ps).threadName,
-                            JDWP.ThreadReference.Frames.waitForReply(ps.vm, ps).frames[0]);
-                } catch (Exception ignored) {
-                }
-            }
-            return EMPTY;
-        }
-
-        void apply(EventSetImpl eventSet) {
-            for (Event e : eventSet) {
-                if (e instanceof LocatableEvent) {
-                    ThreadReference thread = ((LocatableEvent) e).thread();
-                    if (thread instanceof ThreadReferenceImpl) {
-                        ThreadReferenceImpl t = (ThreadReferenceImpl) thread;
-                        t.setFrameCount(frameCount);
-                        t.setStatus(status);
-                        t.setName(name);
-                        t.setFrame0(new StackFrameImpl(eventSet.vm, t, frame0.frameID, frame0.location));
-                        break; // only set for one thread (should be the same in all events in the set)
-                    }
-                }
-            }
-        }
     }
 }
