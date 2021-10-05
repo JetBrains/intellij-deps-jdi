@@ -114,20 +114,26 @@ class PacketStream {
     }
 
     <T> CompletableFuture<T> readReply(Function<Packet, T> reader) {
-        //TODO:  Packet processing have to be performed outside of the reader thread to avoid deadlocks
-//        return pkt.reply.thenApplyAsync(p -> {
-        return pkt.reply.thenApply(p -> {
-            if (!p.replied) {
-                throw new VMDisconnectedException();
-            }
-            try {
-                processError();
-            } catch (JDWPException e) {
-                throw e.toJDIException();
-            }
-            return reader.apply(p);
-        });
-//        }, vm.targetVM().asyncExecutor);
+        //Packet processing have to be performed outside of the reader thread to avoid deadlocks
+        //but not for request set/clear commands
+        if ((pkt.cmdSet == JDWP.EventRequest.COMMAND_SET &&
+                (pkt.cmd == JDWP.EventRequest.Set.COMMAND || pkt.cmd == JDWP.EventRequest.Clear.COMMAND))) {
+            // read reply on the reader thread to have request id set/cleared asap
+            return pkt.reply.thenApply(p -> processReply(reader, p));
+        }
+        return pkt.reply.thenApplyAsync(p -> processReply(reader, p), vm.targetVM().asyncExecutor);
+    }
+
+    private <T> T processReply(Function<Packet, T> reader, Packet p) {
+        if (!p.replied) {
+            throw new VMDisconnectedException();
+        }
+        try {
+            processError();
+        } catch (JDWPException e) {
+            throw e.toJDIException();
+        }
+        return reader.apply(p);
     }
 
     void writeBoolean(boolean data) {

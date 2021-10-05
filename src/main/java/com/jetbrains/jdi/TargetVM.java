@@ -77,12 +77,11 @@ public class TargetVM {
         this.connection = connection;
         this.readerThread = new ReaderThread();
 
-        asyncExecutor = null;
-//        asyncExecutor = Executors.newSingleThreadExecutor(r -> {
-//            Thread thread = new Thread(vm.threadGroupForJDI(), r, "JDI Target Async Processor");
-//            thread.setDaemon(true);
-//            return thread;
-//        });
+        asyncExecutor = Executors.newSingleThreadExecutor(r -> {
+            Thread thread = new Thread(vm.threadGroupForJDI(), r, "JDI Target Async Processor");
+            thread.setDaemon(true);
+            return thread;
+        });
     }
 
     void start() {
