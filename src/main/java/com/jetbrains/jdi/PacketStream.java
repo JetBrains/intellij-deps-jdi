@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -46,6 +46,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 class PacketStream {
     final VirtualMachineImpl vm;
@@ -234,7 +236,7 @@ class PacketStream {
     }
 
     void writeString(String string) {
-        byte[] stringBytes = string.getBytes(StandardCharsets.UTF_8);
+        byte[] stringBytes = string.getBytes(UTF_8);
         writeInt(stringBytes.length);
         writeByteArray(stringBytes);
     }
@@ -438,10 +440,8 @@ class PacketStream {
      * characters of the string.
      */
     String readString() {
-        String ret;
         int len = readInt();
-
-        ret = new String(pkt.data, inCursor, len, StandardCharsets.UTF_8);
+        String ret = new String(pkt.data, inCursor, len, UTF_8);
         inCursor += len;
         return ret;
     }
