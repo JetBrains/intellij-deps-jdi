@@ -52,8 +52,8 @@ public class Packet {
     // Note! flags, cmdSet, and cmd are all byte values.
     // We represent them as shorts to make them easier
     // to work with.
-    int id;
-    short flags;
+    final int id;
+    final short flags;
     short cmdSet;
     short cmd;
     short errorCode;
@@ -111,10 +111,11 @@ public class Packet {
         int b6 = b[6] & 0xff;
         int b7 = b[7] & 0xff;
 
-        Packet p = new Packet();
-        p.id = ((b4 << 24) | (b5 << 16) | (b6 << 8) | (b7 << 0));
+        int id = ((b4 << 24) | (b5 << 16) | (b6 << 8) | (b7 << 0));
 
-        p.flags = (short)(b[8] & 0xff);
+        short flags = (short)(b[8] & 0xff);
+
+        Packet p = new Packet(id, flags);
 
         if ((p.flags & Packet.Reply) == 0) {
             p.cmdSet = (short)(b[9] & 0xff);
@@ -130,9 +131,13 @@ public class Packet {
         return p;
     }
 
+    private Packet(int id, short flags) {
+        this.id = id;
+        this.flags = flags;
+    }
+
     Packet() {
-        id = uniqID();
-        flags = NoFlags;
+        this(uniqID(), NoFlags);
         data = nullData;
     }
 
