@@ -53,7 +53,7 @@ public class InterfaceTypeImpl extends InvokableTypeImpl
                                      implements InterfaceType {
 
     private static class IResult implements InvocationResult {
-        final private JDWP.InterfaceType.InvokeMethod rslt;
+        private final JDWP.InterfaceType.InvokeMethod rslt;
 
         public IResult(JDWP.InterfaceType.InvokeMethod rslt) {
             this.rslt = rslt;

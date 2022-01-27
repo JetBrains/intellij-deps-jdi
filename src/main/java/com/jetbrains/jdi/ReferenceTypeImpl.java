@@ -666,7 +666,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return list;
     }
 
-    abstract public List<Method> allMethods();
+    public abstract List<Method> allMethods();
 
     public CompletableFuture<List<Method>> allMethodsAsync() {
         List<Method> methodList = Collections.synchronizedList(new ArrayList<>());

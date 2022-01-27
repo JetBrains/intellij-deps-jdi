@@ -578,7 +578,7 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
         }
     }
 
-    synchronized private CompletableFuture<List<StackFrame>> privateFramesAsync(int start, int length) {
+    private synchronized CompletableFuture<List<StackFrame>> privateFramesAsync(int start, int length) {
         LocalCache snapshot = localCache;
         List<StackFrame> frames = getCachedFrames(start, length, snapshot);
         if (frames != null) {

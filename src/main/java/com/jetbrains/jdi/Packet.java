@@ -42,12 +42,12 @@ import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 public class Packet {
-    public final static short NoFlags = 0x0;
-    public final static short Reply = 0x80;
-    public final static short ReplyNoError = 0x0;
+    public static final short NoFlags = 0x0;
+    public static final short Reply = 0x80;
+    public static final short ReplyNoError = 0x0;
 
     static int uID = 1;
-    final static byte[] nullData = new byte[0];
+    static final byte[] nullData = new byte[0];
 
     // Note! flags, cmdSet, and cmd are all byte values.
     // We represent them as shorts to make them easier
@@ -136,7 +136,7 @@ public class Packet {
         data = nullData;
     }
 
-    static synchronized private int uniqID() {
+    private static synchronized int uniqID() {
         /*
          * JDWP spec does not require this id to be sequential and
          * increasing, but our implementation does. See
