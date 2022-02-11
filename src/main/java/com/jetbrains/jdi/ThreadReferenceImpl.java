@@ -580,9 +580,13 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
 
     private synchronized CompletableFuture<List<StackFrame>> privateFramesAsync(int start, int length) {
         LocalCache snapshot = localCache;
-        List<StackFrame> frames = getCachedFrames(start, length, snapshot);
-        if (frames != null) {
-            return CompletableFuture.completedFuture(frames);
+        try {
+            List<StackFrame> frames = getCachedFrames(start, length, snapshot);
+            if (frames != null) {
+                return CompletableFuture.completedFuture(frames);
+            }
+        } catch (Exception e) {
+            return CompletableFuture.failedFuture(e);
         }
         return JDWP.ThreadReference.Frames.processAsync(vm, this, start, length)
                 .exceptionally(throwable -> {
