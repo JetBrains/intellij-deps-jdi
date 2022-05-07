@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -517,6 +517,12 @@ public class StackFrameImpl extends MirrorImpl
             JDWP.StackFrame.PopFrames.waitForReply(vm, stream);
         } catch (JDWPException exc) {
             switch (exc.errorCode()) {
+            case JDWP.Error.OPAQUE_FRAME:
+                if (thread.isVirtual()) {
+                    throw new OpaqueFrameException();  // can only happen with virtual threads
+                } else {
+                    throw new NativeMethodException(); // can only happen with platform threads
+                }
             case JDWP.Error.THREAD_NOT_SUSPENDED:
                 throw new IncompatibleThreadStateException(
                          "Thread not current or suspended");

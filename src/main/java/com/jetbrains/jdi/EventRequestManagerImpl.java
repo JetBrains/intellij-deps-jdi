@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -379,6 +379,17 @@ public class EventRequestManagerImpl extends MirrorImpl
         }
     }
 
+    abstract class ThreadLifecycleEventRequestImpl extends ThreadVisibleEventRequestImpl {
+        public synchronized void addPlatformThreadsOnlyFilter() {
+            if (isEnabled() || deleted) {
+                throw invalidState();
+            }
+            if (vm.mayCreateVirtualThreads()) {
+                filters.add(JDWP.EventRequest.Set.Modifier.PlatformThreadsOnly.create());
+            }
+        }
+    }
+
     abstract class ClassVisibleEventRequestImpl
                                   extends ThreadVisibleEventRequestImpl {
         public synchronized void addClassFilter(ReferenceType clazz) {
@@ -728,7 +739,7 @@ public class EventRequestManagerImpl extends MirrorImpl
         }
     }
 
-    class ThreadDeathRequestImpl extends ThreadVisibleEventRequestImpl
+    class ThreadDeathRequestImpl extends ThreadLifecycleEventRequestImpl
                                  implements ThreadDeathRequest {
         ThreadDeathRequestImpl() {
             requestList().add(this);
@@ -743,7 +754,7 @@ public class EventRequestManagerImpl extends MirrorImpl
         }
     }
 
-    class ThreadStartRequestImpl extends ThreadVisibleEventRequestImpl
+    class ThreadStartRequestImpl extends ThreadLifecycleEventRequestImpl
                                  implements ThreadStartRequest {
         ThreadStartRequestImpl() {
             requestList().add(this);
