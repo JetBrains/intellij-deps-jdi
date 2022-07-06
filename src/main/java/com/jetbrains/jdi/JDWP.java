@@ -306,13 +306,18 @@ class JDWP {
         }
 
         /**
-         * Returns all threads currently running in the target VM . 
-         * The returned list contains threads created through 
-         * java.lang.Thread, all native threads attached to 
-         * the target VM through JNI, and system threads created 
-         * by the target VM. Threads that have not yet been started 
-         * and threads that have completed their execution are not 
-         * included in the returned list. 
+         * Returns the live threads in the target VM. Threads that have not yet 
+         * started or threads that have terminated are not included in the list.
+         * <p>
+         * The returned list contains a threadID for each live 
+         * <a href=../../api/java.base/java/lang/Thread.html#platform-threads>platform thread</a> 
+         * in the target VM. This includes platform threads created with the Thread 
+         * API and and all native threads attached to the target VM with JNI code.
+         * <p>
+         * It is implementation dependent if the list contains threadIDs for live 
+         * <a href=../../api/java.base/java/lang/Thread.html#virtual-threads>virtual threads</a> 
+         * in the target VM. The target VM may not return threadIDs for virtual threads, 
+         * or it may be configured to return a threadID for some or all virtual threads.
          */
         static class AllThreads {
             static final int COMMAND = 4;
@@ -434,9 +439,9 @@ class JDWP {
          * <ul>
          * <li>All event requests are cancelled. 
          * <li>All threads suspended by the thread-level 
-         * <a href="#JDWP_ThreadReference_Resume">resume</a> command 
+         * <a href="#JDWP_ThreadReference_Suspend">suspend</a> command 
          * or the VM-level 
-         * <a href="#JDWP_VirtualMachine_Resume">resume</a> command 
+         * <a href="#JDWP_VirtualMachine_Suspend">suspend</a> command 
          * are resumed as many times as necessary for them to run. 
          * <li>Garbage collection is re-enabled in all cases where it was 
          * <a href="#JDWP_ObjectReference_DisableCollection">disabled</a> 
@@ -6132,6 +6137,11 @@ class JDWP {
 
         /**
          * Stops the thread with an asynchronous exception. 
+         * <p>
+         * The target VM may not support, or may only provide limited support, for 
+         * this command when the thread is a virtual thread. It may, for example, 
+         * only support this command when the virtual thread is suspended at a 
+         * breakpoint or singlestep event.
          */
         static class Stop {
             static final int COMMAND = 10;
@@ -6401,6 +6411,11 @@ class JDWP {
          * command and resumption of thread execution, the 
          * state of the stack is undefined. 
          * <p>
+         * The target VM may not support, or may only provide limited support, for 
+         * this command when the thread is a virtual thread. It may, for example, 
+         * only support this command when the virtual thread is suspended at a 
+         * breakpoint or singlestep event.
+         * <p>
          * No further instructions are executed in the called 
          * method. Specifically, finally blocks are not executed. Note: 
          * this can cause inconsistent states in the application. 
@@ -6477,8 +6492,72 @@ class JDWP {
                 }
             }
         }
+
+        /**
+         * <b>IsVirtual is a preview API of the Java platform.</b> 
+         * <em>Preview features may be removed in a future release, or upgraded to 
+         * permanent features of the Java platform.</em> Since JDWP version 19.
+         * <p>
+         * Determine if a thread is a 
+         * <a href=../../api/java.base/java/lang/Thread.html#virtual-threads>virtual thread</a>.
+         */
+        static class IsVirtual {
+            static final int COMMAND = 15;
+
+            static IsVirtual process(VirtualMachineImpl vm, 
+                                ThreadReferenceImpl thread)
+                                    throws JDWPException {
+                PacketStream ps = enqueueCommand(vm, thread);
+                return waitForReply(vm, ps);
+            }
+
+            static CompletableFuture<IsVirtual> processAsync(VirtualMachineImpl vm, 
+                                ThreadReferenceImpl thread) {
+                PacketStream ps = enqueueCommand(vm, thread);
+                return ps.readReply(p -> new IsVirtual(vm, ps));
+            }
+
+            static PacketStream enqueueCommand(VirtualMachineImpl vm, 
+                                ThreadReferenceImpl thread) {
+                PacketStream ps = new PacketStream(vm, COMMAND_SET, COMMAND);
+                if ((vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
+                    vm.printTrace("Sending Command(id=" + ps.pkt.id + ") JDWP.ThreadReference.IsVirtual"+(ps.pkt.flags!=0?", FLAGS=" + ps.pkt.flags:""));
+                }
+                if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {
+                    ps.vm.printTrace("Sending:                 thread(ThreadReferenceImpl): " + (thread==null?"NULL":"ref="+thread.ref()));
+                }
+                ps.writeObjectRef(thread.ref());
+                ps.send();
+                return ps;
+            }
+
+            static IsVirtual waitForReply(VirtualMachineImpl vm, PacketStream ps)
+                                    throws JDWPException {
+                ps.waitForReply();
+                return new IsVirtual(vm, ps);
+            }
+
+
+            /**
+             * true if the thread is a virtual thread.
+             */
+            final boolean isVirtual;
+
+            private IsVirtual(VirtualMachineImpl vm, PacketStream ps) {
+                if (vm.traceReceives) {
+                    vm.printTrace("Receiving Command(id=" + ps.pkt.id + ") JDWP.ThreadReference.IsVirtual"+(ps.pkt.flags!=0?", FLAGS=" + ps.pkt.flags:"")+(ps.pkt.errorCode!=0?", ERROR CODE=" + ps.pkt.errorCode:""));
+                }
+                isVirtual = ps.readBoolean();
+                if (vm.traceReceives) {
+                    vm.printReceiveTrace(4, "isVirtual(boolean): " + isVirtual);
+                }
+            }
+        }
     }
 
+    /**
+     * See <a href=../../api/java.base/java/lang/ThreadGroup.html>java.lang.ThreadGroup</a>.
+     */
     static class ThreadGroupReference {
         static final int COMMAND_SET = 12;
         private ThreadGroupReference() {}  // hide constructor
@@ -6598,12 +6677,10 @@ class JDWP {
         }
 
         /**
-         * Returns the live threads and active thread groups directly contained 
-         * in this thread group. Threads and thread groups in child 
-         * thread groups are not included. 
-         * A thread is alive if it has been started and has not yet been stopped. 
-         * See <a href=../../api/java.base/java/lang/ThreadGroup.html>java.lang.ThreadGroup </a>
-         * for information about active ThreadGroups.
+         * Returns the live platform threads and the thread groups directly 
+         * contained in this thread group. Virtual threads are not included. 
+         * Threads and thread groups in child thread groups are not included. 
+         * A thread is alive if it has been started and has not yet terminated.
          */
         static class Children {
             static final int COMMAND = 3;
@@ -7493,6 +7570,27 @@ class JDWP {
                         ps.writeString(sourceNamePattern);
                     }
                 }
+
+                /**
+                 * <b>PlatformThreadsOnly is a preview API of the Java platform.</b> 
+                 * <em>Preview features may be removed in a future release, or upgraded to 
+                 * permanent features of the Java platform.</em> Since JDWP version 19.
+                 * <p>
+                 * For thread start and thread end events, restrict the 
+                 * events so they are only sent for platform threads.
+                 */
+                static class PlatformThreadsOnly extends ModifierCommon {
+                    static final byte ALT_ID = 13;
+                    static Modifier create() {
+                        return new Modifier(ALT_ID, new PlatformThreadsOnly());
+                    }
+
+                    PlatformThreadsOnly() {
+                    }
+
+                    void write(PacketStream ps) {
+                    }
+                }
             }
 
             static Set process(VirtualMachineImpl vm, 
@@ -7802,6 +7900,11 @@ class JDWP {
          * determine the correct local variable index. (Typically, this
          * index can be determined for method arguments from the method 
          * signature without access to the local variable table information.) 
+         * <p>
+         * If the thread is a virtual thread then this command can be used to set 
+         * the value of local variables in the top-most frame when the thread is 
+         * suspended at a breakpoint or single step event. The target VM may support 
+         * setting local variables in other cases.
          */
         static class SetValues {
             static final int COMMAND = 2;
@@ -7969,6 +8072,11 @@ class JDWP {
          * are added back and if the invoke was not <code>invokestatic</code>, 
          * <code>objectref</code> is added back as well. The Java virtual machine 
          * program counter is restored to the opcode of the invoke instruction.
+         * <p>
+         * The target VM may not support, or may only provide limited support, for this 
+         * command when the thread is a virtual thread. It may, for example, only support 
+         * this command when the virtual thread is suspended at a breakpoint or singlestep 
+         * event.
          * <p>
          * Since JDWP version 1.4. Requires canPopFrames capability - see 
          * <a href="#JDWP_VirtualMachine_CapabilitiesNew">CapabilitiesNew</a>.
