@@ -519,7 +519,8 @@ public class StackFrameImpl extends MirrorImpl
             switch (exc.errorCode()) {
             case JDWP.Error.OPAQUE_FRAME:
                 if (thread.isVirtual()) {
-                    throw new OpaqueFrameException();  // can only happen with virtual threads
+                    throw new InvalidStackFrameException("Opaque frame");
+//                    throw new OpaqueFrameException();  // can only happen with virtual threads
                 } else {
                     throw new NativeMethodException(); // can only happen with platform threads
                 }

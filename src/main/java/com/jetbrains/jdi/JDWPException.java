@@ -44,7 +44,7 @@ import com.sun.jdi.InternalException;
 import com.sun.jdi.InvalidModuleException;
 import com.sun.jdi.InvalidStackFrameException;
 import com.sun.jdi.ObjectCollectedException;
-import com.sun.jdi.OpaqueFrameException;
+//import com.sun.jdi.OpaqueFrameException;
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.VMOutOfMemoryException;
 
@@ -90,7 +90,8 @@ class JDWPException extends Exception {
             case JDWP.Error.INVALID_THREAD:
                 return new IllegalThreadStateException();
             case JDWP.Error.OPAQUE_FRAME:
-                return new OpaqueFrameException();
+                return new InvalidStackFrameException("Opaque frame");
+//                return new OpaqueFrameException();
             default:
                 InternalException internalException = new InternalException("Unexpected JDWP Error: " + errorCode, errorCode);
                 if (errorCode == JDWP.Error.INTERNAL) {
