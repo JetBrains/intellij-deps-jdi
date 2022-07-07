@@ -352,7 +352,7 @@ public class VirtualMachineImpl extends MirrorImpl
         }
         return res.thenApply(unused -> {
             synchronized (this) {
-                return Collections.unmodifiableList(new ArrayList<>(typesByID.values()));
+                return List.copyOf(typesByID.values());
             }
         });
     }
@@ -1179,7 +1179,6 @@ public class VirtualMachineImpl extends MirrorImpl
         synchronized (this) {
             if (!retrievedAllTypes) {
                 // Number of classes
-                int count = cinfos.length;
                 for (JDWP.VirtualMachine.AllClassesWithGeneric.ClassInfo ci : cinfos) {
                     ReferenceTypeImpl type = referenceType(ci.typeID,
                             ci.refTypeTag,

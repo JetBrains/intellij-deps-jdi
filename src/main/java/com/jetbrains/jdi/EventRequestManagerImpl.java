@@ -1067,7 +1067,7 @@ public class EventRequestManagerImpl extends MirrorImpl
     List<? extends EventRequest> unmodifiableRequestList(int eventCmd) {
         // No need of explicit synchronization for requestList here.
         // It is taken care internally by SynchronizedList class.
-        return Collections.unmodifiableList(new ArrayList<>(requestList(eventCmd)));
+        return List.copyOf(requestList(eventCmd));
     }
 
     EventRequest request(int eventCmd, int requestId) {

@@ -417,7 +417,7 @@ abstract class ConnectorImpl implements Connector {
                              String value,
                              boolean mustSpecify, List<String> choices) {
             super(name, label, description, value, mustSpecify);
-            this.choices = Collections.unmodifiableList(new ArrayList<>(choices));
+            this.choices = List.copyOf(choices);
         }
 
         /**
