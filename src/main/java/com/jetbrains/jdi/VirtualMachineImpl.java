@@ -53,6 +53,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import com.sun.jdi.ModuleReference;
 
@@ -1077,13 +1078,10 @@ public class VirtualMachineImpl extends MirrorImpl
         } catch (JDWPException exc) {
             throw exc.toJDIException();
         }
-        ArrayList<ModuleReference> modules = new ArrayList<>();
-        for (int i = 0; i < reqModules.length; i++) {
-            long moduleRef = reqModules[i].ref();
-            ModuleReference module = getModule(moduleRef);
-            modules.add(module);
-        }
-        return modules;
+        return Arrays.stream(reqModules)
+                .map(ObjectReferenceImpl::ref)
+                .map(this::getModule)
+                .collect(Collectors.toList());
     }
 
     private List<ReferenceType> retrieveClassesBySignature(String signature) {
