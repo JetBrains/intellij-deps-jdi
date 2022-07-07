@@ -319,13 +319,11 @@ public class VirtualMachineImpl extends MirrorImpl
 
     List<ReferenceType> classesBySignature(String signature) {
         validateVM();
-        List<ReferenceType> list;
         if (retrievedAllTypes) {
-            list = findReferenceTypes(signature);
+            return findReferenceTypes(signature);
         } else {
-            list = retrieveClassesBySignature(signature);
+            return Collections.unmodifiableList(retrieveClassesBySignature(signature));
         }
-        return Collections.unmodifiableList(list);
     }
 
     public List<ReferenceType> allClasses() {
@@ -938,8 +936,9 @@ public class VirtualMachineImpl extends MirrorImpl
          * and then remove all obsolete
          */
 
-        List<ReferenceType> toRemove = new ArrayList<>(findReferenceTypes(signature));
+        List<ReferenceType> toRemove = findReferenceTypes(signature);
         if (toRemove.size() > 1) {
+            toRemove = new ArrayList<>(toRemove);
             // no synchronization while waiting for retrieveClassesBySignature
             toRemove.removeAll(retrieveClassesBySignature(signature));
         }
@@ -966,7 +965,7 @@ public class VirtualMachineImpl extends MirrorImpl
 
     private synchronized List<ReferenceType> findReferenceTypes(String signature) {
         List<ReferenceType> res = typesBySignature.get(signature);
-        return res != null ? res : Collections.emptyList();
+        return res != null ? List.copyOf(res) : List.of();
     }
 
     ReferenceTypeImpl referenceType(long ref, byte tag) {
