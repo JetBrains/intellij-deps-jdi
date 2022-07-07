@@ -379,7 +379,7 @@ public class EventRequestManagerImpl extends MirrorImpl
         }
     }
 
-    abstract class ThreadLifecycleEventRequestImpl extends ThreadVisibleEventRequestImpl {
+    public abstract class ThreadLifecycleEventRequestImpl extends ThreadVisibleEventRequestImpl {
         public synchronized void addPlatformThreadsOnlyFilter() {
             if (isEnabled() || deleted) {
                 throw invalidState();
