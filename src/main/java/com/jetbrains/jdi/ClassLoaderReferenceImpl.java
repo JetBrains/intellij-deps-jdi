@@ -65,6 +65,12 @@ public class ClassLoaderReferenceImpl extends ObjectReferenceImpl
         vm.state().addListener(this);
     }
 
+    // marker object
+    static final ClassLoaderReferenceImpl NULL = new ClassLoaderReferenceImpl();
+    private ClassLoaderReferenceImpl() {
+        super(null, -1);
+    }
+
     protected String description() {
         return "ClassLoaderReference " + uniqueID();
     }

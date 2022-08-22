@@ -62,7 +62,6 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     private volatile SoftReference<List<Method>> methodsRef = null;
     private volatile SoftReference<SDE> sdeRef = null;
 
-    private boolean isClassLoaderCached = false;
     private ClassLoaderReference classLoader = null;
     private ClassObjectReference classObject = null;
     private ModuleReference module = null;
@@ -242,18 +241,18 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     }
 
     public ClassLoaderReference classLoader() {
-        if (!isClassLoaderCached) {
+        if (classLoader == null) {
             // Does not need synchronization, since worst-case
             // static info is fetched twice
             try {
-                classLoader = JDWP.ReferenceType.ClassLoader.
-                    process(vm, this).classLoader;
-                isClassLoaderCached = true;
+                ClassLoaderReferenceImpl res = JDWP.ReferenceType.ClassLoader.process(vm, this).classLoader;
+                classLoader = notnullize(res, ClassLoaderReferenceImpl.NULL);
+                return res;
             } catch (JDWPException exc) {
                 throw exc.toJDIException();
             }
         }
-        return classLoader;
+        return nullize(classLoader, ClassLoaderReferenceImpl.NULL);
     }
 
     public ModuleReference module() {
@@ -1526,4 +1525,11 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         }
     }
 
+    static <T> T notnullize(T value, T defaultValue) {
+        return value != null ? value : defaultValue;
+    }
+
+    static <T> T nullize(T value, T defaultValue) {
+        return value != defaultValue ? value : null;
+    }
 }

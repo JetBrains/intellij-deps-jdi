@@ -76,7 +76,6 @@ public class ClassTypeImpl extends InvokableTypeImpl
         }
     }
 
-    private volatile boolean cachedSuperclass = false;
     private volatile ClassType superclass = null;
     private volatile InterfaceType[] interfaces = null;
 
@@ -84,8 +83,11 @@ public class ClassTypeImpl extends InvokableTypeImpl
         super(aVm, aRef);
     }
 
+    // marker object
+    private static final ClassTypeImpl NULL = new ClassTypeImpl(null, -1);
+
     public ClassType superclass() {
-        if (!cachedSuperclass)  {
+        if (superclass == null) {
             ClassTypeImpl sup;
             try {
                 sup = JDWP.ClassType.Superclass.
@@ -96,28 +98,22 @@ public class ClassTypeImpl extends InvokableTypeImpl
 
             /*
              * If there is a superclass, cache its
-             * ClassType here. Otherwise,
-             * leave the cache reference null.
+             * ClassType here.
              */
-            if (sup != null) {
-                superclass = sup;
-            }
-            cachedSuperclass = true;
+            superclass = notnullize(sup, NULL);
+            return sup;
         }
 
-        return superclass;
+        return nullize(superclass, NULL);
     }
 
     public CompletableFuture<ClassType> superclassAsync() {
-        if (cachedSuperclass) {
-            return CompletableFuture.completedFuture(superclass);
+        if (superclass != null) {
+            return CompletableFuture.completedFuture(nullize(superclass, NULL));
         }
         return JDWP.ClassType.Superclass.processAsync(vm, this).thenApply(s -> {
             ClassTypeImpl sup = s.superclass;
-            if (sup != null) {
-                superclass = sup;
-            }
-            cachedSuperclass = true;
+            superclass = notnullize(sup, NULL);
             return sup;
         });
     }
