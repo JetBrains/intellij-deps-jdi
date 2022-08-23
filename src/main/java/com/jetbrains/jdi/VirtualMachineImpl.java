@@ -93,7 +93,7 @@ public class VirtualMachineImpl extends MirrorImpl
     // tested unsynchronized (since once true, it stays true), but must
     // be set synchronously
     private final Map<Long, ReferenceType> typesByID = new LinkedHashMap<>(300);
-    private final Map<String, List<ReferenceType>> typesBySignature = new HashMap<>(300);
+    private final Map<String, Object> typesBySignature = new HashMap<>(300);
     private volatile boolean retrievedAllTypes = false;
 
     private Map<Long, ModuleReference> modulesByID;
@@ -927,7 +927,16 @@ public class VirtualMachineImpl extends MirrorImpl
     }
 
     synchronized void cacheTypeBySignature(ReferenceTypeImpl type, String signature) {
-        typesBySignature.computeIfAbsent(signature, s -> new ArrayList<>(1)).add(type);
+        typesBySignature.merge(signature, type, (oldValue, newValue) -> {
+            if (oldValue instanceof ReferenceType[]) {
+                ReferenceType[] oldArray = (ReferenceType[]) oldValue;
+                ReferenceType[] newArray = Arrays.copyOf(oldArray, oldArray.length + 1);
+                newArray[oldArray.length] = (ReferenceTypeImpl) newValue;
+                return newArray;
+            }
+            assert oldValue instanceof ReferenceType;
+            return new ReferenceType[]{(ReferenceType) oldValue, (ReferenceType) newValue};
+        });
     }
 
     void removeReferenceType(String signature) {
@@ -947,26 +956,37 @@ public class VirtualMachineImpl extends MirrorImpl
     }
 
     private synchronized void removeReferenceTypes(String signature, List<ReferenceType> toRemove) {
-        List<ReferenceType> referenceTypes = typesBySignature.get(signature);
-        if (referenceTypes != null) {
-            for (ReferenceType t : toRemove) {
-                ReferenceTypeImpl type = (ReferenceTypeImpl) t;
-                referenceTypes.remove(t);
-                typesByID.remove(type.ref());
-                state.referenceTypeRemoved(type);
-                if ((vm.traceFlags & VirtualMachine.TRACE_REFTYPES) != 0) {
-                    vm.printTrace("Uncaching ReferenceType, sig=" + signature + ", id=" + type.ref());
-                }
+        List<ReferenceType> referenceTypes = new ArrayList<>(findReferenceTypes(signature));
+        for (ReferenceType t : toRemove) {
+            ReferenceTypeImpl type = (ReferenceTypeImpl) t;
+            referenceTypes.remove(t);
+            typesByID.remove(type.ref());
+            state.referenceTypeRemoved(type);
+            if ((vm.traceFlags & VirtualMachine.TRACE_REFTYPES) != 0) {
+                vm.printTrace("Uncaching ReferenceType, sig=" + signature + ", id=" + type.ref());
             }
-            if (referenceTypes.isEmpty()) {
+        }
+        switch (referenceTypes.size()) {
+            case 0:
                 typesBySignature.remove(signature);
-            }
+                break;
+            case 1:
+                typesBySignature.put(signature, referenceTypes.get(0));
+                break;
+            default:
+                typesBySignature.put(signature, referenceTypes.toArray());
         }
     }
 
     private synchronized List<ReferenceType> findReferenceTypes(String signature) {
-        List<ReferenceType> res = typesBySignature.get(signature);
-        return res != null ? List.copyOf(res) : List.of();
+        Object res = typesBySignature.get(signature);
+        if (res instanceof ReferenceType) {
+            return List.of((ReferenceType) res);
+        } else if (res instanceof ReferenceType[]) {
+            return List.of((ReferenceType[]) res);
+        }
+        assert res == null;
+        return List.of();
     }
 
     ReferenceTypeImpl referenceType(long ref, byte tag) {
