@@ -39,6 +39,7 @@
 package com.jetbrains.jdi;
 
 import java.io.IOException;
+import java.lang.reflect.InaccessibleObjectException;
 import java.util.Map;
 
 import com.sun.jdi.VirtualMachine;
@@ -71,7 +72,8 @@ public class RawCommandLineLauncher extends AbstractLauncher {
         try {
             transportService = SharedMemoryAttachingConnector.createSharedMemoryTransportService();
             transport = () -> "dt_shmem";
-        } catch (ReflectiveOperationException x) {
+        } catch (ReflectiveOperationException | InaccessibleObjectException x) {
+            x.printStackTrace();
         }
 
         if (transportService == null) {

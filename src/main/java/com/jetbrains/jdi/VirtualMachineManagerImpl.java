@@ -39,6 +39,7 @@
 package com.jetbrains.jdi;
 
 import java.io.IOException;
+import java.lang.reflect.InaccessibleObjectException;
 import java.util.*;
 
 import com.sun.jdi.JDIPermission;
@@ -114,8 +115,8 @@ public class VirtualMachineManagerImpl implements VirtualMachineManagerService {
             try {
                 addConnector(new SharedMemoryListeningConnector());
                 addConnector(new SharedMemoryAttachingConnector());
-            } catch (ReflectiveOperationException e) {
-                e.printStackTrace();
+            } catch (ReflectiveOperationException | InaccessibleObjectException x) {
+                x.printStackTrace();
             }
         }
 

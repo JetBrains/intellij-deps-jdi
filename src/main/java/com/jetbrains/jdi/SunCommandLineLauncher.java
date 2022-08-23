@@ -40,6 +40,7 @@ package com.jetbrains.jdi;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InaccessibleObjectException;
 import java.util.Map;
 import java.util.Random;
 
@@ -84,7 +85,8 @@ public class SunCommandLineLauncher extends AbstractLauncher {
             transportService = SharedMemoryAttachingConnector.createSharedMemoryTransportService();
             transport = () -> "dt_shmem";
             usingSharedMemory = true;
-        } catch (ReflectiveOperationException x) {
+        } catch (ReflectiveOperationException | InaccessibleObjectException x) {
+            x.printStackTrace();
         }
         if (transportService == null) {
             transportService = new SocketTransportService();
