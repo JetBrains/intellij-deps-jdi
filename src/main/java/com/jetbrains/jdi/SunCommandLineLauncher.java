@@ -85,7 +85,8 @@ public class SunCommandLineLauncher extends AbstractLauncher {
             transportService = SharedMemoryAttachingConnector.createSharedMemoryTransportService();
             transport = () -> "dt_shmem";
             usingSharedMemory = true;
-        } catch (ReflectiveOperationException | InaccessibleObjectException x) {
+        } catch (ClassNotFoundException ignored) {
+        } catch (Exception x) {
             x.printStackTrace();
         }
         if (transportService == null) {

@@ -72,7 +72,8 @@ public class RawCommandLineLauncher extends AbstractLauncher {
         try {
             transportService = SharedMemoryAttachingConnector.createSharedMemoryTransportService();
             transport = () -> "dt_shmem";
-        } catch (ReflectiveOperationException | InaccessibleObjectException x) {
+        } catch (ClassNotFoundException ignored) {
+        } catch (Exception x) {
             x.printStackTrace();
         }
 
