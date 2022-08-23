@@ -218,8 +218,13 @@ public class SunCommandLineLauncher extends AbstractLauncher {
 
             String xrun = "transport=" + transport().name() +
                           ",address=" + address +
-                          ",suspend=" + (wait? 'y' : 'n') +
-                          ",includevirtualthreads=" + includeVThreads;
+                          ",suspend=" + (wait? 'y' : 'n');
+
+            // only add includevirtualthreads if not default
+            if (!defaultArguments.get(ARG_VM_INCLUDE_VTHREADS).value().equals(includeVThreads)) {
+                xrun += ",includevirtualthreads=" + includeVThreads;
+            }
+
             // Quote only if necessary in case the quote arg value is bogus
             if (hasWhitespace(xrun)) {
                 xrun = quote + xrun + quote;
