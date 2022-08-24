@@ -273,6 +273,7 @@ public class ConcreteMethodImpl extends MethodImpl {
         return getVariables().stream().filter(v -> v.name().equals(name)).collect(Collectors.toList());
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<List<LocalVariable>> variablesByNameAsync(String name) {
         return getVariablesAsync().thenApply(variables ->
                 variables.stream().filter(v -> v.name().equals(name)).collect(Collectors.toList()));

@@ -163,6 +163,7 @@ public class StackFrameImpl extends MirrorImpl
         return thisObject;
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<ObjectReference> thisObjectAsync() {
         validateStackFrame();
         return ((LocationImpl) location).methodAsync().thenCompose(currentMethod -> {
@@ -237,6 +238,7 @@ public class StackFrameImpl extends MirrorImpl
         return mapAsList;
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<List<LocalVariable>> visibleVariablesAsync() {
         validateStackFrame();
         return createVisibleVariablesAsync().thenApply(v -> {
@@ -255,6 +257,7 @@ public class StackFrameImpl extends MirrorImpl
         return createVisibleVariables().get(name);
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<LocalVariable> visibleVariableByNameAsync(String name) {
         validateStackFrame();
         return createVisibleVariablesAsync().thenApply(variables -> variables.get(name));
@@ -264,6 +267,7 @@ public class StackFrameImpl extends MirrorImpl
         return getValues(List.of(variable)).get(variable);
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<Value> getValueAsync(LocalVariable variable) {
         return getValuesAsync(List.of(variable)).thenApply(res -> res.get(variable));
     }
@@ -383,6 +387,7 @@ public class StackFrameImpl extends MirrorImpl
         return slots;
     }
 
+    @SuppressWarnings("unused")
     public void setSlotValue(SlotLocalVariable variable, Value value) {
         validateStackFrame();
         validateMirrorOrNull(value);

@@ -50,6 +50,7 @@ public class StringReferenceImpl extends ObjectReferenceImpl implements StringRe
         super(aVm, aRef);
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<String> valueAsync() {
         if (value != null) {
             return CompletableFuture.completedFuture(value);

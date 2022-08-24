@@ -87,6 +87,7 @@ public class ThreadGroupReferenceImpl extends ObjectReferenceImpl
         return name;
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<String> nameAsync() {
         if (name != null) {
             return CompletableFuture.completedFuture(name);

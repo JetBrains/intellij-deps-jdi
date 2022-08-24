@@ -529,6 +529,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return fieldList;
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<List<Field>> allFieldsAsync() {
         //TODO: may improve further, but need to preserve the order
         List<Field> fieldList = Collections.synchronizedList(new ArrayList<>());
@@ -718,6 +719,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return nested;
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<Value> getValueAsync(Field sig) {
         return getValuesAsync(Collections.singletonList(sig)).thenApply(m -> m.get(sig));
     }
@@ -865,6 +867,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return sourceNames(vm.getDefaultStratum()).get(0);
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<String> sourceNameAsync() {
         return sourceNamesAsync(vm.getDefaultStratum()).thenApply(strings -> strings.get(0));
     }
@@ -1063,6 +1066,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return allLineLocations(vm.getDefaultStratum(), null);
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<List<Location>> allLineLocationsAsync() {
         return allLineLocationsAsync(vm.getDefaultStratum(), null);
     }
@@ -1129,6 +1133,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
                                lineNumber);
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<List<Location>> locationsOfLineAsync(int lineNumber) {
         return locationsOfLineAsync(vm.getDefaultStratum(),
                 null,
@@ -1349,6 +1354,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return constanPoolCount;
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<Integer> constantPoolCountAsync() {
         return getConstantPoolInfoAsync().thenApply((bytes -> constanPoolCount));
     }
@@ -1372,6 +1378,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         }
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<byte[]> constantPoolAsync() {
         return getConstantPoolInfoAsync().thenApply(bytes -> {
             if (bytes != null) {

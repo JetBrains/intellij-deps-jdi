@@ -338,6 +338,7 @@ public class VirtualMachineImpl extends MirrorImpl
         }
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<List<ReferenceType>> allClassesAsync() {
         validateVM();
 
@@ -470,6 +471,7 @@ public class VirtualMachineImpl extends MirrorImpl
         return state.allThreads();
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<List<ThreadReference>> allThreadsAsync() {
         validateVM();
         return state.allThreadsAsync();
@@ -507,6 +509,7 @@ public class VirtualMachineImpl extends MirrorImpl
         notifySuspend();
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<Void> suspendAsync() {
         validateVM();
         return JDWP.VirtualMachine.Suspend.processAsync(vm).thenAccept(suspend -> notifySuspend());
@@ -1588,10 +1591,12 @@ public class VirtualMachineImpl extends MirrorImpl
        }
    }
 
+    @SuppressWarnings("unused")
     public int getSentPacketsNumber() {
         return sentPackets.get();
     }
 
+    @SuppressWarnings("unused")
     public int getWaitPacketsNumber() {
         return waitPackets.get();
     }
@@ -1599,10 +1604,12 @@ public class VirtualMachineImpl extends MirrorImpl
     /**
      * @return true if there's no debugger commands being sent/read or waited for
      */
+    @SuppressWarnings("unused")
     public boolean isIdle() {
         return target.isIdle();
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<Long> measureLatency() {
         return target.measureLatency();
     }

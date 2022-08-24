@@ -156,6 +156,7 @@ public class ObjectReferenceImpl extends ValueImpl
         return Long.hashCode(ref());
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<? extends Type> typeAsync() {
         return referenceTypeAsync();
     }
@@ -190,6 +191,7 @@ public class ObjectReferenceImpl extends ValueImpl
         this.type = type;
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<Value> getValueAsync(Field sig) {
         return getValuesAsync(Collections.singletonList(sig)).thenApply(m -> m.get(sig));
     }
@@ -484,6 +486,7 @@ public class ObjectReferenceImpl extends ValueImpl
         }
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<Value> invokeMethodAsync(ThreadReference threadIntf, Method methodIntf,
                                                       List<? extends Value> origArguments, int options)
             throws InvalidTypeException,
@@ -551,6 +554,7 @@ public class ObjectReferenceImpl extends ValueImpl
         gcDisableCount++;
     }
 
+    @SuppressWarnings("unused")
     /* leave synchronized to keep count accurate */
     public synchronized CompletableFuture<Void> disableCollectionAsync() {
         gcDisableCount++;
@@ -578,6 +582,7 @@ public class ObjectReferenceImpl extends ValueImpl
         }
     }
 
+    @SuppressWarnings("unused")
     /* leave synchronized to keep count accurate */
     public synchronized CompletableFuture<Void> enableCollectionAsync() {
         gcDisableCount--;
@@ -605,6 +610,7 @@ public class ObjectReferenceImpl extends ValueImpl
         }
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<Boolean> isCollectedAsync() {
         return JDWP.ObjectReference.IsCollected.processAsync(vm, this).thenApply(r -> r.isCollected);
     }

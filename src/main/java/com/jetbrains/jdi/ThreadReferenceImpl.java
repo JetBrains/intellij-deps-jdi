@@ -216,6 +216,7 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
         return name;
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<String> nameAsync() {
         String name = null;
         Cache local = (Cache) getCache();
@@ -258,6 +259,7 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
         // will be called.
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<Void> suspendAsync() {
         return JDWP.ThreadReference.Suspend.processAsync(vm, this).thenAccept(r -> {});
     }
@@ -380,6 +382,7 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
         return jdwpStatus().threadStatus;
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<Integer> statusAsync() {
         return jdwpStatusAsync().thenApply(res -> res.threadStatus);
     }
@@ -389,6 +392,7 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
                 ((jdwpStatus().suspendStatus & SUSPEND_STATUS_SUSPENDED) != 0));
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<Boolean> isSuspendedAsync() {
         if (suspendedZombieCount > 0) {
             return CompletableFuture.completedFuture(true);
@@ -418,6 +422,7 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
         }
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<Boolean> isAtBreakpointAsync() {
         /*
          * TO DO: This fails to take filters into account.
@@ -459,6 +464,7 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
         return threadGroup;
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<ThreadGroupReference> threadGroupAsync() {
         if (threadGroup != null) {
             return CompletableFuture.completedFuture(threadGroup);
@@ -485,6 +491,7 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
         return snapshot.frameCount;
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<Integer> frameCountAsync() {
         LocalCache snapshot = localCache;
         if (snapshot.frameCount != -1) {
@@ -506,6 +513,7 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
         return privateFrames(0, -1);
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<List<StackFrame>> framesAsync() {
         return privateFramesAsync(0, -1);
     }
@@ -551,6 +559,7 @@ public class ThreadReferenceImpl extends ObjectReferenceImpl
         return privateFrames(start, length);
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<List<StackFrame>> framesAsync(int start, int length) {
         if (length < 0) {
             throw new IndexOutOfBoundsException(

@@ -110,6 +110,7 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
         return getValues(0, -1);
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<List<Value>> getValuesAsync() {
         return getValuesAsync(0, -1);
     }

@@ -118,6 +118,7 @@ public abstract class MethodImpl extends TypeComponentImpl
         return allLineLocations(vm.getDefaultStratum(), null);
     }
 
+    @SuppressWarnings("unused")
     public final CompletableFuture<List<Location>> allLineLocationsAsync() {
         return allLineLocationsAsync(vm.getDefaultStratum(), null);
     }
@@ -261,6 +262,7 @@ public abstract class MethodImpl extends TypeComponentImpl
         return obsolete;
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<Boolean> isObsoleteAsync() {
         if (obsolete == null) {
             return JDWP.Method.IsObsolete.processAsync(vm, declaringType, ref).thenApply(r -> obsolete = r.isObsolete);
@@ -455,6 +457,7 @@ public abstract class MethodImpl extends TypeComponentImpl
         return (options & SKIP_ASSIGNABLE_CHECK) == 0;
     }
 
+    @SuppressWarnings("unused")
     public abstract CompletableFuture<byte[]> bytecodesAsync();
 
     public abstract CompletableFuture<List<LocalVariable>> variablesAsync();
