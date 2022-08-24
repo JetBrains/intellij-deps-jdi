@@ -38,22 +38,11 @@
 
 package com.jetbrains.jdi;
 
+import com.sun.jdi.*;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-
-import com.sun.jdi.ClassNotLoadedException;
-import com.sun.jdi.ClassType;
-import com.sun.jdi.Field;
-import com.sun.jdi.IncompatibleThreadStateException;
-import com.sun.jdi.InterfaceType;
-import com.sun.jdi.InvalidTypeException;
-import com.sun.jdi.InvocationException;
-import com.sun.jdi.Method;
-import com.sun.jdi.ObjectReference;
-import com.sun.jdi.ThreadReference;
-import com.sun.jdi.Value;
-import com.sun.jdi.VirtualMachine;
 
 public class ClassTypeImpl extends InvokableTypeImpl
                                  implements ClassType
@@ -123,16 +112,16 @@ public class ClassTypeImpl extends InvokableTypeImpl
         if (interfaces == null) {
             interfaces = getInterfaces();
         }
-        return unmodifiableList(interfaces);
+        return List.of(interfaces);
     }
 
     public CompletableFuture<List<InterfaceType>> interfacesAsync()  {
         if (interfaces != null) {
-            return CompletableFuture.completedFuture(unmodifiableList(interfaces));
+            return CompletableFuture.completedFuture(List.of(interfaces));
         }
         return getInterfacesAsync().thenApply(r -> {
             interfaces = r;
-            return unmodifiableList(r);
+            return List.of(r);
         });
     }
 

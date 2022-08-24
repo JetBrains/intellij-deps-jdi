@@ -333,11 +333,9 @@ public class VirtualMachineImpl extends MirrorImpl
         if (!retrievedAllTypes) {
             retrieveAllClasses();
         }
-        ArrayList<ReferenceType> a;
         synchronized (this) {
-            a = new ArrayList<>(typesByID.values());
+            return List.copyOf(typesByID.values());
         }
-        return Collections.unmodifiableList(a);
     }
 
     public CompletableFuture<List<ReferenceType>> allClassesAsync() {

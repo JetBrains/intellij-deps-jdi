@@ -41,6 +41,7 @@ package com.jetbrains.jdi;
 import java.io.IOException;
 import java.lang.reflect.InaccessibleObjectException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import com.sun.jdi.JDIPermission;
 import com.sun.jdi.VMDisconnectedException;
@@ -155,33 +156,24 @@ public class VirtualMachineManagerImpl implements VirtualMachineManagerService {
     }
 
     public List<LaunchingConnector> launchingConnectors() {
-        List<LaunchingConnector> launchingConnectors = new ArrayList<>(connectors.size());
-        for (Connector connector: connectors) {
-            if (connector instanceof LaunchingConnector) {
-                launchingConnectors.add((LaunchingConnector)connector);
-            }
-        }
-        return Collections.unmodifiableList(launchingConnectors);
+        return connectors.stream()
+                .filter(connector -> connector instanceof LaunchingConnector)
+                .map(connector -> (LaunchingConnector) connector)
+                .collect(Collectors.toUnmodifiableList());
     }
 
     public List<AttachingConnector> attachingConnectors() {
-        List<AttachingConnector> attachingConnectors = new ArrayList<>(connectors.size());
-        for (Connector connector: connectors) {
-            if (connector instanceof AttachingConnector) {
-                attachingConnectors.add((AttachingConnector)connector);
-            }
-        }
-        return Collections.unmodifiableList(attachingConnectors);
+        return connectors.stream()
+                .filter(connector -> connector instanceof AttachingConnector)
+                .map(connector -> (AttachingConnector) connector)
+                .collect(Collectors.toUnmodifiableList());
     }
 
     public List<ListeningConnector> listeningConnectors() {
-        List<ListeningConnector> listeningConnectors = new ArrayList<>(connectors.size());
-        for (Connector connector: connectors) {
-            if (connector instanceof ListeningConnector) {
-                listeningConnectors.add((ListeningConnector)connector);
-            }
-        }
-        return Collections.unmodifiableList(listeningConnectors);
+        return connectors.stream()
+                .filter(connector -> connector instanceof ListeningConnector)
+                .map(connector -> (ListeningConnector) connector)
+                .collect(Collectors.toUnmodifiableList());
     }
 
     public List<Connector> allConnectors() {

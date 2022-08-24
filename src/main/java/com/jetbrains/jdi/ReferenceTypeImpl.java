@@ -47,8 +47,6 @@ import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.sun.jdi.ModuleReference;
-
 public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceType {
     protected final long ref;
     private String signature = null;
@@ -361,21 +359,17 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         }
         if (vm.canGet1_5LanguageFeatures()) {
             return JDWP.ReferenceType.FieldsWithGeneric.processAsync(vm, this).thenApply(r -> {
-                List<Field> res = Collections.unmodifiableList(
-                        Arrays.stream(r.declared)
-                                .map(fi -> new FieldImpl(vm, this, fi.fieldID, fi.name,
-                                        fi.signature, fi.genericSignature, fi.modBits))
-                                .collect(Collectors.toList()));
+                List<Field> res = Arrays.stream(r.declared)
+                        .map(fi -> new FieldImpl(vm, this, fi.fieldID, fi.name, fi.signature, fi.genericSignature, fi.modBits))
+                        .collect(Collectors.toUnmodifiableList());
                 fieldsRef = new SoftReference<>(res);
                 return res;
             });
         } else {
             return JDWP.ReferenceType.Fields.processAsync(vm, this).thenApply(r -> {
-                List<Field> res = Collections.unmodifiableList(
-                        Arrays.stream(r.declared)
-                                .map(fi -> new FieldImpl(vm, this, fi.fieldID, fi.name,
-                                        fi.signature, null, fi.modBits))
-                                .collect(Collectors.toList()));
+                List<Field> res = Arrays.stream(r.declared)
+                        .map(fi -> new FieldImpl(vm, this, fi.fieldID, fi.name,
+                                fi.signature, null, fi.modBits)).collect(Collectors.toUnmodifiableList());
                 fieldsRef = new SoftReference<>(res);
                 return res;
             });
@@ -561,27 +555,23 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         }
         if (!vm.canGet1_5LanguageFeatures()) {
             return JDWP.ReferenceType.Methods.processAsync(vm, this).thenApply(r -> {
-                List<Method> res = Collections.unmodifiableList(
-                        Arrays.stream(r.declared)
-                                .map(mi -> MethodImpl.createMethodImpl(vm, this,
-                                        mi.methodID,
-                                        mi.name, mi.signature,
-                                        null,
-                                        mi.modBits))
-                                .collect(Collectors.toList()));
+                List<Method> res = Arrays.stream(r.declared)
+                        .map(mi -> MethodImpl.createMethodImpl(vm, this,
+                                mi.methodID,
+                                mi.name, mi.signature,
+                                null,
+                                mi.modBits)).collect(Collectors.toUnmodifiableList());
                 methodsRef = new SoftReference<>(res);
                 return res;
             });
         } else {
             return JDWP.ReferenceType.MethodsWithGeneric.processAsync(vm, this).thenApply(r -> {
-                List<Method> res = Collections.unmodifiableList(
-                        Arrays.stream(r.declared)
-                                .map(mi -> MethodImpl.createMethodImpl(vm, this,
-                                        mi.methodID,
-                                        mi.name, mi.signature,
-                                        mi.genericSignature,
-                                        mi.modBits))
-                                .collect(Collectors.toList()));
+                List<Method> res = Arrays.stream(r.declared)
+                        .map(mi -> MethodImpl.createMethodImpl(vm, this,
+                                mi.methodID,
+                                mi.name, mi.signature,
+                                mi.genericSignature,
+                                mi.modBits)).collect(Collectors.toUnmodifiableList());
                 methodsRef = new SoftReference<>(res);
                 return res;
             });
@@ -708,10 +698,6 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
 
     CompletableFuture<InterfaceType[]> getInterfacesAsync() {
         return JDWP.ReferenceType.Interfaces.processAsync(vm, this).thenApply(r -> r.interfaces);
-    }
-
-    <T> List<T> unmodifiableList(T[] array) {
-        return Collections.unmodifiableList(Arrays.asList(array));
     }
 
     public List<ReferenceType> nestedTypes() {

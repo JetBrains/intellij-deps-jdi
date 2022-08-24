@@ -38,16 +38,12 @@
 
 package com.jetbrains.jdi;
 
+import com.sun.jdi.*;
+
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-
-import com.sun.jdi.ClassType;
-import com.sun.jdi.InterfaceType;
-import com.sun.jdi.Method;
-import com.sun.jdi.ReferenceType;
-import com.sun.jdi.VirtualMachine;
 
 public class InterfaceTypeImpl extends InvokableTypeImpl
                                      implements InterfaceType {
@@ -83,17 +79,17 @@ public class InterfaceTypeImpl extends InvokableTypeImpl
             superinterfaces = getInterfaces();
             superinterfacesRef = new SoftReference<>(superinterfaces);
         }
-        return unmodifiableList(superinterfaces);
+        return List.of(superinterfaces);
     }
 
     public CompletableFuture<List<InterfaceType>> superinterfacesAsync() {
         InterfaceType[] superinterfaces = (superinterfacesRef == null) ? null : superinterfacesRef.get();
         if (superinterfaces != null) {
-            return CompletableFuture.completedFuture(unmodifiableList(superinterfaces));
+            return CompletableFuture.completedFuture(List.of(superinterfaces));
         }
         return getInterfacesAsync().thenApply(r -> {
             superinterfacesRef = new SoftReference<>(r);
-            return unmodifiableList(r);
+            return List.of(r);
         });
     }
 
