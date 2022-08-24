@@ -18,3 +18,5 @@ vmTestbase/nsk/jdi/PlugConnectors/TransportService/transportService002/transport
 com/sun/jdi/connect/spi/DebugUsingCustomConnector.java
 com/sun/jdi/connect/spi/GeneratedConnectors.java
 com/sun/jdi/connect/spi/JdiLoadedByCustomLoader.java
+
+com/sun/jdi/ResumeAfterThreadResumeCallTest.java 8274687 generic-all
