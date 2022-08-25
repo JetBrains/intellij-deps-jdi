@@ -92,7 +92,7 @@ public class VirtualMachineImpl extends MirrorImpl
     // Protected by "synchronized(this)". "retrievedAllTypes" may be
     // tested unsynchronized (since once true, it stays true), but must
     // be set synchronously
-    private final Map<Long, ReferenceType> typesByID = new LinkedHashMap<>(300);
+    private final Map<Long, ReferenceType> typesByID = new HashMap<>(300);
     private final Map<String, Object> typesBySignature = new HashMap<>(300);
     private volatile boolean retrievedAllTypes = false;
 
