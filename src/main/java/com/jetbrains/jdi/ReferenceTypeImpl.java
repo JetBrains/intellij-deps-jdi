@@ -52,7 +52,6 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     protected final long ref;
     private String signature = null;
     private volatile String baseSourceName = null;
-    private String baseSourceDir = null;
     private String baseSourcePath = null;
     protected int modifiers = -1;
     private volatile SoftReference<Field[]> fieldsRef = null;
@@ -916,20 +915,17 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     }
 
     String baseSourceDir() {
-        if (baseSourceDir == null) {
-            String typeName = name();
-            StringBuilder sb = new StringBuilder(typeName.length() + 10);
-            int index = 0;
-            int nextIndex;
+        String typeName = name();
+        StringBuilder sb = new StringBuilder(typeName.length() + 10);
+        int index = 0;
+        int nextIndex;
 
-            while ((nextIndex = typeName.indexOf('.', index)) > 0) {
-                sb.append(typeName, index, nextIndex);
-                sb.append(java.io.File.separatorChar);
-                index = nextIndex + 1;
-            }
-            baseSourceDir = sb.toString();
+        while ((nextIndex = typeName.indexOf('.', index)) > 0) {
+            sb.append(typeName, index, nextIndex);
+            sb.append(java.io.File.separatorChar);
+            index = nextIndex + 1;
         }
-        return baseSourceDir;
+        return sb.toString();
     }
 
     public String sourceDebugExtension()
