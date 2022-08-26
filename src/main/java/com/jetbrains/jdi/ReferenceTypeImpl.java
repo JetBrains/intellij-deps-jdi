@@ -51,8 +51,6 @@ import java.util.stream.Collectors;
 public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceType {
     protected final long ref;
     private String signature = null;
-    private String genericSignature = null;
-    private boolean genericSignatureGotten;
     private volatile String baseSourceName = null;
     private String baseSourceDir = null;
     private String baseSourcePath = null;
@@ -89,7 +87,6 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     protected ReferenceTypeImpl(VirtualMachine aVm, long aRef) {
         super(aVm);
         ref = aRef;
-        genericSignatureGotten = false;
     }
 
     public void noticeRedefineClass() {
@@ -204,39 +201,27 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         if (signature == null) {
             // Does not need synchronization, since worst-case
             // static info is fetched twice
-            if (vm.canGet1_5LanguageFeatures()) {
-                /*
-                 * we might as well get both the signature and the
-                 * generic signature.
-                 */
-                genericSignature();
-            } else {
-                try {
-                    setSignature(JDWP.ReferenceType.Signature.process(vm, this).signature);
-                } catch (JDWPException exc) {
-                    throw exc.toJDIException();
-                }
+            try {
+                setSignature(JDWP.ReferenceType.Signature.process(vm, this).signature);
+            } catch (JDWPException exc) {
+                throw exc.toJDIException();
             }
         }
         return signature;
     }
 
     public String genericSignature() {
-        // This gets both the signature and the generic signature
-        if (vm.canGet1_5LanguageFeatures() && !genericSignatureGotten) {
-            // Does not need synchronization, since worst-case
-            // static info is fetched twice
-            JDWP.ReferenceType.SignatureWithGeneric result;
-            try {
-                result = JDWP.ReferenceType.SignatureWithGeneric.
-                    process(vm, this);
-            } catch (JDWPException exc) {
-                throw exc.toJDIException();
-            }
-            setSignature(result.signature);
-            setGenericSignature(result.genericSignature);
+        if (!vm.canGet1_5LanguageFeatures()) {
+            return null;
         }
-        return genericSignature;
+        JDWP.ReferenceType.SignatureWithGeneric result;
+        try {
+            result = JDWP.ReferenceType.SignatureWithGeneric.process(vm, this);
+        } catch (JDWPException exc) {
+            throw exc.toJDIException();
+        }
+        setSignature(result.signature);
+        return result.genericSignature;
     }
 
     public ClassLoaderReference classLoader() {
@@ -1453,15 +1438,6 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
             vm.cacheTypeBySignature(this, signature);
         }
         this.signature = signature;
-    }
-
-    void setGenericSignature(String signature) {
-        if (signature != null && signature.length() == 0) {
-            this.genericSignature = null;
-        } else{
-            this.genericSignature = signature;
-        }
-        this.genericSignatureGotten = true;
     }
 
     private static boolean isOneDimensionalPrimitiveArray(String signature) {

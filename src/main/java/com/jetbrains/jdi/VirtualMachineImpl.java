@@ -1188,9 +1188,9 @@ public class VirtualMachineImpl extends MirrorImpl
          * To save time (assuming the caller will be
          * using then) we will get the generic sigs too.
          */
-        JDWP.VirtualMachine.AllClassesWithGeneric.ClassInfo[] cinfos;
+        JDWP.VirtualMachine.AllClasses.ClassInfo[] cinfos;
         try {
-            cinfos = JDWP.VirtualMachine.AllClassesWithGeneric.process(vm).classes;
+            cinfos = JDWP.VirtualMachine.AllClasses.process(vm).classes;
         } catch (JDWPException exc) {
             throw exc.toJDIException();
         }
@@ -1200,11 +1200,10 @@ public class VirtualMachineImpl extends MirrorImpl
         synchronized (this) {
             if (!retrievedAllTypes) {
                 // Number of classes
-                for (JDWP.VirtualMachine.AllClassesWithGeneric.ClassInfo ci : cinfos) {
+                for (JDWP.VirtualMachine.AllClasses.ClassInfo ci : cinfos) {
                     ReferenceTypeImpl type = referenceType(ci.typeID,
                             ci.refTypeTag,
                             ci.signature);
-                    type.setGenericSignature(ci.genericSignature);
                     type.setStatus(ci.status);
                 }
                 retrievedAllTypes = true;
@@ -1221,14 +1220,13 @@ public class VirtualMachineImpl extends MirrorImpl
             return retrieveAllClasses1_4Async();
         }
 
-        return JDWP.VirtualMachine.AllClassesWithGeneric.processAsync(vm).thenAccept(allClassesWithGeneric -> {
+        return JDWP.VirtualMachine.AllClasses.processAsync(vm).thenAccept(allClassesWithGeneric -> {
             // Hold lock during processing to improve performance
             // and to have safe check/set of retrievedAllTypes
             synchronized (this) {
                 if (!retrievedAllTypes) {
-                    for (JDWP.VirtualMachine.AllClassesWithGeneric.ClassInfo ci : allClassesWithGeneric.classes) {
+                    for (JDWP.VirtualMachine.AllClasses.ClassInfo ci : allClassesWithGeneric.classes) {
                         ReferenceTypeImpl type = referenceType(ci.typeID, ci.refTypeTag, ci.signature);
-                        type.setGenericSignature(ci.genericSignature);
                         type.setStatus(ci.status);
                     }
                     retrievedAllTypes = true;
