@@ -74,22 +74,22 @@ public class InterfaceTypeImpl extends InvokableTypeImpl
     }
 
     public List<InterfaceType> superinterfaces() {
-        InterfaceType[] superinterfaces = (superinterfacesRef == null) ? null : superinterfacesRef.get();
+        InterfaceType[] superinterfaces = dereference(superinterfacesRef);
         if (superinterfaces == null) {
             superinterfaces = getInterfaces();
             superinterfacesRef = new SoftReference<>(superinterfaces);
         }
-        return List.of(superinterfaces);
+        return unmodifiableList(superinterfaces);
     }
 
     public CompletableFuture<List<InterfaceType>> superinterfacesAsync() {
-        InterfaceType[] superinterfaces = (superinterfacesRef == null) ? null : superinterfacesRef.get();
+        InterfaceType[] superinterfaces = dereference(superinterfacesRef);
         if (superinterfaces != null) {
-            return CompletableFuture.completedFuture(List.of(superinterfaces));
+            return CompletableFuture.completedFuture(unmodifiableList(superinterfaces));
         }
         return getInterfacesAsync().thenApply(r -> {
             superinterfacesRef = new SoftReference<>(r);
-            return List.of(r);
+            return unmodifiableList(r);
         });
     }
 

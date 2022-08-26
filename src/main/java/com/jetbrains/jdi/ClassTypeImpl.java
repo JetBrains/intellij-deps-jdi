@@ -112,16 +112,16 @@ public class ClassTypeImpl extends InvokableTypeImpl
         if (interfaces == null) {
             interfaces = getInterfaces();
         }
-        return List.of(interfaces);
+        return unmodifiableList(interfaces);
     }
 
     public CompletableFuture<List<InterfaceType>> interfacesAsync()  {
         if (interfaces != null) {
-            return CompletableFuture.completedFuture(List.of(interfaces));
+            return CompletableFuture.completedFuture(unmodifiableList(interfaces));
         }
         return getInterfacesAsync().thenApply(r -> {
             interfaces = r;
-            return List.of(r);
+            return unmodifiableList(r);
         });
     }
 

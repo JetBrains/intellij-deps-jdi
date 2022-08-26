@@ -40,6 +40,7 @@ package com.jetbrains.jdi;
 
 import com.sun.jdi.*;
 
+import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -56,8 +57,8 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     private String baseSourceDir = null;
     private String baseSourcePath = null;
     protected int modifiers = -1;
-    private volatile SoftReference<List<Field>> fieldsRef = null;
-    private volatile SoftReference<List<Method>> methodsRef = null;
+    private volatile SoftReference<Field[]> fieldsRef = null;
+    private volatile SoftReference<Method[]> methodsRef = null;
     private volatile SoftReference<SDE> sdeRef = null;
 
     private ClassLoaderReference classLoader = null;
@@ -99,7 +100,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         modifiers = -1;
         fieldsRef = null;
         if (methodsRef != null) {
-            List<Method> methods = methodsRef.get();
+            Method[] methods = dereference(methodsRef);
             if (methods != null) {
                 for (Method method : methods) {
                     ((MethodImpl) method).noticeRedefineClass();
@@ -352,32 +353,39 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return (status & JDWP.ClassStatus.ERROR) != 0;
     }
 
+    private Field[] readFields(JDWP.ReferenceType.Fields.FieldInfo[] jdwpFields) {
+        return Arrays.stream(jdwpFields)
+                .map(fi -> new FieldImpl(vm, this, fi.fieldID, fi.name, fi.signature, null, fi.modBits))
+                .toArray(Field[]::new);
+    }
+
+    private Field[] readFieldsWithGenerics(JDWP.ReferenceType.FieldsWithGeneric.FieldInfo[] jdwpFields) {
+        return Arrays.stream(jdwpFields)
+                .map(fi -> new FieldImpl(vm, this, fi.fieldID, fi.name, fi.signature, fi.genericSignature, fi.modBits))
+                .toArray(Field[]::new);
+    }
+
     public CompletableFuture<List<Field>> fieldsAsync() {
-        List<Field> fields = (fieldsRef == null) ? null : fieldsRef.get();
+        Field[] fields = dereference(fieldsRef);
         if (fields != null) {
-            return CompletableFuture.completedFuture(fields);
+            return CompletableFuture.completedFuture(unmodifiableList(fields));
         }
+        CompletableFuture<Field[]> array;
         if (vm.canGet1_5LanguageFeatures()) {
-            return JDWP.ReferenceType.FieldsWithGeneric.processAsync(vm, this).thenApply(r -> {
-                List<Field> res = Arrays.stream(r.declared)
-                        .map(fi -> new FieldImpl(vm, this, fi.fieldID, fi.name, fi.signature, fi.genericSignature, fi.modBits))
-                        .collect(Collectors.toUnmodifiableList());
-                fieldsRef = new SoftReference<>(res);
-                return res;
-            });
+            array = JDWP.ReferenceType.FieldsWithGeneric.processAsync(vm, this)
+                    .thenApply(r -> readFieldsWithGenerics(r.declared));
         } else {
-            return JDWP.ReferenceType.Fields.processAsync(vm, this).thenApply(r -> {
-                List<Field> res = Arrays.stream(r.declared)
-                        .map(fi -> new FieldImpl(vm, this, fi.fieldID, fi.name,
-                                fi.signature, null, fi.modBits)).collect(Collectors.toUnmodifiableList());
-                fieldsRef = new SoftReference<>(res);
-                return res;
-            });
+            array = JDWP.ReferenceType.Fields.processAsync(vm, this)
+                    .thenApply(r -> readFields(r.declared));
         }
+        return array.thenApply(res -> {
+            fieldsRef = new SoftReference<>(res);
+            return unmodifiableList(res);
+        });
     }
 
     public List<Field> fields() {
-        List<Field> fields = (fieldsRef == null) ? null : fieldsRef.get();
+        Field[] fields = dereference(fieldsRef);
         if (fields == null) {
             if (vm.canGet1_5LanguageFeatures()) {
                 JDWP.ReferenceType.FieldsWithGeneric.FieldInfo[] jdwpFields;
@@ -387,14 +395,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
                 } catch (JDWPException exc) {
                     throw exc.toJDIException();
                 }
-                fields = new ArrayList<>(jdwpFields.length);
-                for (JDWP.ReferenceType.FieldsWithGeneric.FieldInfo fi : jdwpFields) {
-                    Field field = new FieldImpl(vm, this, fi.fieldID,
-                            fi.name, fi.signature,
-                            fi.genericSignature,
-                            fi.modBits);
-                    fields.add(field);
-                }
+                fields = readFieldsWithGenerics(jdwpFields);
             } else {
                 JDWP.ReferenceType.Fields.FieldInfo[] jdwpFields;
                 try {
@@ -403,20 +404,11 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
                 } catch (JDWPException exc) {
                     throw exc.toJDIException();
                 }
-                fields = new ArrayList<>(jdwpFields.length);
-                for (JDWP.ReferenceType.Fields.FieldInfo fi : jdwpFields) {
-                    Field field = new FieldImpl(vm, this, fi.fieldID,
-                            fi.name, fi.signature,
-                            null,
-                            fi.modBits);
-                    fields.add(field);
-                }
+                fields = readFields(jdwpFields);
             }
-
-            fields = Collections.unmodifiableList(fields);
             fieldsRef = new SoftReference<>(fields);
         }
-        return fields;
+        return unmodifiableList(fields);
     }
 
     abstract List<? extends ReferenceType> inheritedTypes();
@@ -549,41 +541,49 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return null;
     }
 
+    private Method[] readMethods(JDWP.ReferenceType.Methods.MethodInfo[] jdwpMethods) {
+        return Arrays.stream(jdwpMethods)
+                .map(mi -> MethodImpl.createMethodImpl(vm, this,
+                        mi.methodID,
+                        mi.name, mi.signature,
+                        null,
+                        mi.modBits))
+                .toArray(Method[]::new);
+    }
+
+    private Method[] readMethodsWithGeneric(JDWP.ReferenceType.MethodsWithGeneric.MethodInfo[] jdwpMethods) {
+        return Arrays.stream(jdwpMethods)
+                .map(mi -> MethodImpl.createMethodImpl(vm, this,
+                        mi.methodID,
+                        mi.name, mi.signature,
+                        mi.genericSignature,
+                        mi.modBits))
+                .toArray(Method[]::new);
+    }
+
     public CompletableFuture<List<Method>> methodsAsync() {
-        List<Method> methods = (methodsRef == null) ? null : methodsRef.get();
+        Method[] methods = dereference(methodsRef);
         if (methods != null) {
-            return CompletableFuture.completedFuture(methods);
+            return CompletableFuture.completedFuture(unmodifiableList(methods));
         }
+        CompletableFuture<Method[]> array;
         if (!vm.canGet1_5LanguageFeatures()) {
-            return JDWP.ReferenceType.Methods.processAsync(vm, this).thenApply(r -> {
-                List<Method> res = Arrays.stream(r.declared)
-                        .map(mi -> MethodImpl.createMethodImpl(vm, this,
-                                mi.methodID,
-                                mi.name, mi.signature,
-                                null,
-                                mi.modBits)).collect(Collectors.toUnmodifiableList());
-                methodsRef = new SoftReference<>(res);
-                return res;
-            });
+            array = JDWP.ReferenceType.Methods.processAsync(vm, this)
+                    .thenApply(m -> readMethods(m.declared));
         } else {
-            return JDWP.ReferenceType.MethodsWithGeneric.processAsync(vm, this).thenApply(r -> {
-                List<Method> res = Arrays.stream(r.declared)
-                        .map(mi -> MethodImpl.createMethodImpl(vm, this,
-                                mi.methodID,
-                                mi.name, mi.signature,
-                                mi.genericSignature,
-                                mi.modBits)).collect(Collectors.toUnmodifiableList());
-                methodsRef = new SoftReference<>(res);
-                return res;
-            });
+            array = JDWP.ReferenceType.MethodsWithGeneric.processAsync(vm, this)
+                    .thenApply(m -> readMethodsWithGeneric(m.declared));
         }
+        return array.thenApply(res -> {
+            methodsRef = new SoftReference<>(res);
+            return unmodifiableList(res);
+        });
     }
 
     public List<Method> methods() {
-        List<Method> methods = (methodsRef == null) ? null : methodsRef.get();
+        Method[] methods = dereference(methodsRef);
         if (methods == null) {
             if (!vm.canGet1_5LanguageFeatures()) {
-                List<Method> methods1;
                 JDWP.ReferenceType.Methods.MethodInfo[] declared;
                 try {
                     declared = JDWP.ReferenceType.Methods.
@@ -591,16 +591,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
                 } catch (JDWPException exc) {
                     throw exc.toJDIException();
                 }
-                methods1 = new ArrayList<>(declared.length);
-                for (JDWP.ReferenceType.Methods.MethodInfo mi : declared) {
-                    Method method = MethodImpl.createMethodImpl(vm, this,
-                            mi.methodID,
-                            mi.name, mi.signature,
-                            null,
-                            mi.modBits);
-                    methods1.add(method);
-                }
-                methods = methods1;
+                methods = readMethods(declared);
             } else {
                 JDWP.ReferenceType.MethodsWithGeneric.MethodInfo[] declared;
                 try {
@@ -609,20 +600,11 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
                 } catch (JDWPException exc) {
                     throw exc.toJDIException();
                 }
-                methods = new ArrayList<>(declared.length);
-                for (JDWP.ReferenceType.MethodsWithGeneric.MethodInfo mi : declared) {
-                    Method method = MethodImpl.createMethodImpl(vm, this,
-                            mi.methodID,
-                            mi.name, mi.signature,
-                            mi.genericSignature,
-                            mi.modBits);
-                    methods.add(method);
-                }
+                methods = readMethodsWithGeneric(declared);
             }
-            methods = Collections.unmodifiableList(methods);
             methodsRef = new SoftReference<>(methods);
         }
-        return methods;
+        return unmodifiableList(methods);
     }
 
     /*
@@ -699,6 +681,11 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
 
     CompletableFuture<InterfaceType[]> getInterfacesAsync() {
         return JDWP.ReferenceType.Interfaces.processAsync(vm, this).thenApply(r -> r.interfaces);
+    }
+
+    <T> List<T> unmodifiableList(T[] array) {
+        // List.of(array) in this case will copy the array
+        return Collections.unmodifiableList(Arrays.asList(array));
     }
 
     public List<ReferenceType> nestedTypes() {
@@ -988,7 +975,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         if (!vm.canGetSourceDebugExtension()) {
             return NO_SDE_INFO_MARK;
         }
-        SDE sde = (sdeRef == null) ?  null : sdeRef.get();
+        SDE sde = dereference(sdeRef);
         if (sde == null) {
             String extension = null;
             try {
@@ -1014,7 +1001,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         if (!vm.canGetSourceDebugExtension()) {
             return CompletableFuture.completedFuture(NO_SDE_INFO_MARK);
         }
-        SDE sde = (sdeRef == null) ? null : sdeRef.get();
+        SDE sde = dereference(sdeRef);
         if (sde != null) {
             return CompletableFuture.completedFuture(sde);
         }
@@ -1524,5 +1511,9 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
 
     static <T> T nullize(T value, T defaultValue) {
         return value != defaultValue ? value : null;
+    }
+
+    static <T> T dereference(Reference<T> ref) {
+        return ref == null ? null : ref.get();
     }
 }
