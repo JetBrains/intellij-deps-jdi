@@ -65,10 +65,6 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     private int status = 0;
     private boolean isPrepared = false;
 
-    private boolean versionNumberGotten = false;
-    private int majorVersion;
-    private int minorVersion;
-
     private volatile boolean constantPoolInfoGotten = false;
     private volatile int constanPoolCount;
     private volatile SoftReference<byte[]> constantPoolBytesRef = null;
@@ -105,7 +101,6 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         }
         methodsRef = null;
         sdeRef = null;
-        versionNumberGotten = false;
         constantPoolInfoGotten = false;
     }
 
@@ -1200,47 +1195,29 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         }
     }
 
-    private void getClassFileVersion() {
+    private int[] getClassFileVersion() {
         if (!vm.canGetClassFileVersion()) {
             throw new UnsupportedOperationException();
         }
         JDWP.ReferenceType.ClassFileVersion classFileVersion;
-        if (versionNumberGotten) {
-        } else {
-            try {
-                classFileVersion = JDWP.ReferenceType.ClassFileVersion.process(vm, this);
-            } catch (JDWPException exc) {
-                if (exc.errorCode() == JDWP.Error.ABSENT_INFORMATION) {
-                    majorVersion = 0;
-                    minorVersion = 0;
-                    versionNumberGotten = true;
-                    return;
-                } else {
-                    throw exc.toJDIException();
-                }
+        try {
+            classFileVersion = JDWP.ReferenceType.ClassFileVersion.process(vm, this);
+        } catch (JDWPException exc) {
+            if (exc.errorCode() == JDWP.Error.ABSENT_INFORMATION) {
+                return new int[]{0, 0};
+            } else {
+                throw exc.toJDIException();
             }
-            majorVersion = classFileVersion.majorVersion;
-            minorVersion = classFileVersion.minorVersion;
-            versionNumberGotten = true;
         }
+        return new int[]{classFileVersion.majorVersion, classFileVersion.minorVersion};
     }
 
     public int majorVersion() {
-        try {
-            getClassFileVersion();
-        } catch (RuntimeException exc) {
-            throw exc;
-        }
-        return majorVersion;
+        return getClassFileVersion()[0];
     }
 
     public int minorVersion() {
-        try {
-            getClassFileVersion();
-        } catch (RuntimeException exc) {
-            throw exc;
-        }
-        return minorVersion;
+        return getClassFileVersion()[1];
     }
 
     private byte[] getConstantPoolInfo() {
