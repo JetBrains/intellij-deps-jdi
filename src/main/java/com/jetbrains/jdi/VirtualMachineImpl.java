@@ -975,7 +975,7 @@ public class VirtualMachineImpl extends MirrorImpl
                 typesBySignature.put(signature, referenceTypes.get(0));
                 break;
             default:
-                typesBySignature.put(signature, referenceTypes.toArray());
+                typesBySignature.put(signature, referenceTypes.toArray(new ReferenceType[0]));
         }
     }
 
