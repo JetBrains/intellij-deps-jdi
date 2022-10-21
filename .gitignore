@@ -5,3 +5,4 @@
 gradle.properties
 .idea/shelf
 .idea/workspace.xml
+/gradle/wrapper/gradle-wrapper.jar
