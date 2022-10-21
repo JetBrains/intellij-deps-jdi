@@ -44,7 +44,6 @@ import com.sun.jdi.Method;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.VirtualMachine;
 
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 public class LocationImpl extends MirrorImpl implements Location {
@@ -99,8 +98,13 @@ public class LocationImpl extends MirrorImpl implements Location {
         return codeIndex() == other.codeIndex() && super.equals(obj);
     }
 
+    @Override
     public int hashCode() {
-        return Objects.hash(declaringType, methodRef, codeIndex);
+        int result = super.hashCode();
+        result = 31 * result + declaringType.hashCode();
+        result = 31 * result + (int) (methodRef ^ (methodRef >>> 32));
+        result = 31 * result + (int) (codeIndex ^ (codeIndex >>> 32));
+        return result;
     }
 
     public int compareTo(Location other) {
