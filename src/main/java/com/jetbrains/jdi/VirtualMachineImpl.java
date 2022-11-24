@@ -1377,10 +1377,17 @@ public class VirtualMachineImpl extends MirrorImpl
         //if ((traceFlags & TRACE_OBJREFS) != 0) {
         //    printTrace("Checking for softly reachable objects");
         //}
+        boolean found = false;
         while ((ref = referenceQueue.poll()) != null) {
             SoftObjectReference softRef = (SoftObjectReference)ref;
             removeObjectMirror(softRef);
             batchForDispose(softRef);
+            found = true;
+        }
+
+        if (found) {
+            // we can do that right here as now it is async
+            processBatchedDisposes();
         }
     }
 

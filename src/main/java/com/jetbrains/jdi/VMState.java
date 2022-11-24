@@ -38,6 +38,8 @@
 
 package com.jetbrains.jdi;
 
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -197,8 +199,29 @@ class VMState {
         }
     }
 
+    private final ReferenceQueue<VMListener> referenceQueue = new ReferenceQueue<>();
+
+    private boolean hasUnreachableListeners() {
+        boolean res = false;
+        while (referenceQueue.poll() != null) {
+            res = true;
+        }
+        return res;
+    }
+
     synchronized void addListener(VMListener listener) {
-        listeners.add(new WeakReference<>(listener));
+        // remove unreachable
+        if (hasUnreachableListeners()) {
+            Iterator<WeakReference<VMListener>> iter = listeners.iterator();
+            while (iter.hasNext()) {
+                VMListener l = iter.next().get();
+                if (l == null) {
+                    iter.remove();
+                }
+            }
+        }
+
+        listeners.add(new WeakReference<>(listener, referenceQueue));
     }
 
     synchronized boolean hasListener(VMListener listener) {
