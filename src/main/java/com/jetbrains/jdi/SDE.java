@@ -284,7 +284,7 @@ class SDE {
 
     void syntax() {
         throw new InternalError("bad SourceDebugExtension syntax - position " +
-                                sdePos);
+                                sdePos + " raw: " + sourceDebugExtension);
     }
 
     void syntax(String msg) {
