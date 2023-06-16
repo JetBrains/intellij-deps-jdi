@@ -443,15 +443,21 @@ class SDE {
 
     int readNumber() {
         int value = 0;
+        boolean positive = true;
         char ch;
 
         ignoreWhite();
+
+        if (sdePeek() == '-') {
+            sdeAdvance();
+            positive = false;
+        }
         while (((ch = sdePeek()) >= '0') && (ch <= '9')) {
             sdeAdvance();
             value = (value * 10) + ch - '0';
         }
         ignoreWhite();
-        return value;
+        return positive ? value : -value;
     }
 
     void storeFile(int fileId, String sourceName, String sourcePath) {
@@ -529,12 +535,14 @@ class SDE {
         }
         ignoreLine(); /* flush the rest */
 
-        storeLine(jplsStart,
-                  jplsStart + (lineCount * lineIncrement) -1,
-                  lineIncrement,
-                  njplsStart,
-                  njplsStart + lineCount -1,
-                  currentFileId);
+        if (njplsStart >= 0) { // skip incorrect lines
+            storeLine(jplsStart,
+                    jplsStart + (lineCount * lineIncrement) - 1,
+                    lineIncrement,
+                    njplsStart,
+                    njplsStart + lineCount - 1,
+                    currentFileId);
+        }
     }
 
     /**
