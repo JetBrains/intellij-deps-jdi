@@ -23,7 +23,7 @@ publishing {
         MyPublication(MavenPublication) {
             artifactId 'jb-jdi'
             groupId 'org.jetbrains.intellij.deps'
-            version '2.26'
+            version '2.27'
             artifact mainJar
             artifact sourceJar {
                 classifier "sources"
