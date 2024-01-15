@@ -730,7 +730,7 @@ public class ConcreteMethodImpl extends MethodImpl {
              * Skip "this*" entries because they are never real
              * variables from the JLS perspective.
              */
-            if (!si.name.startsWith("this$") && !si.name.equals("this")) {
+            if (isStatic() || (!si.name.startsWith("this$") && !si.name.equals("this"))) {
                 Location scopeStart = new LocationImpl(virtualMachine(),
                                                        this, si.codeIndex);
                 Location scopeEnd =
