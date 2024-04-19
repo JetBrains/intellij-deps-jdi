@@ -813,12 +813,29 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return sde.stratum(stratumID);
     }
 
+    public SDE.Stratum stratumOrNull(String stratumID) {
+        SDE sde = sourceDebugExtensionInfo();
+        if (!sde.isValid()) {
+            return null;
+        }
+        return sde.stratumOrNull(stratumID);
+    }
+
     CompletableFuture<SDE.Stratum> stratumAsync(String stratumID) {
         return sourceDebugExtensionInfoAsync().thenApply(sde -> {
             if (!sde.isValid()) {
                 sde = NO_SDE_INFO_MARK;
             }
             return sde.stratum(stratumID);
+        });
+    }
+
+    public CompletableFuture<SDE.Stratum> stratumOrNullAsync(String stratumID) {
+        return sourceDebugExtensionInfoAsync().thenApply(sde -> {
+            if (!sde.isValid()) {
+                return null;
+            }
+            return sde.stratumOrNull(stratumID);
         });
     }
 
