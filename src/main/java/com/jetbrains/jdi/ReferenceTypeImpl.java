@@ -46,6 +46,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceType {
@@ -813,29 +814,12 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return sde.stratum(stratumID);
     }
 
-    public SDE.Stratum stratumOrNull(String stratumID) {
-        SDE sde = sourceDebugExtensionInfo();
-        if (!sde.isValid()) {
-            return null;
-        }
-        return sde.stratumOrNull(stratumID);
-    }
-
     CompletableFuture<SDE.Stratum> stratumAsync(String stratumID) {
         return sourceDebugExtensionInfoAsync().thenApply(sde -> {
             if (!sde.isValid()) {
                 sde = NO_SDE_INFO_MARK;
             }
             return sde.stratum(stratumID);
-        });
-    }
-
-    public CompletableFuture<SDE.Stratum> stratumOrNullAsync(String stratumID) {
-        return sourceDebugExtensionInfoAsync().thenApply(sde -> {
-            if (!sde.isValid()) {
-                return null;
-            }
-            return sde.stratumOrNull(stratumID);
         });
     }
 
@@ -873,6 +857,27 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
             return List.of(baseSourceDir() + baseSourceName());
         }
         return stratum.sourcePaths(this);
+    }
+
+    public boolean hasMappedLineTo(String stratumID, int njplsLine, Predicate<String> sourcePathFilter) {
+        SDE sde = sourceDebugExtensionInfo();
+        return hasMappedLineTo(sde, stratumID, sourcePathFilter, njplsLine);
+    }
+
+    public CompletableFuture<Boolean> hasMappedLineToAsync(String stratumID, int njplsLine, Predicate<String> sourcePathFilter) {
+        return sourceDebugExtensionInfoAsync().thenApply(sde -> hasMappedLineTo(sde, stratumID, sourcePathFilter, njplsLine));
+    }
+
+    private boolean hasMappedLineTo(SDE sde, String stratumID, Predicate<String> sourcePathFilter, int njplsLine) {
+        List<String> availableStrata = sde.availableStrata();
+        if (!availableStrata.contains(stratumID)) return false;
+        SDE.Stratum stratum = sde.stratum(stratumID);
+        List<String> sourcePaths = stratum.sourcePaths(this);
+        for (String sourcePath : sourcePaths) {
+            if (!sourcePathFilter.test(sourcePath)) continue;
+            if (stratum.hasMappedLineTo(this, sourcePath, njplsLine)) return true;
+        }
+        return false;
     }
 
     String baseSourceName() throws AbsentInformationException {

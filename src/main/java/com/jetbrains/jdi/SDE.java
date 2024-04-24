@@ -40,10 +40,9 @@ package com.jetbrains.jdi;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-public class SDE {
+class SDE {
     private static final int INIT_SIZE_FILE = 3;
     private static final int INIT_SIZE_LINE = 100;
     private static final int INIT_SIZE_STRATUM = 3;
@@ -86,7 +85,7 @@ public class SDE {
         }
     }
 
-    public static class LineTableRecord {
+    private static class LineTableRecord {
         int jplsStart;
         int jplsEnd;
         int jplsLineInc;
@@ -97,7 +96,7 @@ public class SDE {
         /**
          * Checks whether this mapping contains the provided line number in the mapped range.
          */
-        public boolean containsMappedLine(int njplsLine) {
+        boolean containsMappedLine(int njplsLine) {
             return njplsStart <= njplsLine && njplsLine <= njplsEnd;
         }
     }
@@ -108,7 +107,7 @@ public class SDE {
         int lineIndex;
     }
 
-    public class Stratum {
+    class Stratum {
         private final int sti; /* stratum index */
 
         private Stratum(int sti) {
@@ -149,7 +148,7 @@ public class SDE {
          * is always a terminator stratum.
          * Default sourcePath (the first one) must be first.
          */
-        public List<String> sourcePaths(ReferenceTypeImpl refType) {
+        List<String> sourcePaths(ReferenceTypeImpl refType) {
             int i;
             int fileIndexStart = stratumTable[sti].fileIndex;
             /* one past end */
@@ -161,38 +160,25 @@ public class SDE {
             return result;
         }
 
-        /**
-         * Get {@link LineTableRecord} elements that contain mappings to the provided source path.
-         */
-        public List<LineTableRecord> mappingsToPath(ReferenceTypeImpl refType, String sourcePath) {
-            int fileId = getFileIdWithSourcePath(refType, sourcePath);
-            if (fileId < 0) return Collections.emptyList();
-
-            List<LineTableRecord> result = new ArrayList<>();
-
+        boolean hasMappedLineTo(ReferenceTypeImpl refType, String targetSourcePath, int njplsLine) {
             int lineIndexStart = stratumTable[sti].lineIndex;
-            /* one past end */
             int lineIndexEnd = stratumTable[sti + 1].lineIndex;
-            for (int i = lineIndexStart; i < lineIndexEnd; ++i) {
-                LineTableRecord record = lineTable[i];
-                if (record.fileId == fileId) {
-                    result.add(record);
+            for (int lti = lineIndexStart; lti < lineIndexEnd; ++lti) {
+                LineTableRecord record = lineTable[lti];
+                if (record.containsMappedLine(njplsLine)) {
+                    int fti = stiFileTableIndex(sti, lti);
+                    if (fti == -1) {
+                        throw new InternalError("Bad SourceDebugExtension, no matching source id "
+                                + lineTable[lti].fileId + "\n" + sourceDebugExtension);
+                    }
+                    FileTableRecord ftr = fileTable[fti];
+                    String sourcePath = ftr.getSourcePath(refType);
+                    if (targetSourcePath.equals(sourcePath)) {
+                        return true;
+                    }
                 }
             }
-            return result;
-        }
-
-        private int getFileIdWithSourcePath(ReferenceTypeImpl refType, String sourcePath) {
-            int fileIndexStart = stratumTable[sti].fileIndex;
-            /* one past end */
-            int fileIndexEnd = stratumTable[sti+1].fileIndex;
-            for (int i = fileIndexStart; i < fileIndexEnd; ++i) {
-                String fileSourcePath = fileTable[i].getSourcePath(refType);
-                if (sourcePath.equals(fileSourcePath)) {
-                    return fileTable[i].fileId;
-                }
-            }
-            return -1;
+            return false;
         }
 
         LineStratum lineStratum(ReferenceTypeImpl refType,
@@ -405,31 +391,21 @@ public class SDE {
     }
 
     int stratumTableIndex(String stratumId) {
+        int i;
+
         if (stratumId == null) {
             return defaultStratumTableIndex();
         }
-        int i = findStratumTableIndex(stratumId);
-        if (i >= 0) return i;
-        return defaultStratumTableIndex();
-    }
-
-    private int findStratumTableIndex(String stratumId) {
-        for (int i = 0; i < (stratumIndex-1); ++i) {
+        for (i = 0; i < (stratumIndex-1); ++i) {
             if (stratumTable[i].id.equals(stratumId)) {
                 return i;
             }
         }
-        return -1;
+        return defaultStratumTableIndex();
     }
 
     Stratum stratum(String stratumID) {
         int sti = stratumTableIndex(stratumID);
-        return new Stratum(sti);
-    }
-
-    Stratum stratumOrNull(String stratumID) {
-        int sti = findStratumTableIndex(stratumID);
-        if (sti < 0) return null;
         return new Stratum(sti);
     }
 

@@ -52,18 +52,21 @@ class SDETest {
     @Test
     void testStratumOrNull() {
         SDE sde = getTestSde();
-        assertNotNull(sde.stratumOrNull("Kotlin"));
-        assertNotNull(sde.stratumOrNull("KotlinDebug"));
+        SDE.Stratum kotlinStratum = sde.stratum("Kotlin");
+        assertNotNull(kotlinStratum);
+        assertNotNull(sde.stratum("KotlinDebug"));
         // Java stratum is always present
-        assertNotNull(sde.stratumOrNull("Java"));
+        assertNotNull(sde.stratum("Java"));
 
-        assertNull(sde.stratumOrNull("Non-existent stratum"));
+        SDE.Stratum nonExistentStratum = sde.stratum("Non-existent stratum");
+        // Always returns the default stratum if nothing found
+        assertEquals("Kotlin", nonExistentStratum.id());
     }
 
     @Test
     void testSourcePaths() {
         SDE sde = getTestSde();
-        SDE.Stratum stratum = sde.stratumOrNull("Kotlin");
+        SDE.Stratum stratum = sde.stratum("Kotlin");
 
         // we can pass null here as a source path is present in the SMAP
         List<String> sourcePaths = stratum.sourcePaths(null);
@@ -72,35 +75,17 @@ class SDETest {
     }
 
     @Test
-    void testMappedLines() {
-        SDE sde = getTestSde();
-        SDE.Stratum stratum = sde.stratumOrNull("Kotlin");
-
-        List<SDE.LineTableRecord> lineMappings = stratum.mappingsToPath(null, "kt/breakpoints/inline/A");
-        assertEquals(1, lineMappings.size());
-
-        SDE.LineTableRecord lineMapping = lineMappings.get(0);
-        assertEquals(27, lineMapping.jplsStart);
-        assertEquals(28, lineMapping.jplsEnd);
-        assertEquals(1, lineMapping.jplsLineInc);
-        assertEquals(6, lineMapping.njplsStart);
-    }
-
-    @Test
     void testContainsLine() {
         SDE sde = getTestSde();
-        SDE.Stratum stratum = sde.stratumOrNull("Kotlin");
-
-        List<SDE.LineTableRecord> lineMappings = stratum.mappingsToPath(null, "kt/breakpoints/inline/A");
-        SDE.LineTableRecord lineMapping = lineMappings.get(0);
+        SDE.Stratum stratum = sde.stratum("Kotlin");
 
         for (int i = 0; i < 5; i++) {
-            assertFalse(lineMapping.containsMappedLine(i));
+            assertFalse(stratum.hasMappedLineTo(null, "kt/breakpoints/inline/A", i));
         }
-        assertTrue(lineMapping.containsMappedLine(6));
-        assertTrue(lineMapping.containsMappedLine(7));
+        assertTrue(stratum.hasMappedLineTo(null, "kt/breakpoints/inline/A", 6));
+        assertTrue(stratum.hasMappedLineTo(null, "kt/breakpoints/inline/A", 7));
         for (int i = 8; i < 27; i++) {
-            assertFalse(lineMapping.containsMappedLine(i));
+            assertFalse(stratum.hasMappedLineTo(null, "kt/breakpoints/inline/A", i));
         }
     }
 }
