@@ -41,8 +41,9 @@ package com.jetbrains.jdi;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
-class SDE {
+public class SDE {
     private static final int INIT_SIZE_FILE = 3;
     private static final int INIT_SIZE_LINE = 100;
     private static final int INIT_SIZE_STRATUM = 3;
@@ -281,7 +282,7 @@ class SDE {
     String defaultStratumId = null;
     boolean isValid = false;
 
-    SDE(String sourceDebugExtension) {
+    public SDE(String sourceDebugExtension) {
         this.sourceDebugExtension = sourceDebugExtension;
         decode();
     }
@@ -409,7 +410,7 @@ class SDE {
         return new Stratum(sti);
     }
 
-    List<String> availableStrata() {
+    public List<String> availableStrata() {
         List<String> strata = new ArrayList<>();
 
         for (int i = 0; i < (stratumIndex-1); ++i) {
@@ -417,6 +418,45 @@ class SDE {
             strata.add(rec.id);
         }
         return strata;
+    }
+
+    public LineAndSourcePath getLine(String stratumID, int jplsLine) {
+        LineStratum lineStratum = stratum(stratumID).lineStratum(null, jplsLine);
+        if (lineStratum == null) return null;
+        String sourcePath;
+        try {
+            sourcePath = lineStratum.sourcePath();
+        } catch (NullPointerException e) {
+            // Source path extraction takes ReferenceType instance as input, see SDE.FileTableRecord.getSourcePath
+            // However, the source path is usually present in the SMAP, so we pass null.
+            sourcePath = null;
+        }
+        return new LineAndSourcePath(lineStratum.lineNumber(), sourcePath);
+    }
+
+    public static class LineAndSourcePath {
+        public final int line;
+        public final String sourcePath;
+
+        public LineAndSourcePath(int line, String sourcePath) {
+            this.line = line;
+            this.sourcePath = sourcePath;
+        }
+
+        @Override
+        public final boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof LineAndSourcePath that)) return false;
+
+            return line == that.line && Objects.equals(sourcePath, that.sourcePath);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = line;
+            result = 31 * result + Objects.hashCode(sourcePath);
+            return result;
+        }
     }
 
 /*****************************
@@ -733,7 +773,7 @@ class SDE {
         return fileTableIndex(sti, lineTable[lti].fileId);
     }
 
-    boolean isValid() {
+    public boolean isValid() {
         return isValid;
     }
 }

@@ -88,4 +88,23 @@ class SDETest {
             assertFalse(stratum.hasMappedLineTo(null, "kt/breakpoints/inline/A", i));
         }
     }
+
+    @Test
+    void testAvailableStrata() {
+        SDE sde = getTestSde();
+        assertEquals(List.of("Java", "Kotlin", "KotlinDebug"), sde.availableStrata());
+    }
+
+    @Test
+    void testGetLine() {
+        SDE sde = getTestSde();
+        assertNull(sde.getLine("Kotlin", 0));
+        for (int i = 1; i <= 26; i++) {
+            assertEquals(new SDE.LineAndSourcePath(i, "kt/breakpoints/inline/B"), sde.getLine("Kotlin", i));
+        }
+
+        assertEquals(new SDE.LineAndSourcePath(6, "kt/breakpoints/inline/A"), sde.getLine("Kotlin", 27));
+        assertEquals(new SDE.LineAndSourcePath(7, "kt/breakpoints/inline/A"), sde.getLine("Kotlin", 28));
+        assertNull(sde.getLine("Kotlin", 29));
+    }
 }
