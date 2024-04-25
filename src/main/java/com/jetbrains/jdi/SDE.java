@@ -90,9 +90,15 @@ class SDE {
         int jplsEnd;
         int jplsLineInc;
         int njplsStart;
-        @SuppressWarnings("unused")
         int njplsEnd;
         int fileId;
+
+        /**
+         * Checks whether this mapping contains the provided line number in the mapped range.
+         */
+        boolean containsMappedLine(int njplsLine) {
+            return njplsStart <= njplsLine && njplsLine <= njplsEnd;
+        }
     }
 
     private static class StratumTableRecord {
@@ -152,6 +158,27 @@ class SDE {
                 result.add(fileTable[i].getSourcePath(refType));
             }
             return result;
+        }
+
+        boolean hasMappedLineTo(ReferenceTypeImpl refType, String targetSourcePath, int njplsLine) {
+            int lineIndexStart = stratumTable[sti].lineIndex;
+            int lineIndexEnd = stratumTable[sti + 1].lineIndex;
+            for (int lti = lineIndexStart; lti < lineIndexEnd; ++lti) {
+                LineTableRecord record = lineTable[lti];
+                if (record.containsMappedLine(njplsLine)) {
+                    int fti = stiFileTableIndex(sti, lti);
+                    if (fti == -1) {
+                        throw new InternalError("Bad SourceDebugExtension, no matching source id "
+                                + lineTable[lti].fileId + "\n" + sourceDebugExtension);
+                    }
+                    FileTableRecord ftr = fileTable[fti];
+                    String sourcePath = ftr.getSourcePath(refType);
+                    if (targetSourcePath.equals(sourcePath)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         LineStratum lineStratum(ReferenceTypeImpl refType,
