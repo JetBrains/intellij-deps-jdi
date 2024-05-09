@@ -500,6 +500,7 @@ public class StackFrameImpl extends MirrorImpl
                 case JDWP.Error.INVALID_FRAMEID:
                 case JDWP.Error.THREAD_NOT_SUSPENDED:
                 case JDWP.Error.INVALID_THREAD:
+                case JDWP.Error.INVALID_SLOT:
                     throw new InvalidStackFrameException();
                 default:
                     throw exc.toJDIException();
