@@ -81,6 +81,8 @@ public class VirtualMachineImpl extends MirrorImpl
     // JDI as little as possible when not enabled.
     int traceFlags = TRACE_NONE;
 
+    private Consumer<String> debugTraceConsumer = VirtualMachineImpl::defaultPrintTrace;
+
     static final int TRACE_RAW_SENDS     = 0x01000000;
     static final int TRACE_RAW_RECEIVES  = 0x02000000;
 
@@ -878,7 +880,20 @@ public class VirtualMachineImpl extends MirrorImpl
         this.traceReceives = (traceFlags & TRACE_RECEIVES) != 0;
     }
 
+    public void setDebugTraceConsumer(Consumer<String> consumer) {
+        if (consumer == null) {
+            debugTraceConsumer = VirtualMachineImpl::defaultPrintTrace;
+        }
+        else {
+            debugTraceConsumer = consumer;
+        }
+    }
+
     void printTrace(String string) {
+        debugTraceConsumer.accept(string);
+    }
+
+    private static void defaultPrintTrace(String string) {
         System.err.println("[JDI: " + string + "]");
     }
 
