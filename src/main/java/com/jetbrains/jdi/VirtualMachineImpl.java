@@ -91,7 +91,7 @@ public class VirtualMachineImpl extends MirrorImpl
     private final AtomicInteger waitPackets = new AtomicInteger();
 
     // ReferenceType access - updated with class prepare and unload events
-    // Protected by "synchronized(this)". "retrievedAllTypes" may be
+    // Protected by "synchronized(state)". "retrievedAllTypes" may be
     // tested unsynchronized (since once true, it stays true), but must
     // be set synchronously
     private final Map<Long, ReferenceType> typesByID = new HashMap<>(300);
@@ -104,7 +104,7 @@ public class VirtualMachineImpl extends MirrorImpl
     private String defaultStratum = null;
 
     // ObjectReference cache
-    // "objectsByID" protected by "synchronized(this)".
+    // "objectsByID" protected by "synchronized(state)".
     private final Map<Long, SoftObjectReference> objectsByID = new HashMap<>();
     private final ReferenceQueue<ObjectReferenceImpl> referenceQueue = new ReferenceQueue<>();
     private static final int DISPOSE_THRESHOLD = 50;
@@ -118,7 +118,7 @@ public class VirtualMachineImpl extends MirrorImpl
     private JDWP.VirtualMachine.CapabilitiesNew capabilitiesNew = null;
 
     // Per-vm singletons for primitive types and for void.
-    // singleton-ness protected by "synchronized(this)".
+    // singleton-ness protected by "synchronized(state)".
     private final BooleanType theBooleanType;
     private final ByteType    theByteType;
     private final CharType    theCharType;
@@ -335,7 +335,7 @@ public class VirtualMachineImpl extends MirrorImpl
         if (!retrievedAllTypes) {
             retrieveAllClasses();
         }
-        synchronized (this) {
+        synchronized (state) {
             return List.copyOf(typesByID.values());
         }
     }
@@ -352,7 +352,7 @@ public class VirtualMachineImpl extends MirrorImpl
             res = retrieveAllClassesAsync();
         }
         return res.thenApply(unused -> {
-            synchronized (this) {
+            synchronized (state) {
                 return List.copyOf(typesByID.values());
             }
         });
@@ -940,7 +940,8 @@ public class VirtualMachineImpl extends MirrorImpl
         return type;
     }
 
-    synchronized void cacheTypeBySignature(ReferenceTypeImpl type, String signature) {
+    void cacheTypeBySignature(ReferenceTypeImpl type, String signature) {
+      synchronized (state) {
         typesBySignature.merge(signature, type, (oldValue, newValue) -> {
             if (oldValue instanceof ReferenceType[]) {
                 ReferenceType[] oldArray = (ReferenceType[]) oldValue;
@@ -951,6 +952,7 @@ public class VirtualMachineImpl extends MirrorImpl
             assert oldValue instanceof ReferenceType;
             return new ReferenceType[]{(ReferenceType) oldValue, (ReferenceType) newValue};
         });
+      }
     }
 
     void removeReferenceType(String signature) {
@@ -969,7 +971,8 @@ public class VirtualMachineImpl extends MirrorImpl
         removeReferenceTypes(signature, toRemove);
     }
 
-    private synchronized void removeReferenceTypes(String signature, List<ReferenceType> toRemove) {
+    private void removeReferenceTypes(String signature, List<ReferenceType> toRemove) {
+      synchronized (state) {
         List<ReferenceType> referenceTypes = new ArrayList<>(findReferenceTypes(signature));
         for (ReferenceType t : toRemove) {
             ReferenceTypeImpl type = (ReferenceTypeImpl) t;
@@ -990,9 +993,11 @@ public class VirtualMachineImpl extends MirrorImpl
             default:
                 typesBySignature.put(signature, referenceTypes.toArray(new ReferenceType[0]));
         }
+      }
     }
 
-    private synchronized List<ReferenceType> findReferenceTypes(String signature) {
+    private List<ReferenceType> findReferenceTypes(String signature) {
+      synchronized (state) {
         Object res = typesBySignature.get(signature);
         if (res instanceof ReferenceType) {
             return List.of((ReferenceType) res);
@@ -1001,6 +1006,7 @@ public class VirtualMachineImpl extends MirrorImpl
         }
         assert res == null;
         return List.of();
+      }
     }
 
     ReferenceTypeImpl referenceType(long ref, byte tag) {
@@ -1042,7 +1048,7 @@ public class VirtualMachineImpl extends MirrorImpl
             return null;
         } else {
             ReferenceTypeImpl retType;
-            synchronized (this) {
+            synchronized (state) {
                 retType = (ReferenceTypeImpl)typesByID.get(id);
                 if (retType == null) {
                     retType = addReferenceType(id, tag, signature);
@@ -1079,13 +1085,15 @@ public class VirtualMachineImpl extends MirrorImpl
         return capabilitiesNew;
     }
 
-    private synchronized ModuleReference addModule(long id) {
+    private ModuleReference addModule(long id) {
+      synchronized (state) {
         if (modulesByID == null) {
             modulesByID = new HashMap<>(77);
         }
         ModuleReference module = new ModuleReferenceImpl(vm, id);
         modulesByID.put(id, module);
         return module;
+      }
     }
 
     ModuleReference getModule(long id) {
@@ -1093,7 +1101,7 @@ public class VirtualMachineImpl extends MirrorImpl
             return null;
         } else {
             ModuleReference module = null;
-            synchronized (this) {
+            synchronized (state) {
                 if (modulesByID != null) {
                     module = modulesByID.get(id);
                 }
@@ -1105,7 +1113,8 @@ public class VirtualMachineImpl extends MirrorImpl
         }
     }
 
-    private synchronized List<ModuleReference> retrieveAllModules() {
+    private List<ModuleReference> retrieveAllModules() {
+      synchronized (state) {
         ModuleReferenceImpl[] reqModules;
         try {
             reqModules = JDWP.VirtualMachine.AllModules.process(vm).modules;
@@ -1116,6 +1125,7 @@ public class VirtualMachineImpl extends MirrorImpl
                 .map(ObjectReferenceImpl::ref)
                 .map(this::getModule)
                 .collect(Collectors.toList());
+      }
     }
 
     private List<ReferenceType> retrieveClassesBySignature(String signature) {
@@ -1134,7 +1144,7 @@ public class VirtualMachineImpl extends MirrorImpl
         List<ReferenceType> list = new ArrayList<>(count);
 
         // Hold lock during processing to improve performance
-        synchronized (this) {
+        synchronized (state) {
             for (JDWP.VirtualMachine.ClassesBySignature.ClassInfo ci : cinfos) {
                 ReferenceTypeImpl type = referenceType(ci.typeID,
                         ci.refTypeTag,
@@ -1156,7 +1166,7 @@ public class VirtualMachineImpl extends MirrorImpl
 
         // Hold lock during processing to improve performance
         // and to have safe check/set of retrievedAllTypes
-        synchronized (this) {
+        synchronized (state) {
             if (!retrievedAllTypes) {
                 // Number of classes
                 int count = cinfos.length;
@@ -1175,7 +1185,7 @@ public class VirtualMachineImpl extends MirrorImpl
         return JDWP.VirtualMachine.AllClasses.processAsync(vm).thenAccept(allClasses -> {
             // Hold lock during processing to improve performance
             // and to have safe check/set of retrievedAllTypes
-            synchronized (this) {
+            synchronized (state) {
                 if (!retrievedAllTypes) {
                     for (JDWP.VirtualMachine.AllClasses.ClassInfo ci : allClasses.classes) {
                         ReferenceTypeImpl type = referenceType(ci.typeID, ci.refTypeTag, ci.signature);
@@ -1210,7 +1220,7 @@ public class VirtualMachineImpl extends MirrorImpl
 
         // Hold lock during processing to improve performance
         // and to have safe check/set of retrievedAllTypes
-        synchronized (this) {
+        synchronized (state) {
             if (!retrievedAllTypes) {
                 // Number of classes
                 for (JDWP.VirtualMachine.AllClasses.ClassInfo ci : cinfos) {
@@ -1236,7 +1246,7 @@ public class VirtualMachineImpl extends MirrorImpl
         return JDWP.VirtualMachine.AllClasses.processAsync(vm).thenAccept(allClassesWithGeneric -> {
             // Hold lock during processing to improve performance
             // and to have safe check/set of retrievedAllTypes
-            synchronized (this) {
+            synchronized (state) {
                 if (!retrievedAllTypes) {
                     for (JDWP.VirtualMachine.AllClasses.ClassInfo ci : allClassesWithGeneric.classes) {
                         ReferenceTypeImpl type = referenceType(ci.typeID, ci.refTypeTag, ci.signature);
@@ -1404,8 +1414,9 @@ public class VirtualMachineImpl extends MirrorImpl
         }
     }
 
-    synchronized ObjectReferenceImpl objectMirror(long id, int tag) {
+    ObjectReferenceImpl objectMirror(long id, int tag) {
 
+      synchronized (state) {
         // Handle any queue elements that are not strongly reachable
         processQueue();
 
@@ -1472,14 +1483,17 @@ public class VirtualMachineImpl extends MirrorImpl
         }
 
         return object;
+      }
     }
 
-    private synchronized void removeObjectMirror(SoftObjectReference ref) {
+    private void removeObjectMirror(SoftObjectReference ref) {
+      synchronized (state) {
         /*
          * This will remove the soft reference if it has not been
          * replaced in the cache.
          */
         objectsByID.remove(ref.key());
+      }
     }
 
     ObjectReferenceImpl objectMirror(long id) {
