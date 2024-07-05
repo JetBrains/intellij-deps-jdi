@@ -906,9 +906,7 @@ public class VirtualMachineImpl extends MirrorImpl
         printTrace(sb.toString());
     }
 
-    private synchronized ReferenceTypeImpl addReferenceType(long id,
-                                                            int tag,
-                                                            String signature) {
+    private ReferenceTypeImpl addReferenceType(long id, int tag, String signature) {
         ReferenceTypeImpl type;
         switch(tag) {
             case JDWP.TypeTag.CLASS:
