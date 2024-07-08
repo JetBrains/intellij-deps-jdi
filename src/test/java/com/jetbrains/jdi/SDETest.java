@@ -2,11 +2,15 @@ package com.jetbrains.jdi;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class SDETest {
+    private static final String A_CLASS = toOSSpecificPath("kt/breakpoints/inline/A");
+    private static final String B_CLASS = toOSSpecificPath("kt/breakpoints/inline/B");
+
     // Original code:
     //
     //object A {
@@ -29,16 +33,19 @@ class SDETest {
             *S Kotlin
             *F
             + 1 inline.kt
-            kt/breakpoints/inline/B
+            """ +
+            B_CLASS + '\n' + """
             + 2 inline.kt
-            kt/breakpoints/inline/A
+            """ +
+            A_CLASS + '\n' + """
             *L
             1#1,26:1
             6#2,2:27
             *S KotlinDebug
             *F
             + 1 inline.kt
-            kt/breakpoints/inline/B
+            """ +
+            B_CLASS + '\n' + """
             *L
             12#1:27,2
             *E""";
@@ -71,7 +78,7 @@ class SDETest {
         // we can pass null here as a source path is present in the SMAP
         List<String> sourcePaths = stratum.sourcePaths(null);
 
-        assertEquals(List.of("kt/breakpoints/inline/B", "kt/breakpoints/inline/A"), sourcePaths);
+        assertEquals(List.of(B_CLASS, A_CLASS), sourcePaths);
     }
 
     @Test
@@ -80,12 +87,12 @@ class SDETest {
         SDE.Stratum stratum = sde.stratum("Kotlin");
 
         for (int i = 0; i < 5; i++) {
-            assertFalse(stratum.hasMappedLineTo(null, "kt/breakpoints/inline/A", i));
+            assertFalse(stratum.hasMappedLineTo(null, A_CLASS, i));
         }
-        assertTrue(stratum.hasMappedLineTo(null, "kt/breakpoints/inline/A", 6));
-        assertTrue(stratum.hasMappedLineTo(null, "kt/breakpoints/inline/A", 7));
+        assertTrue(stratum.hasMappedLineTo(null, A_CLASS, 6));
+        assertTrue(stratum.hasMappedLineTo(null, A_CLASS, 7));
         for (int i = 8; i < 27; i++) {
-            assertFalse(stratum.hasMappedLineTo(null, "kt/breakpoints/inline/A", i));
+            assertFalse(stratum.hasMappedLineTo(null, A_CLASS, i));
         }
     }
 
@@ -100,11 +107,15 @@ class SDETest {
         SDE sde = getTestSde();
         assertNull(sde.getLine("Kotlin", 0));
         for (int i = 1; i <= 26; i++) {
-            assertEquals(new SDE.LineAndSourcePath(i, "kt/breakpoints/inline/B"), sde.getLine("Kotlin", i));
+            assertEquals(new SDE.LineAndSourcePath(i, B_CLASS), sde.getLine("Kotlin", i));
         }
 
-        assertEquals(new SDE.LineAndSourcePath(6, "kt/breakpoints/inline/A"), sde.getLine("Kotlin", 27));
-        assertEquals(new SDE.LineAndSourcePath(7, "kt/breakpoints/inline/A"), sde.getLine("Kotlin", 28));
+        assertEquals(new SDE.LineAndSourcePath(6, A_CLASS), sde.getLine("Kotlin", 27));
+        assertEquals(new SDE.LineAndSourcePath(7, A_CLASS), sde.getLine("Kotlin", 28));
         assertNull(sde.getLine("Kotlin", 29));
+    }
+
+    private static String toOSSpecificPath(String unixPath) {
+        return unixPath.replace("/", File.separator);
     }
 }
