@@ -194,7 +194,7 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
         abstract String eventName();
 
         public String toString() {
-            return eventName();
+            return eventName() + "(ER=" + requestID + ")";
         }
 
     }
@@ -213,7 +213,7 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
         }
 
         public String toString() {
-            return eventName() + " in thread " + thread.name();
+            return eventName() + "(ER=" + requestID() + ") in thread " + thread.name();
         }
     }
 
@@ -240,7 +240,7 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
         }
 
         public String toString() {
-            return eventName() + "@" +
+            return eventName() + "(ER=" + requestID() + ")@" +
                    ((location() == null) ? " null" : location().toString()) +
                    " in thread " + thread().name();
         }
