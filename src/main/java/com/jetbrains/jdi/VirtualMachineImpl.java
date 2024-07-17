@@ -82,6 +82,7 @@ public class VirtualMachineImpl extends MirrorImpl
     int traceFlags = TRACE_NONE;
 
     private Consumer<String> debugTraceConsumer = VirtualMachineImpl::defaultPrintTrace;
+    private static boolean useSoftReferences = true;
 
     static final int TRACE_RAW_SENDS     = 0x01000000;
     static final int TRACE_RAW_RECEIVES  = 0x02000000;
@@ -886,6 +887,28 @@ public class VirtualMachineImpl extends MirrorImpl
         }
         else {
             debugTraceConsumer = consumer;
+        }
+    }
+
+    public void disableSoftReferences() {
+        useSoftReferences = false;
+    }
+
+    <T> SoftReference<T> createSoftReference(T object) {
+        if (useSoftReferences) {
+            return new SoftReference<>(object);
+        }
+        else {
+            return new HardSoftReference<>(object);
+        }
+    }
+
+    // simple SoftReference implementation that works as a hard reference
+    private static class HardSoftReference<T> extends SoftReference<T> {
+        T hardRef;
+        public HardSoftReference(T referent) {
+            super(referent);
+            hardRef = referent;
         }
     }
 

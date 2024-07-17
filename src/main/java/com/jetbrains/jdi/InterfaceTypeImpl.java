@@ -77,7 +77,7 @@ public class InterfaceTypeImpl extends InvokableTypeImpl
         InterfaceType[] superinterfaces = dereference(superinterfacesRef);
         if (superinterfaces == null) {
             superinterfaces = getInterfaces();
-            superinterfacesRef = new SoftReference<>(superinterfaces);
+            superinterfacesRef = vm.createSoftReference(superinterfaces);
         }
         return unmodifiableList(superinterfaces);
     }
@@ -88,7 +88,7 @@ public class InterfaceTypeImpl extends InvokableTypeImpl
             return CompletableFuture.completedFuture(unmodifiableList(superinterfaces));
         }
         return getInterfacesAsync().thenApply(r -> {
-            superinterfacesRef = new SoftReference<>(r);
+            superinterfacesRef = vm.createSoftReference(r);
             return unmodifiableList(r);
         });
     }

@@ -298,7 +298,7 @@ public class ConcreteMethodImpl extends MethodImpl {
             } catch (JDWPException exc) {
                 throw exc.toJDIException();
             }
-            bytecodesRef = new SoftReference<>(bytecodes);
+            bytecodesRef = vm.createSoftReference(bytecodes);
         }
         /*
          * Arrays are always modifiable, so it is a little unsafe
@@ -314,7 +314,7 @@ public class ConcreteMethodImpl extends MethodImpl {
             return CompletableFuture.completedFuture(bytecodes.clone());
         }
         return JDWP.Method.Bytecodes.processAsync(vm, declaringType, ref).thenApply(b -> {
-            bytecodesRef = new SoftReference<>(b.bytes);
+            bytecodesRef = vm.createSoftReference(b.bytes);
             /*
              * Arrays are always modifiable, so it is a little unsafe
              * to return the cached bytecodes directly; instead, we
@@ -391,7 +391,7 @@ public class ConcreteMethodImpl extends MethodImpl {
 
         info = new SoftLocationXRefs(stratumID, lineMapper, lineLocations,
                                      lowestLine, highestLine);
-        softOtherLocationXRefsRef = new SoftReference<>(info);
+        softOtherLocationXRefsRef = vm.createSoftReference(info);
         return info;
     }
 
@@ -455,7 +455,7 @@ public class ConcreteMethodImpl extends MethodImpl {
 
                     SoftLocationXRefs res = new SoftLocationXRefs(stratumID, lineMapper, lineLocations,
                             lowestLine, highestLine);
-                    softOtherLocationXRefsRef = new SoftReference<>(res);
+                    softOtherLocationXRefsRef = vm.createSoftReference(res);
                     return res;
                 });
     }
@@ -541,7 +541,7 @@ public class ConcreteMethodImpl extends MethodImpl {
         info = new SoftLocationXRefs(SDE.BASE_STRATUM_NAME,
                                      lineMapper, lineLocations,
                                      lowestLine, highestLine);
-        softBaseLocationXRefsRef = new SoftReference<>(info);
+        softBaseLocationXRefsRef = vm.createSoftReference(info);
         return info;
     }
 
@@ -617,7 +617,7 @@ public class ConcreteMethodImpl extends MethodImpl {
                     SoftLocationXRefs res = new SoftLocationXRefs(SDE.BASE_STRATUM_NAME,
                             lineMapper, lineLocations,
                             lowestLine, highestLine);
-                    softBaseLocationXRefsRef = new SoftReference<>(res);
+                    softBaseLocationXRefsRef = vm.createSoftReference(res);
                     return res;
                 });
     }
@@ -760,7 +760,7 @@ public class ConcreteMethodImpl extends MethodImpl {
         }
         variables = getVariables1();
         variables = Collections.unmodifiableList(variables);
-        variablesRef = new SoftReference<>(variables);
+        variablesRef = vm.createSoftReference(variables);
         return variables;
     }
 
@@ -775,7 +775,7 @@ public class ConcreteMethodImpl extends MethodImpl {
         }
         return getVariables1Async().thenApply(v -> {
             List<LocalVariable> res = Collections.unmodifiableList(v);
-            variablesRef = new SoftReference<>(res);
+            variablesRef = vm.createSoftReference(res);
             return res;
         });
     }

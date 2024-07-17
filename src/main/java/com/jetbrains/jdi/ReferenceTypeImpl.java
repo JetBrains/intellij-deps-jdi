@@ -45,6 +45,7 @@ import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -55,6 +56,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     private volatile String baseSourceName = null;
     private String baseSourcePath = null;
     protected int modifiers = -1;
+    private final Object cachesLock = new Object();
     private volatile SoftReference<Field[]> fieldsRef = null;
     private volatile SoftReference<Method[]> methodsRef = null;
     private volatile SoftReference<SDE> sdeRef = null;
@@ -90,17 +92,17 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         baseSourceName = null;
         baseSourcePath = null;
         modifiers = -1;
-        fieldsRef = null;
-        if (methodsRef != null) {
-            Method[] methods = dereference(methodsRef);
+        synchronized (cachesLock) {
+            fieldsRef = null;
+            Method[] methods = getFromCache(methodsRef);
             if (methods != null) {
                 for (Method method : methods) {
                     ((MethodImpl) method).noticeRedefineClass();
                 }
             }
+            methodsRef = null;
+            sdeRef = null;
         }
-        methodsRef = null;
-        sdeRef = null;
         constantPoolInfoGotten = false;
     }
 
@@ -339,7 +341,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     }
 
     public CompletableFuture<List<Field>> fieldsAsync() {
-        Field[] fields = dereference(fieldsRef);
+        Field[] fields = getFromCache(fieldsRef);
         if (fields != null) {
             return CompletableFuture.completedFuture(unmodifiableList(fields));
         }
@@ -352,13 +354,13 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
                     .thenApply(r -> readFields(r.declared));
         }
         return array.thenApply(res -> {
-            fieldsRef = new SoftReference<>(res);
+            res = tryToCache(fieldsRef, res, v -> fieldsRef = v);
             return unmodifiableList(res);
         });
     }
 
     public List<Field> fields() {
-        Field[] fields = dereference(fieldsRef);
+        Field[] fields = getFromCache(fieldsRef);
         if (fields == null) {
             if (vm.canGet1_5LanguageFeatures()) {
                 JDWP.ReferenceType.FieldsWithGeneric.FieldInfo[] jdwpFields;
@@ -379,7 +381,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
                 }
                 fields = readFields(jdwpFields);
             }
-            fieldsRef = new SoftReference<>(fields);
+            fields = tryToCache(fieldsRef, fields, v -> fieldsRef = v);
         }
         return unmodifiableList(fields);
     }
@@ -535,7 +537,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     }
 
     public CompletableFuture<List<Method>> methodsAsync() {
-        Method[] methods = dereference(methodsRef);
+        Method[] methods = getFromCache(methodsRef);
         if (methods != null) {
             return CompletableFuture.completedFuture(unmodifiableList(methods));
         }
@@ -548,13 +550,13 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
                     .thenApply(m -> readMethodsWithGeneric(m.declared));
         }
         return array.thenApply(res -> {
-            methodsRef = new SoftReference<>(res);
+            res = tryToCache(methodsRef, res, n -> methodsRef = n);
             return unmodifiableList(res);
         });
     }
 
     public List<Method> methods() {
-        Method[] methods = dereference(methodsRef);
+        Method[] methods = getFromCache(methodsRef);
         if (methods == null) {
             if (!vm.canGet1_5LanguageFeatures()) {
                 JDWP.ReferenceType.Methods.MethodInfo[] declared;
@@ -575,9 +577,27 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
                 }
                 methods = readMethodsWithGeneric(declared);
             }
-            methodsRef = new SoftReference<>(methods);
+            methods = tryToCache(methodsRef, methods, n -> methodsRef = n);
         }
         return unmodifiableList(methods);
+    }
+
+    private <T> T getFromCache(SoftReference<T> cache) {
+        synchronized (cachesLock) {
+            return dereference(cache);
+        }
+    }
+
+    private <T> T tryToCache(SoftReference<T> cache, T value, Consumer<SoftReference<T>> setter) {
+        synchronized (cachesLock) {
+            T current = dereference(cache);
+            if (current != null) {
+                return current;
+            } else {
+                setter.accept(vm.createSoftReference(value));
+                return value;
+            }
+        }
     }
 
     /*
@@ -966,7 +986,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         if (!vm.canGetSourceDebugExtension()) {
             return NO_SDE_INFO_MARK;
         }
-        SDE sde = dereference(sdeRef);
+        SDE sde = getFromCache(sdeRef);
         if (sde == null) {
             String extension = null;
             try {
@@ -974,7 +994,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
                     process(vm, this).extension;
             } catch (JDWPException exc) {
                 if (exc.errorCode() != JDWP.Error.ABSENT_INFORMATION) {
-                    sdeRef = new SoftReference<>(NO_SDE_INFO_MARK);
+                    sdeRef = vm.createSoftReference(NO_SDE_INFO_MARK);
                     throw exc.toJDIException();
                 }
             }
@@ -983,7 +1003,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
             } else {
                 sde = new SDE(extension);
             }
-            sdeRef = new SoftReference<>(sde);
+            sde = tryToCache(sdeRef, sde, v -> sdeRef = v);
         }
         return sde;
     }
@@ -992,7 +1012,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         if (!vm.canGetSourceDebugExtension()) {
             return CompletableFuture.completedFuture(NO_SDE_INFO_MARK);
         }
-        SDE sde = dereference(sdeRef);
+        SDE sde = getFromCache(sdeRef);
         if (sde != null) {
             return CompletableFuture.completedFuture(sde);
         }
@@ -1005,7 +1025,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
                 })
                 .thenApply(e -> {
                     SDE res = (e == null) ? NO_SDE_INFO_MARK : new SDE(e.extension);
-                    sdeRef = new SoftReference<>(res);
+                    res = tryToCache(sdeRef, res, v -> sdeRef = v);
                     return res;
                 });
     }
@@ -1268,7 +1288,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         byte[] cpbytes;
         constanPoolCount = jdwpCPool.count;
         cpbytes = jdwpCPool.bytes;
-        constantPoolBytesRef = new SoftReference<>(cpbytes);
+        constantPoolBytesRef = vm.createSoftReference(cpbytes);
         constantPoolInfoGotten = true;
         return cpbytes;
     }
@@ -1299,7 +1319,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
             }
             constanPoolCount = jdwpCPool.count;
             byte[] cpbytes = jdwpCPool.bytes;
-            constantPoolBytesRef = new SoftReference<>(cpbytes);
+            constantPoolBytesRef = vm.createSoftReference(cpbytes);
             constantPoolInfoGotten = true;
             return cpbytes;
         });
