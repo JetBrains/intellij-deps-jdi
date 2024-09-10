@@ -407,7 +407,8 @@ public class VirtualMachineImpl extends MirrorImpl
             JDWP.VirtualMachine.RedefineClasses.
                 process(vm, defs);
         } catch (JDWPException exc) {
-            switch (exc.errorCode()) {
+            short errorCode = exc.errorCode();
+            switch (errorCode) {
             case JDWP.Error.INVALID_CLASS_FORMAT :
                 throw new ClassFormatError(
                     "class not in class file format");
@@ -421,25 +422,25 @@ public class VirtualMachineImpl extends MirrorImpl
                 throw new UnsupportedClassVersionError(
                     "version numbers of class are not supported");
             case JDWP.Error.ADD_METHOD_NOT_IMPLEMENTED:
-                throw new UnsupportedOperationException(
+                throw new JDWPUnsupportedOperationException(errorCode,
                     "add method not implemented");
             case JDWP.Error.SCHEMA_CHANGE_NOT_IMPLEMENTED :
-                throw new UnsupportedOperationException(
+                throw new JDWPUnsupportedOperationException(errorCode,
                     "schema change not implemented");
             case JDWP.Error.HIERARCHY_CHANGE_NOT_IMPLEMENTED:
-                throw new UnsupportedOperationException(
+                throw new JDWPUnsupportedOperationException(errorCode,
                     "hierarchy change not implemented");
             case JDWP.Error.DELETE_METHOD_NOT_IMPLEMENTED :
-                throw new UnsupportedOperationException(
+                throw new JDWPUnsupportedOperationException(errorCode,
                     "delete method not implemented");
             case JDWP.Error.CLASS_MODIFIERS_CHANGE_NOT_IMPLEMENTED:
-                throw new UnsupportedOperationException(
+                throw new JDWPUnsupportedOperationException(errorCode,
                     "changes to class modifiers not implemented");
             case JDWP.Error.METHOD_MODIFIERS_CHANGE_NOT_IMPLEMENTED :
-                throw new UnsupportedOperationException(
+                throw new JDWPUnsupportedOperationException(errorCode,
                     "changes to method modifiers not implemented");
             case JDWP.Error.CLASS_ATTRIBUTE_CHANGE_NOT_IMPLEMENTED :
-                throw new UnsupportedOperationException(
+                throw new JDWPUnsupportedOperationException(errorCode,
                     "changes to class attribute not implemented");
             case JDWP.Error.NAMES_DONT_MATCH :
                 throw new NoClassDefFoundError(
