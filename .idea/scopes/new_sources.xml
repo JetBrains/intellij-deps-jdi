@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="new sources" pattern="file[jb-jdi.main]:java/com/jetbrains/jdi/AsyncUtils.java||file[jb-jdi.main]:java/com/jetbrains/jdi/ExactClassNotLoadedException.java" />
+</component>

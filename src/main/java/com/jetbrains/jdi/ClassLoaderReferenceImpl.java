@@ -145,7 +145,7 @@ public class ClassLoaderReferenceImpl extends ObjectReferenceImpl
         }
 
         String typeName = new JNITypeParser(signature).typeName();
-        throw new ClassNotLoadedException(typeName, "Class " + typeName + " not loaded");
+        throw new ExactClassNotLoadedException(typeName, "Class " + typeName + " not loaded", this);
     }
 
     byte typeValueKey() {
