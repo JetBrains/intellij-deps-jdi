@@ -344,9 +344,9 @@ public abstract class MethodImpl extends TypeComponentImpl
      *     - delete arguments(n+1), ...
      * NOTE that this might modify the input list.
      */
-    void handleVarArgs(List<Value> arguments)
+    public static void handleVarArgs(Method method, List<Value> arguments)
         throws ClassNotLoadedException, InvalidTypeException {
-        List<Type> paramTypes = this.argumentTypes();
+        List<Type> paramTypes = method.argumentTypes();
         ArrayType lastParamType = (ArrayType)paramTypes.get(paramTypes.size() - 1);
         int argCount = arguments.size();
         int paramCount = paramTypes.size();
@@ -413,7 +413,7 @@ public abstract class MethodImpl extends TypeComponentImpl
 
         List<Value> arguments = new ArrayList<>(origArguments);
         if (isVarArgs()) {
-            handleVarArgs(arguments);
+            handleVarArgs(this, arguments);
         }
 
         int argSize = arguments.size();
