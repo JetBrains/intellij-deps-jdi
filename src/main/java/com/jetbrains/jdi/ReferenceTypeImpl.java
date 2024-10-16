@@ -62,7 +62,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     private volatile SoftReference<SDE> sdeRef = null;
 
     private ClassLoaderReference classLoader = null;
-    private ClassObjectReference classObject = null;
+    private volatile ClassObjectReference classObject = null;
 
     private int status = 0;
     private boolean isPrepared = false;
@@ -824,6 +824,18 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
             }
         }
         return classObject;
+    }
+
+    @SuppressWarnings("unused")
+    public CompletableFuture<ClassObjectReference> classObjectAsync() {
+        if (classObject == null) {
+            return JDWP.ReferenceType.ClassObject.processAsync(vm, this)
+                    .thenApply(c -> {
+                        classObject = c.classObject;
+                        return c.classObject;
+                    });
+        }
+        return CompletableFuture.completedFuture(classObject);
     }
 
     SDE.Stratum stratum(String stratumID) {

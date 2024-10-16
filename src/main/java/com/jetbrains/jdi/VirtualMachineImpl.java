@@ -640,6 +640,11 @@ public class VirtualMachineImpl extends MirrorImpl
         }
     }
 
+    public CompletableFuture<StringReferenceImpl> mirrorOfAsync(String value) {
+        validateVM();
+        return JDWP.VirtualMachine.CreateString.processAsync(vm, value).thenApply(s -> s.stringObject);
+    }
+
     public VoidValueImpl mirrorOfVoid() {
         return voidVal;
     }

@@ -38,18 +38,10 @@
 
 package com.jetbrains.jdi;
 
+import com.sun.jdi.*;
+
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-
-import com.sun.jdi.ArrayReference;
-import com.sun.jdi.ArrayType;
-import com.sun.jdi.ClassNotLoadedException;
-import com.sun.jdi.InterfaceType;
-import com.sun.jdi.Method;
-import com.sun.jdi.PrimitiveType;
-import com.sun.jdi.ReferenceType;
-import com.sun.jdi.Type;
-import com.sun.jdi.VirtualMachine;
 
 public class ArrayTypeImpl extends ReferenceTypeImpl
     implements ArrayType
@@ -67,6 +59,16 @@ public class ArrayTypeImpl extends ReferenceTypeImpl
         } catch (JDWPException exc) {
             throw exc.toJDIException();
         }
+    }
+
+    @SuppressWarnings("unused")
+    public CompletableFuture<ArrayReference> newInstanceAsync(int length) {
+        return JDWP.ArrayType.NewInstance.processAsync(vm, this, length).thenApply(a -> {
+            ArrayReferenceImpl res = (ArrayReferenceImpl) a.newArray;
+            res.setLength(length);
+            res.setType(this);
+            return res;
+        });
     }
 
     public String componentSignature() {
