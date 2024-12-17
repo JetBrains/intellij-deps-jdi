@@ -60,7 +60,7 @@ class OutNode extends AbstractTypeListNode {
         writer.println();
         indent(writer, depth);
         writer.print(
-                "static CompletableFuture<" + cmdName + "> processAsync(VirtualMachineImpl vm");
+                "public static CompletableFuture<" + cmdName + "> processAsync(VirtualMachineImpl vm");
         for (Node node : components) {
             TypeNode tn = (TypeNode)node;
             writer.println(", ");

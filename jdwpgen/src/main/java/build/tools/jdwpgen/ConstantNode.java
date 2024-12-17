@@ -63,7 +63,7 @@ class ConstantNode extends AbstractCommandNode {
 
     void genJava(PrintWriter writer, int depth) {
         indent(writer, depth);
-        writer.println("static final int " + name + " = " +
+        writer.println("public static final int " + name + " = " +
                        nameNode.value() + ";");
     }
 

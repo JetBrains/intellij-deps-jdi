@@ -97,6 +97,7 @@ abstract class AbstractNamedNode extends Node {
         writer.println();
         genJavaComment(writer, depth);
         indent(writer, depth);
+        writer.print("public ");
         if (depth != 0) {
             writer.print("static ");
         }
