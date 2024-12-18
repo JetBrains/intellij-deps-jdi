@@ -44,38 +44,35 @@ import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceType {
     protected final long ref;
     private String signature = null;
-    private volatile String baseSourceName = null;
+    public volatile String baseSourceName = null;
     private String baseSourcePath = null;
     protected int modifiers = -1;
     private final Object cachesLock = new Object();
-    private volatile SoftReference<Field[]> fieldsRef = null;
-    private volatile SoftReference<Method[]> methodsRef = null;
-    private volatile SoftReference<SDE> sdeRef = null;
+    public volatile SoftReference<Field[]> fieldsRef = null;
+    public volatile SoftReference<Method[]> methodsRef = null;
+    public volatile SoftReference<SDE> sdeRef = null;
 
     private ClassLoaderReference classLoader = null;
-    private volatile ClassObjectReference classObject = null;
+    public volatile ClassObjectReference classObject = null;
 
     private int status = 0;
     private boolean isPrepared = false;
 
-    private volatile boolean constantPoolInfoGotten = false;
-    private volatile int constanPoolCount;
-    private volatile SoftReference<byte[]> constantPoolBytesRef = null;
+    public volatile boolean constantPoolInfoGotten = false;
+    public volatile int constanPoolCount;
+    public volatile SoftReference<byte[]> constantPoolBytesRef = null;
 
     /* to mark a SourceFile request that returned a genuine JDWP.Error.ABSENT_INFORMATION */
-    private static final String ABSENT_BASE_SOURCE_NAME = "**ABSENT_BASE_SOURCE_NAME**";
+    public static final String ABSENT_BASE_SOURCE_NAME = "**ABSENT_BASE_SOURCE_NAME**";
 
     /* to mark when no info available */
-    static final SDE NO_SDE_INFO_MARK = new SDE();
+    public static final SDE NO_SDE_INFO_MARK = new SDE();
 
     // bits set when initialization was attempted (succeeded or failed)
     private static final int INITIALIZED_OR_FAILED =
@@ -121,22 +118,6 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
             }
         }
         throw new IllegalArgumentException("Invalid method id: " + ref);
-    }
-
-    CompletableFuture<Method> getMethodMirrorAsync(long ref) {
-        if (ref == 0) {
-            // obsolete method
-            return CompletableFuture.completedFuture(new ObsoleteMethodImpl(vm, this));
-        }
-        return methodsAsync().thenApply(methods -> {
-            for (Method value : methods) {
-                MethodImpl method = (MethodImpl) value;
-                if (method.ref() == ref) {
-                    return method;
-                }
-            }
-            throw new IllegalArgumentException("Invalid method id: " + ref);
-        });
     }
 
     Field getFieldMirror(long ref) {
@@ -328,35 +309,16 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return (status & JDWP.ClassStatus.ERROR) != 0;
     }
 
-    private Field[] readFields(JDWP.ReferenceType.Fields.FieldInfo[] jdwpFields) {
+    public Field[] readFields(JDWP.ReferenceType.Fields.FieldInfo[] jdwpFields) {
         return Arrays.stream(jdwpFields)
                 .map(fi -> new FieldImpl(vm, this, fi.fieldID, fi.name, fi.signature, null, fi.modBits))
                 .toArray(Field[]::new);
     }
 
-    private Field[] readFieldsWithGenerics(JDWP.ReferenceType.FieldsWithGeneric.FieldInfo[] jdwpFields) {
+    public Field[] readFieldsWithGenerics(JDWP.ReferenceType.FieldsWithGeneric.FieldInfo[] jdwpFields) {
         return Arrays.stream(jdwpFields)
                 .map(fi -> new FieldImpl(vm, this, fi.fieldID, fi.name, fi.signature, fi.genericSignature, fi.modBits))
                 .toArray(Field[]::new);
-    }
-
-    public CompletableFuture<List<Field>> fieldsAsync() {
-        Field[] fields = getFromCache(fieldsRef);
-        if (fields != null) {
-            return CompletableFuture.completedFuture(unmodifiableList(fields));
-        }
-        CompletableFuture<Field[]> array;
-        if (vm.canGet1_5LanguageFeatures()) {
-            array = JDWP.ReferenceType.FieldsWithGeneric.processAsync(vm, this)
-                    .thenApply(r -> readFieldsWithGenerics(r.declared));
-        } else {
-            array = JDWP.ReferenceType.Fields.processAsync(vm, this)
-                    .thenApply(r -> readFields(r.declared));
-        }
-        return array.thenApply(res -> {
-            res = tryToCache(fieldsRef, res, v -> fieldsRef = v);
-            return unmodifiableList(res);
-        });
     }
 
     public List<Field> fields() {
@@ -388,7 +350,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
 
     abstract List<? extends ReferenceType> inheritedTypes();
 
-    abstract CompletableFuture<List<? extends ReferenceType>> inheritedTypesAsync();
+    public abstract CompletableFuture<List<? extends ReferenceType>> inheritedTypesAsync();
 
     void addVisibleFields(List<Field> visibleList, Map<String, Field> visibleTable, List<String> ambiguousNames) {
         for (Field field : visibleFields()) {
@@ -462,46 +424,11 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         }
     }
 
-    CompletableFuture<List<Field>> addAllFieldsAsync(List<Field> fieldList, Set<ReferenceType> typeSet) {
-        return collectRecursively(ReferenceTypeImpl::fieldsAsync, fieldList, typeSet);
-    }
-
-    CompletableFuture<List<Method>> addAllMethodsAsync(List<Method> methodList, Set<ReferenceType> typeSet) {
-        return collectRecursively(ReferenceTypeImpl::methodsAsync, methodList, typeSet);
-    }
-
-    private <T> CompletableFuture<List<T>> collectRecursively(Function<ReferenceTypeImpl, CompletableFuture<List<T>>> func, List<T> list, Set<ReferenceType> typeSet) {
-        if (!typeSet.contains(this)) {
-            typeSet.add(this);
-
-            return func.apply(this)
-                    .thenAccept(list::addAll)
-                    .thenCompose(__ -> inheritedTypesAsync())
-                    .thenCompose(types -> {
-                        CompletableFuture<List<T>> res = CompletableFuture.completedFuture(list);
-                        for (ReferenceType referenceType : types) {
-                            res = res.thenCombine(((ReferenceTypeImpl) referenceType).collectRecursively(func, list, typeSet),
-                                    (f, f2) -> list);
-                        }
-                        return res;
-                    });
-        }
-        return CompletableFuture.completedFuture(list);
-    }
-
     public List<Field> allFields() {
         List<Field> fieldList = new ArrayList<>();
         Set<ReferenceType> typeSet = new HashSet<>();
         addAllFields(fieldList, typeSet);
         return fieldList;
-    }
-
-    @SuppressWarnings("unused")
-    public CompletableFuture<List<Field>> allFieldsAsync() {
-        //TODO: may improve further, but need to preserve the order
-        List<Field> fieldList = Collections.synchronizedList(new ArrayList<>());
-        Set<ReferenceType> typeSet = Collections.synchronizedSet(new HashSet<>());
-        return addAllFieldsAsync(fieldList, typeSet);
     }
 
     public Field fieldByName(String fieldName) {
@@ -516,7 +443,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return null;
     }
 
-    private Method[] readMethods(JDWP.ReferenceType.Methods.MethodInfo[] jdwpMethods) {
+    public Method[] readMethods(JDWP.ReferenceType.Methods.MethodInfo[] jdwpMethods) {
         return Arrays.stream(jdwpMethods)
                 .map(mi -> MethodImpl.createMethodImpl(vm, this,
                         mi.methodID,
@@ -526,7 +453,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
                 .toArray(Method[]::new);
     }
 
-    private Method[] readMethodsWithGeneric(JDWP.ReferenceType.MethodsWithGeneric.MethodInfo[] jdwpMethods) {
+    public Method[] readMethodsWithGeneric(JDWP.ReferenceType.MethodsWithGeneric.MethodInfo[] jdwpMethods) {
         return Arrays.stream(jdwpMethods)
                 .map(mi -> MethodImpl.createMethodImpl(vm, this,
                         mi.methodID,
@@ -534,25 +461,6 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
                         mi.genericSignature,
                         mi.modBits))
                 .toArray(Method[]::new);
-    }
-
-    public CompletableFuture<List<Method>> methodsAsync() {
-        Method[] methods = getFromCache(methodsRef);
-        if (methods != null) {
-            return CompletableFuture.completedFuture(unmodifiableList(methods));
-        }
-        CompletableFuture<Method[]> array;
-        if (!vm.canGet1_5LanguageFeatures()) {
-            array = JDWP.ReferenceType.Methods.processAsync(vm, this)
-                    .thenApply(m -> readMethods(m.declared));
-        } else {
-            array = JDWP.ReferenceType.MethodsWithGeneric.processAsync(vm, this)
-                    .thenApply(m -> readMethodsWithGeneric(m.declared));
-        }
-        return array.thenApply(res -> {
-            res = tryToCache(methodsRef, res, n -> methodsRef = n);
-            return unmodifiableList(res);
-        });
     }
 
     public List<Method> methods() {
@@ -582,13 +490,13 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return unmodifiableList(methods);
     }
 
-    private <T> T getFromCache(SoftReference<T> cache) {
+    public <T> T getFromCache(SoftReference<T> cache) {
         synchronized (cachesLock) {
             return dereference(cache);
         }
     }
 
-    private <T> T tryToCache(SoftReference<T> cache, T value, Consumer<SoftReference<T>> setter) {
+    public <T> T tryToCache(SoftReference<T> cache, T value, Consumer<SoftReference<T>> setter) {
         synchronized (cachesLock) {
             T current = dereference(cache);
             if (current != null) {
@@ -633,12 +541,6 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
 
     public abstract List<Method> allMethods();
 
-    public CompletableFuture<List<Method>> allMethodsAsync() {
-        List<Method> methodList = Collections.synchronizedList(new ArrayList<>());
-        Set<ReferenceType> typeSet = Collections.synchronizedSet(new HashSet<>());
-        return addAllMethodsAsync(methodList, typeSet);
-    }
-
     public List<Method> methodsByName(String name) {
         List<Method> methods = visibleMethods();
         ArrayList<Method> retList = new ArrayList<>(methods.size());
@@ -672,11 +574,11 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         }
     }
 
-    CompletableFuture<InterfaceType[]> getInterfacesAsync() {
-        return JDWP.ReferenceType.Interfaces.processAsync(vm, this).thenApply(r -> r.interfaces);
+    static CompletableFuture<InterfaceType[]> getInterfacesAsync(ReferenceTypeImpl referenceType) {
+        return JDWP.ReferenceType.Interfaces.processAsync(referenceType.vm, referenceType).thenApply(r -> r.interfaces);
     }
 
-    <T> List<T> unmodifiableList(T[] array) {
+    public static <T> List<T> unmodifiableList(T[] array) {
         // List.of(array) in this case will copy the array
         return Collections.unmodifiableList(Arrays.asList(array));
     }
@@ -699,16 +601,11 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return nested;
     }
 
-    @SuppressWarnings("unused")
-    public CompletableFuture<Value> getValueAsync(Field sig) {
-        return getValuesAsync(Collections.singletonList(sig)).thenApply(m -> m.get(sig));
-    }
-
     public Value getValue(Field sig) {
         return getValues(Collections.singletonList(sig)).get(sig);
     }
 
-    void validateFieldAccess(Field field) {
+    public void validateFieldAccess(Field field) {
         /*
          * Field must be in this object's class, a superclass, or
          * implemented interface
@@ -724,42 +621,6 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         if (field.isFinal()) {
             throw new IllegalArgumentException("Cannot set value of final field");
         }
-    }
-
-    public CompletableFuture<Map<Field,Value>> getValuesAsync(List<? extends Field> theFields) {
-        validateMirrors(theFields);
-
-        int size = theFields.size();
-        JDWP.ReferenceType.GetValues.Field[] queryFields = new JDWP.ReferenceType.GetValues.Field[size];
-
-        for (int i=0; i<size; i++) {
-            FieldImpl field = (FieldImpl)theFields.get(i);
-
-            validateFieldAccess(field);
-
-            // Do more validation specific to ReferenceType field getting
-            if (!field.isStatic()) {
-                throw new IllegalArgumentException("Attempt to use non-static field with ReferenceType");
-            }
-            queryFields[i] = new JDWP.ReferenceType.GetValues.Field(field.ref());
-        }
-
-        return JDWP.ReferenceType.GetValues.processAsync(vm, this, queryFields).thenApply(r -> {
-            ValueImpl[] values = r.values;
-
-            if (size != values.length) {
-                throw new InternalException(
-                        "Wrong number of values returned from target VM");
-            }
-
-            Map<Field, Value> map = new HashMap<>(size);
-            for (int i=0; i<size; i++) {
-                FieldImpl field = (FieldImpl)theFields.get(i);
-                map.put(field, values[i]);
-            }
-
-            return map;
-        });
     }
 
     /**
@@ -826,18 +687,6 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return classObject;
     }
 
-    @SuppressWarnings("unused")
-    public CompletableFuture<ClassObjectReference> classObjectAsync() {
-        if (classObject == null) {
-            return JDWP.ReferenceType.ClassObject.processAsync(vm, this)
-                    .thenApply(c -> {
-                        classObject = c.classObject;
-                        return c.classObject;
-                    });
-        }
-        return CompletableFuture.completedFuture(classObject);
-    }
-
     SDE.Stratum stratum(String stratumID) {
         SDE sde = sourceDebugExtensionInfo();
         if (!sde.isValid()) {
@@ -846,22 +695,8 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return sde.stratum(stratumID);
     }
 
-    CompletableFuture<SDE.Stratum> stratumAsync(String stratumID) {
-        return sourceDebugExtensionInfoAsync().thenApply(sde -> {
-            if (!sde.isValid()) {
-                sde = NO_SDE_INFO_MARK;
-            }
-            return sde.stratum(stratumID);
-        });
-    }
-
     public String sourceName() throws AbsentInformationException {
         return sourceNames(vm.getDefaultStratum()).get(0);
-    }
-
-    @SuppressWarnings("unused")
-    public CompletableFuture<String> sourceNameAsync() {
-        return sourceNamesAsync(vm.getDefaultStratum()).thenApply(strings -> strings.get(0));
     }
 
     public List<String> sourceNames(String stratumID)
@@ -871,15 +706,6 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
             return List.of(baseSourceName());
         }
         return stratum.sourceNames(this);
-    }
-
-    public CompletableFuture<List<String>> sourceNamesAsync(String stratumID) {
-        return stratumAsync(stratumID).thenCompose(stratum -> {
-            if (stratum.isJava()) {
-                return baseSourceNameAsync().thenApply(List::of);
-            }
-            return CompletableFuture.completedFuture(stratum.sourceNames(this));
-        });
     }
 
     public List<String> sourcePaths(String stratumID)
@@ -896,11 +722,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return hasMappedLineTo(sde, stratumID, sourcePathFilter, njplsLine);
     }
 
-    public CompletableFuture<Boolean> hasMappedLineToAsync(String stratumID, int njplsLine, Predicate<String> sourcePathFilter) {
-        return sourceDebugExtensionInfoAsync().thenApply(sde -> hasMappedLineTo(sde, stratumID, sourcePathFilter, njplsLine));
-    }
-
-    private boolean hasMappedLineTo(SDE sde, String stratumID, Predicate<String> sourcePathFilter, int njplsLine) {
+    public boolean hasMappedLineTo(SDE sde, String stratumID, Predicate<String> sourcePathFilter, int njplsLine) {
         List<String> availableStrata = sde.availableStrata();
         if (!availableStrata.contains(stratumID)) return false;
         SDE.Stratum stratum = sde.stratum(stratumID);
@@ -933,30 +755,6 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
             throw new AbsentInformationException();
         }
         return bsn;
-    }
-
-    CompletableFuture<String> baseSourceNameAsync() {
-        String bsn = baseSourceName;
-        if (bsn == null) {
-            // Does not need synchronization, since worst-case
-            // static info is fetched twice
-            return JDWP.ReferenceType.SourceFile.processAsync(vm, this)
-                    .exceptionally(throwable -> {
-                        if (JDWPException.isOfType(throwable, JDWP.Error.ABSENT_INFORMATION)) {
-                            baseSourceName = ABSENT_BASE_SOURCE_NAME;
-                            throw new CompletionException(new AbsentInformationException());
-                        }
-                        throw (RuntimeException) throwable;
-                    })
-                    .thenApply(s -> {
-                        baseSourceName = s.sourceFile;
-                        return s.sourceFile;
-                    });
-        }
-        if (bsn == ABSENT_BASE_SOURCE_NAME) {
-            return CompletableFuture.failedFuture(new AbsentInformationException());
-        }
-        return CompletableFuture.completedFuture(bsn);
     }
 
     String baseSourcePath() throws AbsentInformationException {
@@ -1020,36 +818,9 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return sde;
     }
 
-    private CompletableFuture<SDE> sourceDebugExtensionInfoAsync() {
-        if (!vm.canGetSourceDebugExtension()) {
-            return CompletableFuture.completedFuture(NO_SDE_INFO_MARK);
-        }
-        SDE sde = getFromCache(sdeRef);
-        if (sde != null) {
-            return CompletableFuture.completedFuture(sde);
-        }
-        return JDWP.ReferenceType.SourceDebugExtension.processAsync(vm, this)
-                .exceptionally(throwable -> {
-                    if (!JDWPException.isOfType(throwable, JDWP.Error.ABSENT_INFORMATION)) {
-                        throw (RuntimeException) throwable;
-                    }
-                    return null;
-                })
-                .thenApply(e -> {
-                    SDE res = (e == null) ? NO_SDE_INFO_MARK : new SDE(e.extension);
-                    res = tryToCache(sdeRef, res, v -> sdeRef = v);
-                    return res;
-                });
-    }
-
     public List<String> availableStrata() {
         SDE sde = sourceDebugExtensionInfo();
         return sde.isValid() ? sde.availableStrata() : List.of(SDE.BASE_STRATUM_NAME);
-    }
-
-    public CompletableFuture<List<String>> availableStrataAsync() {
-        return sourceDebugExtensionInfoAsync()
-                .thenApply(sde -> sde.isValid() ? sde.availableStrata() : List.of(SDE.BASE_STRATUM_NAME));
     }
 
     /**
@@ -1074,11 +845,6 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     public List<Location> allLineLocations()
                             throws AbsentInformationException {
         return allLineLocations(vm.getDefaultStratum(), null);
-    }
-
-    @SuppressWarnings("unused")
-    public CompletableFuture<List<Location>> allLineLocationsAsync() {
-        return allLineLocationsAsync(vm.getDefaultStratum(), null);
     }
 
     public List<Location> allLineLocations(String stratumID, String sourceName)
@@ -1107,47 +873,11 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return list;
     }
 
-    public CompletableFuture<List<Location>> allLineLocationsAsync(String stratumID, String sourceName) {
-        return methodsAsync().thenCombine(stratumAsync(stratumID),
-                        (methods, stratum) ->
-                                methods.stream()
-                                        .map(method -> ((MethodImpl) method).allLineLocationsAsync(stratum, sourceName))
-                                        .collect(Collectors.toList()))
-                .thenCompose(futures ->
-                        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                                .handle((__, ___) -> {
-                                    // A method that should have info, didn't
-                                    boolean someAbsent = false;
-
-                                    List<Location> list = new ArrayList<>();
-                                    for (CompletableFuture<List<Location>> future : futures) {
-                                        try {
-                                            list.addAll(future.join());
-                                        } catch (Exception e) {
-                                            someAbsent = true;
-                                        }
-                                    }
-
-                                    if (someAbsent && list.size() == 0) {
-                                        throw new CompletionException(new AbsentInformationException());
-                                    }
-
-                                    return list;
-                                }));
-    }
-
     public List<Location> locationsOfLine(int lineNumber)
                            throws AbsentInformationException {
         return locationsOfLine(vm.getDefaultStratum(),
                                null,
                                lineNumber);
-    }
-
-    @SuppressWarnings("unused")
-    public CompletableFuture<List<Location>> locationsOfLineAsync(int lineNumber) {
-        return locationsOfLineAsync(vm.getDefaultStratum(),
-                null,
-                lineNumber);
     }
 
     public List<Location> locationsOfLine(String stratumID,
@@ -1184,42 +914,6 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
             throw new AbsentInformationException();
         }
         return list;
-    }
-
-    public CompletableFuture<List<Location>> locationsOfLineAsync(String stratumID,
-                                                                  String sourceName,
-                                                                  int lineNumber) {
-        return methodsAsync().thenCombine(stratumAsync(stratumID),
-                        (methods, stratum) ->
-                                methods.stream()
-                                        .filter(method -> !method.isAbstract() && !method.isNative())
-                                        // eliminate native and abstract to eliminate false positives
-                                        .map(method -> ((MethodImpl) method).locationsOfLineAsync(stratum, sourceName, lineNumber))
-                                        .collect(Collectors.toList()))
-                .thenCompose(futures ->
-                        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                                .handle((__, ___) -> {
-                                    // A method that should have info, didn't
-                                    boolean someAbsent = false;
-                                    // A method that should have info, did
-                                    boolean somePresent = false;
-
-                                    List<Location> list = new ArrayList<>();
-                                    for (CompletableFuture<List<Location>> future : futures) {
-                                        try {
-                                            list.addAll(future.join());
-                                            somePresent = true;
-                                        } catch (Exception e) {
-                                            someAbsent = true;
-                                        }
-                                    }
-
-                                    if (someAbsent && !somePresent) {
-                                        throw new CompletionException(new AbsentInformationException());
-                                    }
-
-                                    return list;
-                                }));
     }
 
     public List<ObjectReference> instances(long maxInstances) {
@@ -1305,38 +999,6 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         return cpbytes;
     }
 
-    private CompletableFuture<byte[]> getConstantPoolInfoAsync() {
-        if (!vm.canGetConstantPool()) {
-            return CompletableFuture.failedFuture(new UnsupportedOperationException());
-        }
-        if (constantPoolInfoGotten) {
-            if (constantPoolBytesRef == null) {
-                return CompletableFuture.completedFuture(null);
-            }
-            byte[] cpbytes = constantPoolBytesRef.get();
-            if (cpbytes != null) {
-                return CompletableFuture.completedFuture(cpbytes);
-            }
-        }
-
-        return JDWP.ReferenceType.ConstantPool.processAsync(vm, this).handle((jdwpCPool, e) -> {
-            if (e != null) {
-                if (JDWPException.isOfType(e, JDWP.Error.ABSENT_INFORMATION)) {
-                    constanPoolCount = 0;
-                    constantPoolBytesRef = null;
-                    constantPoolInfoGotten = true;
-                    return null;
-                }
-                throw (RuntimeException)e;
-            }
-            constanPoolCount = jdwpCPool.count;
-            byte[] cpbytes = jdwpCPool.bytes;
-            constantPoolBytesRef = vm.createSoftReference(cpbytes);
-            constantPoolInfoGotten = true;
-            return cpbytes;
-        });
-    }
-
     public int constantPoolCount() {
         try {
             getConstantPoolInfo();
@@ -1344,11 +1006,6 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
             throw exc;
         }
         return constanPoolCount;
-    }
-
-    @SuppressWarnings("unused")
-    public CompletableFuture<Integer> constantPoolCountAsync() {
-        return getConstantPoolInfoAsync().thenApply((bytes -> constanPoolCount));
     }
 
     public byte[] constantPool() {
@@ -1368,22 +1025,6 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         } else {
             return null;
         }
-    }
-
-    @SuppressWarnings("unused")
-    public CompletableFuture<byte[]> constantPoolAsync() {
-        return getConstantPoolInfoAsync().thenApply(bytes -> {
-            if (bytes != null) {
-                /*
-                 * Arrays are always modifiable, so it is a little unsafe
-                 * to return the cached bytecodes directly; instead, we
-                 * make a clone at the cost of using more memory.
-                 */
-                return bytes.clone();
-            } else {
-                return null;
-            }
-        });
     }
 
     // Does not need synchronization, since worst-case

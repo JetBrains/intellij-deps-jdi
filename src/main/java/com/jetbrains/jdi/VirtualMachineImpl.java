@@ -769,7 +769,7 @@ public class VirtualMachineImpl extends MirrorImpl
             versionInfo().jdwpMinor >= 4;
     }
 
-    boolean canGet1_5LanguageFeatures() {
+    public boolean canGet1_5LanguageFeatures() {
         return versionInfo().jdwpMajor > 1 ||
             versionInfo().jdwpMinor >= 5;
     }
@@ -900,7 +900,7 @@ public class VirtualMachineImpl extends MirrorImpl
         useSoftReferences = false;
     }
 
-    <T> SoftReference<T> createSoftReference(T object) {
+    public <T> SoftReference<T> createSoftReference(T object) {
         if (useSoftReferences) {
             return new SoftReference<>(object);
         }

@@ -38,6 +38,7 @@
 
 package com.jetbrains.jdi;
 
+import com.jetbrains.jdi2.AsyncRequests;
 import com.sun.jdi.*;
 
 import java.util.*;
@@ -187,7 +188,7 @@ public class ObjectReferenceImpl extends ValueImpl
         return type;
     }
 
-    void setType(ReferenceType type) {
+    public void setType(ReferenceType type) {
         this.type = type;
     }
 
@@ -223,7 +224,7 @@ public class ObjectReferenceImpl extends ValueImpl
 
         CompletableFuture<Map<Field, Value>> res;
         if (staticFields.size() > 0) {
-            res = ((ReferenceTypeImpl) referenceType()).getValuesAsync(staticFields);
+            res = AsyncRequests.getValuesAsync(((ReferenceTypeImpl) referenceType()), staticFields);
         } else {
             res = CompletableFuture.completedFuture(new HashMap<>(size));
         }

@@ -38,6 +38,7 @@
 
 package com.jetbrains.jdi;
 
+import com.jetbrains.jdi2.AsyncRequests;
 import com.sun.jdi.AbsentInformationException;
 import com.sun.jdi.LocalVariable;
 import com.sun.jdi.Location;
@@ -141,7 +142,7 @@ public class ConcreteMethodImpl extends MethodImpl {
             sourceNameFilter(lineLocations, stratum, sourceName));
     }
 
-    CompletableFuture<List<Location>> allLineLocationsAsync(SDE.Stratum stratum, String sourceName) {
+    public CompletableFuture<List<Location>> allLineLocationsAsync(SDE.Stratum stratum, String sourceName) {
         return getLocationsAsync(stratum).thenApply(info -> {
             List<Location> lineLocations = info.lineLocations;
             if (lineLocations.size() == 0) {
@@ -179,9 +180,9 @@ public class ConcreteMethodImpl extends MethodImpl {
             sourceNameFilter(list, stratum, sourceName));
     }
 
-    CompletableFuture<List<Location>> locationsOfLineAsync(SDE.Stratum stratum,
-                                                           String sourceName,
-                                                           int lineNumber) {
+    public CompletableFuture<List<Location>> locationsOfLineAsync(SDE.Stratum stratum,
+                                                                  String sourceName,
+                                                                  int lineNumber) {
         return getLocationsAsync(stratum).thenApply(info -> {
             if (info.lineLocations.size() == 0) {
                 throw new CompletionException(new AbsentInformationException());
@@ -406,7 +407,7 @@ public class ConcreteMethodImpl extends MethodImpl {
         if (info != null && info.stratumID.equals(stratumID)) {
             return CompletableFuture.completedFuture(info);
         }
-        return declaringType.stratumAsync(SDE.BASE_STRATUM_NAME)
+        return AsyncRequests.stratumAsync(declaringType, SDE.BASE_STRATUM_NAME)
                 .thenCombine(getBaseLocationsAsync(), (baseStratum, softLocationXRefs) -> {
                     List<Location> lineLocations = new ArrayList<>();
                     Map<Integer, List<Location>> lineMapper = new HashMap<>();

@@ -282,7 +282,7 @@ abstract class InvokableTypeImpl extends ReferenceTypeImpl {
     }
 
     @Override
-    final CompletableFuture<List<? extends ReferenceType>> inheritedTypesAsync() {
+    public final CompletableFuture<List<? extends ReferenceType>> inheritedTypesAsync() {
         return superclassAsync().thenCombine(interfacesAsync(), (superclass, interfaces) -> {
             List<ReferenceType> res = new ArrayList<>();
             if (superclass != null) {

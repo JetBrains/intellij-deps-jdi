@@ -87,7 +87,7 @@ public class NonConcreteMethodImpl extends MethodImpl {
     }
 
     @Override
-    CompletableFuture<List<Location>> allLineLocationsAsync(SDE.Stratum stratum, String sourceName) {
+    public CompletableFuture<List<Location>> allLineLocationsAsync(SDE.Stratum stratum, String sourceName) {
         return CompletableFuture.completedFuture(Collections.emptyList());
     }
 
@@ -104,9 +104,9 @@ public class NonConcreteMethodImpl extends MethodImpl {
     }
 
     @Override
-    CompletableFuture<List<Location>> locationsOfLineAsync(SDE.Stratum stratum,
-                                                           String sourceName,
-                                                           int lineNumber) {
+    public CompletableFuture<List<Location>> locationsOfLineAsync(SDE.Stratum stratum,
+                                                                  String sourceName,
+                                                                  int lineNumber) {
         return CompletableFuture.completedFuture(Collections.emptyList());
     }
 

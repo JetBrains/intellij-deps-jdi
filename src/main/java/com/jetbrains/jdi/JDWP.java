@@ -2210,7 +2210,7 @@ public class JDWP {
             /**
              * Number of declared fields.
              */
-            final FieldInfo[] declared;
+            public final FieldInfo[] declared;
 
             private Fields(VirtualMachineImpl vm, PacketStream ps) {
                 if (vm.traceReceives) {
@@ -2327,7 +2327,7 @@ public class JDWP {
             /**
              * Number of declared methods.
              */
-            final MethodInfo[] declared;
+            public final MethodInfo[] declared;
 
             private Methods(VirtualMachineImpl vm, PacketStream ps) {
                 if (vm.traceReceives) {
@@ -2364,7 +2364,7 @@ public class JDWP {
                  */
                 final long fieldID;
 
-                Field(long fieldID) {
+                public Field(long fieldID) {
                     this.fieldID = fieldID;
                 }
 
@@ -2427,7 +2427,7 @@ public class JDWP {
              * The number of values returned, always equal to fields, 
              * the number of values to get.
              */
-            final ValueImpl[] values;
+            public final ValueImpl[] values;
 
             private GetValues(VirtualMachineImpl vm, PacketStream ps) {
                 if (vm.traceReceives) {
@@ -2492,7 +2492,7 @@ public class JDWP {
              * The source file name. No path information 
              * for the file is included
              */
-            final String sourceFile;
+            public final String sourceFile;
 
             private SourceFile(VirtualMachineImpl vm, PacketStream ps) {
                 if (vm.traceReceives) {
@@ -2768,7 +2768,7 @@ public class JDWP {
             /**
              * class object.
              */
-            final ClassObjectReferenceImpl classObject;
+            public final ClassObjectReferenceImpl classObject;
 
             private ClassObject(VirtualMachineImpl vm, PacketStream ps) {
                 if (vm.traceReceives) {
@@ -2826,7 +2826,7 @@ public class JDWP {
             /**
              * extension attribute
              */
-            final String extension;
+            public final String extension;
 
             private SourceDebugExtension(VirtualMachineImpl vm, PacketStream ps) {
                 if (vm.traceReceives) {
@@ -3021,7 +3021,7 @@ public class JDWP {
             /**
              * Number of declared fields.
              */
-            final FieldInfo[] declared;
+            public final FieldInfo[] declared;
 
             private FieldsWithGeneric(VirtualMachineImpl vm, PacketStream ps) {
                 if (vm.traceReceives) {
@@ -3153,7 +3153,7 @@ public class JDWP {
             /**
              * Number of declared methods.
              */
-            final MethodInfo[] declared;
+            public final MethodInfo[] declared;
 
             private MethodsWithGeneric(VirtualMachineImpl vm, PacketStream ps) {
                 if (vm.traceReceives) {
@@ -3365,9 +3365,9 @@ public class JDWP {
              * Class File Format in 
              * <cite>The Java Virtual Machine Specification</cite>. 
              */
-            final int count;
+            public final int count;
 
-            final byte[] bytes;
+            public final byte[] bytes;
 
             private ConstantPool(VirtualMachineImpl vm, PacketStream ps) {
                 if (vm.traceReceives) {
@@ -3967,7 +3967,7 @@ public class JDWP {
             /**
              * The newly created array object. 
              */
-            final ObjectReferenceImpl newArray;
+            public final ObjectReferenceImpl newArray;
 
             private NewInstance(VirtualMachineImpl vm, PacketStream ps) {
                 if (vm.traceReceives) {
@@ -4528,7 +4528,7 @@ public class JDWP {
              * by a non-equivalent method using
              * the RedefineClasses command.
              */
-            final boolean isObsolete;
+            public final boolean isObsolete;
 
             private IsObsolete(VirtualMachineImpl vm, PacketStream ps) {
                 if (vm.traceReceives) {
@@ -6806,7 +6806,7 @@ public class JDWP {
             /**
              * The length of the array.
              */
-            final int arrayLength;
+            public final int arrayLength;
 
             private Length(VirtualMachineImpl vm, PacketStream ps) {
                 if (vm.traceReceives) {
@@ -6879,7 +6879,7 @@ public class JDWP {
              * are objects, they are tagged-values; 
              * otherwise, they are untagged-values
              */
-            final List<?> values;
+            public final List<?> values;
 
             private GetValues(VirtualMachineImpl vm, PacketStream ps) {
                 if (vm.traceReceives) {

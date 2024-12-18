@@ -40,7 +40,6 @@ package com.jetbrains.jdi;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import com.sun.jdi.ArrayReference;
 import com.sun.jdi.ClassNotLoadedException;
@@ -53,7 +52,7 @@ import com.sun.jdi.VirtualMachine;
 public class ArrayReferenceImpl extends ObjectReferenceImpl
     implements ArrayReference
 {
-    private volatile int length = -1;
+    public volatile int length = -1;
 
     ArrayReferenceImpl(VirtualMachine aVm, long aRef) {
         super(aVm, aRef);
@@ -87,32 +86,12 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
         return length;
     }
 
-    public CompletableFuture<Integer> lengthAsync() {
-        if (length != -1) {
-            return CompletableFuture.completedFuture(length);
-        }
-        return JDWP.ArrayReference.Length.processAsync(vm, this).thenApply(r -> length = r.arrayLength);
-    }
-
-    void setLength(int length) {
-        this.length = length;
-    }
-
     public Value getValue(int index) {
         return getValues(index, 1).get(0);
     }
 
-    public CompletableFuture<Value> getValueAsync(int index) {
-        return getValuesAsync(index, 1).thenApply(r -> r.get(0));
-    }
-
     public List<Value> getValues() {
         return getValues(0, -1);
-    }
-
-    @SuppressWarnings("unused")
-    public CompletableFuture<List<Value>> getValuesAsync() {
-        return getValuesAsync(0, -1);
     }
 
     /**
@@ -120,7 +99,7 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
      * length of -1 (meaning rest of array) has been converted
      * before entry.
      */
-    private void validateArrayAccess(int index, int length) {
+    public void validateArrayAccess(int index, int length) {
         // because length can be computed from index,
         // index must be tested first for correct error message
         if ((index < 0) || (index > length())) {
@@ -139,24 +118,8 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
     }
 
     @SuppressWarnings("unchecked")
-    private static <T> T cast(Object x) {
+    public static <T> T cast(Object x) {
         return (T)x;
-    }
-
-    public CompletableFuture<List<Value>> getValuesAsync(int index, int len) {
-        return lengthAsync().thenCompose(__ -> { // preload length
-            int length = len;
-            if (length == -1) { // -1 means the rest of the array
-                length = length() - index;
-            }
-            validateArrayAccess(index, length);
-            if (length == 0) {
-                return CompletableFuture.completedFuture(Collections.emptyList());
-            }
-
-            return JDWP.ArrayReference.GetValues.processAsync(vm, this, index, length)
-                    .thenApply(r -> cast(r.values));
-        });
     }
 
     public List<Value> getValues(int index, int length) {

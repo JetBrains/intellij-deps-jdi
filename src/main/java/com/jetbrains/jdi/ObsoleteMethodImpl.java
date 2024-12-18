@@ -50,7 +50,7 @@ import com.sun.jdi.VirtualMachine;
  */
 public class ObsoleteMethodImpl extends NonConcreteMethodImpl {
 
-    ObsoleteMethodImpl(VirtualMachine vm, ReferenceTypeImpl declaringType) {
+    public ObsoleteMethodImpl(VirtualMachine vm, ReferenceTypeImpl declaringType) {
         super(vm, declaringType, 0, "<obsolete>", "", null, 0);
     }
 

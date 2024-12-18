@@ -50,7 +50,7 @@ public abstract class MethodImpl extends TypeComponentImpl
     public static final int SKIP_ASSIGNABLE_CHECK = 1 << 10;
 
     private final JNITypeParser signatureParser;
-    private volatile Boolean obsolete = null;
+    public volatile Boolean obsolete = null;
 
     abstract int argSlotCount() throws AbsentInformationException;
 
@@ -58,16 +58,16 @@ public abstract class MethodImpl extends TypeComponentImpl
                                              String sourceName)
                             throws AbsentInformationException;
 
-    abstract CompletableFuture<List<Location>> allLineLocationsAsync(SDE.Stratum stratum, String sourceName);
+    public abstract CompletableFuture<List<Location>> allLineLocationsAsync(SDE.Stratum stratum, String sourceName);
 
     abstract List<Location> locationsOfLine(SDE.Stratum stratum,
                                             String sourceName,
                                             int lineNumber)
                             throws AbsentInformationException;
 
-    abstract CompletableFuture<List<Location>> locationsOfLineAsync(SDE.Stratum stratum,
-                                                              String sourceName,
-                                                              int lineNumber);
+    public abstract CompletableFuture<List<Location>> locationsOfLineAsync(SDE.Stratum stratum,
+                                                                           String sourceName,
+                                                                           int lineNumber);
 
     MethodImpl(VirtualMachine vm, ReferenceTypeImpl declaringType,
                long ref, String name, String signature,
@@ -118,19 +118,10 @@ public abstract class MethodImpl extends TypeComponentImpl
         return allLineLocations(vm.getDefaultStratum(), null);
     }
 
-    @SuppressWarnings("unused")
-    public final CompletableFuture<List<Location>> allLineLocationsAsync() {
-        return allLineLocationsAsync(vm.getDefaultStratum(), null);
-    }
-
     public List<Location> allLineLocations(String stratumID,
                                            String sourceName)
                           throws AbsentInformationException {
         return allLineLocations(declaringType.stratum(stratumID), sourceName);
-    }
-
-    public CompletableFuture<List<Location>> allLineLocationsAsync(String stratumID, String sourceName) {
-        return declaringType.stratumAsync(stratumID).thenCompose(stratum -> allLineLocationsAsync(stratum, sourceName));
     }
 
     public final List<Location> locationsOfLine(int lineNumber)
@@ -260,14 +251,6 @@ public abstract class MethodImpl extends TypeComponentImpl
             }
         }
         return obsolete;
-    }
-
-    @SuppressWarnings("unused")
-    public CompletableFuture<Boolean> isObsoleteAsync() {
-        if (obsolete == null) {
-            return JDWP.Method.IsObsolete.processAsync(vm, declaringType, ref).thenApply(r -> obsolete = r.isObsolete);
-        }
-        return CompletableFuture.completedFuture(obsolete);
     }
 
     /*

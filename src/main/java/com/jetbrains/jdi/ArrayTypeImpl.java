@@ -53,22 +53,12 @@ public class ArrayTypeImpl extends ReferenceTypeImpl
     public ArrayReference newInstance(int length) {
         try {
             ArrayReferenceImpl res = (ArrayReferenceImpl) JDWP.ArrayType.NewInstance.process(vm, this, length).newArray;
-            res.setLength(length);
+            res.length = length;
             res.setType(this);
             return res;
         } catch (JDWPException exc) {
             throw exc.toJDIException();
         }
-    }
-
-    @SuppressWarnings("unused")
-    public CompletableFuture<ArrayReference> newInstanceAsync(int length) {
-        return JDWP.ArrayType.NewInstance.processAsync(vm, this, length).thenApply(a -> {
-            ArrayReferenceImpl res = (ArrayReferenceImpl) a.newArray;
-            res.setLength(length);
-            res.setType(this);
-            return res;
-        });
     }
 
     public String componentSignature() {
@@ -144,7 +134,7 @@ public class ArrayTypeImpl extends ReferenceTypeImpl
     }
 
     @Override
-    CompletableFuture<List<? extends ReferenceType>> inheritedTypesAsync() {
+    public CompletableFuture<List<? extends ReferenceType>> inheritedTypesAsync() {
         return CompletableFuture.completedFuture(Collections.emptyList());
     }
 

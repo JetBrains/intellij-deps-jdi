@@ -87,7 +87,7 @@ public class InterfaceTypeImpl extends InvokableTypeImpl
         if (superinterfaces != null) {
             return CompletableFuture.completedFuture(unmodifiableList(superinterfaces));
         }
-        return getInterfacesAsync().thenApply(r -> {
+        return getInterfacesAsync(this).thenApply(r -> {
             superinterfacesRef = vm.createSoftReference(r);
             return unmodifiableList(r);
         });

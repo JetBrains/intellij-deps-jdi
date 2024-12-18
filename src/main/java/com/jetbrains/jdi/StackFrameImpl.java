@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import com.jetbrains.jdi2.AsyncRequests;
 import com.sun.jdi.*;
 
 public class StackFrameImpl extends MirrorImpl
@@ -166,7 +167,7 @@ public class StackFrameImpl extends MirrorImpl
     @SuppressWarnings("unused")
     public CompletableFuture<ObjectReference> thisObjectAsync() {
         validateStackFrame();
-        return ((LocationImpl) location).methodAsync().thenCompose(currentMethod -> {
+        return AsyncRequests.methodAsync(((LocationImpl) location)).thenCompose(currentMethod -> {
             if (currentMethod.isStatic() || currentMethod.isNative()) {
                 return CompletableFuture.completedFuture(null);
             }
@@ -204,7 +205,7 @@ public class StackFrameImpl extends MirrorImpl
 
     private CompletableFuture<Map<String, LocalVariable>> createVisibleVariablesAsync() {
         if (visibleVariables == null) {
-            return ((LocationImpl) location).methodAsync()
+            return AsyncRequests.methodAsync(((LocationImpl) location))
                     .thenCompose(method -> ((MethodImpl) method).variablesAsync())
                     .thenApply(this::createVisibleVariablesImpl);
         }

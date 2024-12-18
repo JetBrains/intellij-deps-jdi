@@ -97,7 +97,7 @@ abstract class MirrorImpl implements Mirror {
      * Throw NullPointerException on null mirrors.
      * Throw VMMismatchException on wrong VM.
      */
-    void validateMirrors(Collection<? extends Mirror> mirrors) {
+    public void validateMirrors(Collection<? extends Mirror> mirrors) {
         for (Mirror mirror : mirrors) {
             validateMirror(mirror);
         }

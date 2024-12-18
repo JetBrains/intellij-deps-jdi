@@ -48,7 +48,7 @@ public class SDE {
     private static final int INIT_SIZE_LINE = 100;
     private static final int INIT_SIZE_STRATUM = 3;
 
-    static final String BASE_STRATUM_NAME = "Java";
+    public static final String BASE_STRATUM_NAME = "Java";
 
     /* for C capatibility */
     static final String NullString = null;
@@ -108,7 +108,7 @@ public class SDE {
         int lineIndex;
     }
 
-    class Stratum {
+    public class Stratum {
         private final int sti; /* stratum index */
 
         private Stratum(int sti) {
@@ -119,7 +119,7 @@ public class SDE {
             return stratumTable[sti].id;
         }
 
-        boolean isJava() {
+        public boolean isJava() {
             return sti == baseStratumIndex;
         }
 
@@ -130,7 +130,7 @@ public class SDE {
          * is always a terminator stratum.
          * Default sourceName (the first one) must be first.
          */
-        List<String> sourceNames(ReferenceTypeImpl refType) {
+        public List<String> sourceNames(ReferenceTypeImpl refType) {
             int i;
             int fileIndexStart = stratumTable[sti].fileIndex;
             /* one past end */
@@ -405,7 +405,7 @@ public class SDE {
         return defaultStratumTableIndex();
     }
 
-    Stratum stratum(String stratumID) {
+    public Stratum stratum(String stratumID) {
         int sti = stratumTableIndex(stratumID);
         return new Stratum(sti);
     }

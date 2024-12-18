@@ -44,12 +44,10 @@ import com.sun.jdi.Method;
 import com.sun.jdi.ReferenceType;
 import com.sun.jdi.VirtualMachine;
 
-import java.util.concurrent.CompletableFuture;
-
 public class LocationImpl extends MirrorImpl implements Location {
-    private final ReferenceTypeImpl declaringType;
-    private volatile Method method;
-    private final long methodRef;
+    public final ReferenceTypeImpl declaringType;
+    public volatile Method method;
+    public final long methodRef;
     private final long codeIndex;
     private LineInfo baseLineInfo = null;
     private LineInfo otherLineInfo = null;
@@ -130,13 +128,6 @@ public class LocationImpl extends MirrorImpl implements Location {
             method = declaringType.getMethodMirror(methodRef);
         }
         return method;
-    }
-
-    public CompletableFuture<Method> methodAsync() {
-        if (method == null) {
-            return declaringType.getMethodMirrorAsync(methodRef).thenApply(m -> method = m);
-        }
-        return CompletableFuture.completedFuture(method);
     }
 
     public long methodRef() {

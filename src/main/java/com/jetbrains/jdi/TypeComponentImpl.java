@@ -49,7 +49,7 @@ public abstract class TypeComponentImpl extends MirrorImpl
     protected final String name;
     protected final String signature;
     protected final String genericSignature;
-    protected final ReferenceTypeImpl declaringType;
+    public final ReferenceTypeImpl declaringType;
     private final int modifiers;
 
     TypeComponentImpl(VirtualMachine vm, ReferenceTypeImpl declaringType,
@@ -118,7 +118,7 @@ public abstract class TypeComponentImpl extends MirrorImpl
         return isModifierSet(VMModifiers.SYNTHETIC);
     }
 
-    long ref() {
+    public long ref() {
         return ref;
     }
 
