@@ -53,6 +53,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import com.sun.jdi.ModuleReference;
@@ -918,12 +919,32 @@ public class VirtualMachineImpl extends MirrorImpl
         }
     }
 
+    void printTraceSafe(Supplier<String> stringSupplier) {
+        try {
+            printTrace(stringSupplier.get());
+        }
+        catch (Throwable t) {
+            // the logging should not affect program execution
+            printTrace("Error while JDI tracing: " + t.getMessage());
+        }
+    }
+
     void printTrace(String string) {
         debugTraceConsumer.accept(string);
     }
 
     private static void defaultPrintTrace(String string) {
         System.err.println("[JDI: " + string + "]");
+    }
+
+    void printReceiveTraceSafe(int depth, Supplier<String> stringSupplier) {
+        try {
+            printReceiveTrace(depth, stringSupplier.get());
+        }
+        catch (Throwable t) {
+            // the logging should not affect program execution
+            printTrace("Error while JDI tracing: " + t.getMessage());
+        }
     }
 
     void printReceiveTrace(int depth, String string) {

@@ -659,7 +659,7 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
             EventImpl evt = createEvent(compEvt.events[i]);
             if ((vm.traceFlags & VirtualMachine.TRACE_EVENTS) != 0) {
                 try {
-                    vm.printTrace("Event: " + evt);
+                    vm.printTraceSafe(() -> "Event: " + evt);
                 } catch (VMDisconnectedException ee) {
                     // ignore - see bug 6502716
                 }

@@ -3752,7 +3752,7 @@ public class JDWP {
                 }
                 returnValue = ps.readValue();
                 if (vm.traceReceives) {
-                    vm.printReceiveTrace(4, "returnValue(ValueImpl): " + returnValue);
+                    vm.printReceiveTraceSafe(4, () -> "returnValue(ValueImpl): " + returnValue);
                 }
                 exception = ps.readTaggedObjectReference();
                 if (vm.traceReceives) {
