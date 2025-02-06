@@ -666,17 +666,23 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
 
     InterfaceType[] getInterfaces() {
         try {
-            return JDWP.ReferenceType.Interfaces.process(vm, this).interfaces;
+            return checkEmpty(JDWP.ReferenceType.Interfaces.process(vm, this).interfaces);
         } catch (JDWPException exc) {
             throw exc.toJDIException();
         }
     }
 
     CompletableFuture<InterfaceType[]> getInterfacesAsync() {
-        return JDWP.ReferenceType.Interfaces.processAsync(vm, this).thenApply(r -> r.interfaces);
+        return JDWP.ReferenceType.Interfaces.processAsync(vm, this).thenApply(r -> checkEmpty(r.interfaces));
     }
 
-    <T> List<T> unmodifiableList(T[] array) {
+    private static final InterfaceTypeImpl[] EMPTY_INTERFACE_TYPE_IMPL_ARRAY = new InterfaceTypeImpl[0];
+
+    private static InterfaceTypeImpl[] checkEmpty(InterfaceTypeImpl[] array) {
+        return array.length == 0 ? EMPTY_INTERFACE_TYPE_IMPL_ARRAY : array;
+    }
+
+    static <T> List<T> unmodifiableList(T[] array) {
         // List.of(array) in this case will copy the array
         return Collections.unmodifiableList(Arrays.asList(array));
     }
