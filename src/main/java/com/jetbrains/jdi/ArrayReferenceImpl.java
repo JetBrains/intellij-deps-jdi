@@ -38,9 +38,12 @@
 
 package com.jetbrains.jdi;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import com.sun.jdi.ArrayReference;
 import com.sun.jdi.ClassNotLoadedException;
@@ -102,6 +105,7 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
         return getValues(index, 1).get(0);
     }
 
+    @SuppressWarnings("unused")
     public CompletableFuture<Value> getValueAsync(int index) {
         return getValuesAsync(index, 1).thenApply(r -> r.get(0));
     }
@@ -154,9 +158,45 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
                 return CompletableFuture.completedFuture(Collections.emptyList());
             }
 
-            return JDWP.ArrayReference.GetValues.processAsync(vm, this, index, length)
-                    .thenApply(r -> cast(r.values));
+            int maxChunkSize = getMaxChunkSizeForGetValues();
+            if (length <= maxChunkSize) {
+                return getValuesAsyncImpl(index, length);
+
+            } else {
+                //noinspection unchecked
+                CompletableFuture<List<Value>>[] chunks = new CompletableFuture[(length - 1) / maxChunkSize + 1];
+                int chunkIdx = 0;
+                int already = 0;
+                while (already < length) {
+                    int chunkSize = Math.min(maxChunkSize, length - already);
+                    chunks[chunkIdx++] = getValuesAsyncImpl(index + already, chunkSize);
+                    already += chunkSize;
+                }
+                assert chunkIdx == chunks.length;
+
+                int finalLength = length;
+                return CompletableFuture.allOf(chunks).thenApply(___ -> {
+                    ArrayList<Value> vals = new ArrayList<>(finalLength);
+
+                    for (CompletableFuture<List<Value>> chunkAsync : chunks) {
+                        List<Value> chunk;
+                        try {
+                            chunk = chunkAsync.get();
+                        } catch (InterruptedException | ExecutionException e) {
+                            throw new RuntimeException(e);
+                        }
+                        vals.addAll(chunk);
+                    }
+                    assert vals.size() == finalLength;
+                    return vals;
+                });
+            }
         });
+    }
+
+    private CompletableFuture<List<Value>> getValuesAsyncImpl(int index, int length) {
+        return JDWP.ArrayReference.GetValues.processAsync(vm, this, index, length)
+                .thenApply(r -> cast(r.values));
     }
 
     public List<Value> getValues(int index, int length) {
@@ -168,14 +208,31 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
             return Collections.emptyList();
         }
 
-        List<Value> vals;
+        int maxChunkSize = getMaxChunkSizeForGetValues();
+        if (length <= maxChunkSize) {
+            return getValuesImpl(index, length);
+
+        } else {
+            ArrayList<Value> vals = new ArrayList<>(length);
+            int already = 0;
+            while (already < length) {
+                int chunkSize = Math.min(maxChunkSize, length - already);
+                List<Value> chunk = getValuesImpl(index + already, chunkSize);
+                assert chunk.size() == chunkSize;
+                vals.addAll(chunk);
+                already += chunkSize;
+            }
+            assert vals.size() == length;
+            return vals;
+        }
+    }
+
+    private List<Value> getValuesImpl(int index, int length) {
         try {
-            vals = cast(JDWP.ArrayReference.GetValues.process(vm, this, index, length).values);
+            return cast(JDWP.ArrayReference.GetValues.process(vm, this, index, length).values);
         } catch (JDWPException exc) {
             throw exc.toJDIException();
         }
-
-        return vals;
     }
 
     public void setValue(int index, Value value)
@@ -222,11 +279,24 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
                         (srcIndex + length - 1));
         }
 
+        int maxChunkSize = getMaxChunkSizeForSetValues();
+        int already = 0;
+        while (already < length) {
+            int chunkSize = Math.min(maxChunkSize, length - already);
+            setValuesImpl(index + already, values, srcIndex + already, chunkSize, checkAssignable);
+            already += chunkSize;
+        }
+    }
+
+    private void setValuesImpl(int index, List<? extends Value> values,
+                               int srcIndex, int length, boolean checkAssignable)
+            throws InvalidTypeException,
+                   ClassNotLoadedException {
         boolean somethingToSet = false;
         ValueImpl[] setValues = new ValueImpl[length];
 
         for (int i = 0; i < length; i++) {
-            ValueImpl value = (ValueImpl)values.get(srcIndex + i);
+            ValueImpl value = (ValueImpl) values.get(srcIndex + i);
 
             try {
                 // Validate and convert if necessary
@@ -255,6 +325,37 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
             } catch (JDWPException exc) {
                 throw exc.toJDIException();
             }
+        }
+    }
+
+    private boolean isAndroidVM() {
+        return vm.name().toLowerCase(Locale.ROOT).contains("dalvik");
+    }
+
+    private int getMaxChunkSizeForGetValues() {
+        if (isAndroidVM()) {
+            return Integer.MAX_VALUE;
+        } else {
+            // HotSpot's JDWP implementation has a limitation when reading reference values,
+            // controlled by MaxJNILocalCapacity property with a default value of 65536
+            // (see https://youtrack.jetbrains.com/issue/IDEA-366875).
+            // We don't want to differentiate reference/primitive values and ignore changes of the default value.
+            return 32_768;
+        }
+    }
+
+    private int getMaxChunkSizeForSetValues() {
+        if (isAndroidVM()) {
+            // Android VM has a limitation when writing reference values (global buffer size is 51200)
+            // (see https://youtrack.jetbrains.com/issue/IDEA-366896).
+            // We don't want to differentiate reference/primitive values and ignore changes of the default value.
+            //
+            // Note that Android versions before 5 (Art Runtime introduction) had really tiny socket buffer (8k bytes),
+            // but we ignore this fact because it's completely outdated
+            // (see https://issuetracker.google.com/issues/73584940 and https://youtrack.jetbrains.com/issue/KTIJ-10233).
+            return 32_768;
+        } else {
+            return Integer.MAX_VALUE;
         }
     }
 
