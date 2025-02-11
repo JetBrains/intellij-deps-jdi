@@ -119,32 +119,40 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
         return getValuesAsync(0, -1);
     }
 
-    /**
-     * Validate that the range to set/get is valid.
-     * length of -1 (meaning rest of array) has been converted
-     * before entry.
-     */
-    private void validateArrayAccess(int index, int length) {
-        // because length can be computed from index,
-        // index must be tested first for correct error message
-        if ((index < 0) || (index > length())) {
-            throw new IndexOutOfBoundsException(
-                        "Invalid array index: " + index);
+    public List<Value> getValues(int index, int length) {
+        if (length == -1) { // -1 means the rest of the array
+            length = length() - index;
         }
-        if (length < 0) {
-            throw new IndexOutOfBoundsException(
-                        "Invalid array range length: " + length);
+        validateArrayAccess(index, length);
+        if (length == 0) {
+            return Collections.emptyList();
         }
-        if (index + length > length()) {
-            throw new IndexOutOfBoundsException(
-                        "Invalid array range: " +
-                        index + " to " + (index + length - 1));
+
+        int maxChunkSize = getMaxChunkSizeForGetValues();
+        if (length <= maxChunkSize) {
+            return getValuesImpl(index, length);
+
+        } else {
+            ArrayList<Value> vals = new ArrayList<>(length);
+            int already = 0;
+            while (already < length) {
+                int chunkSize = Math.min(maxChunkSize, length - already);
+                List<Value> chunk = getValuesImpl(index + already, chunkSize);
+                assert chunk.size() == chunkSize;
+                vals.addAll(chunk);
+                already += chunkSize;
+            }
+            assert vals.size() == length;
+            return vals;
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private static <T> T cast(Object x) {
-        return (T)x;
+    private List<Value> getValuesImpl(int index, int length) {
+        try {
+            return cast(JDWP.ArrayReference.GetValues.process(vm, this, index, length).values);
+        } catch (JDWPException exc) {
+            throw exc.toJDIException();
+        }
     }
 
     public CompletableFuture<List<Value>> getValuesAsync(int index, int len) {
@@ -197,42 +205,6 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
     private CompletableFuture<List<Value>> getValuesAsyncImpl(int index, int length) {
         return JDWP.ArrayReference.GetValues.processAsync(vm, this, index, length)
                 .thenApply(r -> cast(r.values));
-    }
-
-    public List<Value> getValues(int index, int length) {
-        if (length == -1) { // -1 means the rest of the array
-           length = length() - index;
-        }
-        validateArrayAccess(index, length);
-        if (length == 0) {
-            return Collections.emptyList();
-        }
-
-        int maxChunkSize = getMaxChunkSizeForGetValues();
-        if (length <= maxChunkSize) {
-            return getValuesImpl(index, length);
-
-        } else {
-            ArrayList<Value> vals = new ArrayList<>(length);
-            int already = 0;
-            while (already < length) {
-                int chunkSize = Math.min(maxChunkSize, length - already);
-                List<Value> chunk = getValuesImpl(index + already, chunkSize);
-                assert chunk.size() == chunkSize;
-                vals.addAll(chunk);
-                already += chunkSize;
-            }
-            assert vals.size() == length;
-            return vals;
-        }
-    }
-
-    private List<Value> getValuesImpl(int index, int length) {
-        try {
-            return cast(JDWP.ArrayReference.GetValues.process(vm, this, index, length).values);
-        } catch (JDWPException exc) {
-            throw exc.toJDIException();
-        }
     }
 
     public void setValue(int index, Value value)
@@ -326,6 +298,34 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
                 throw exc.toJDIException();
             }
         }
+    }
+
+    /**
+     * Validate that the range to set/get is valid.
+     * length of -1 (meaning rest of array) has been converted
+     * before entry.
+     */
+    private void validateArrayAccess(int index, int length) {
+        // because length can be computed from index,
+        // index must be tested first for correct error message
+        if ((index < 0) || (index > length())) {
+            throw new IndexOutOfBoundsException(
+                    "Invalid array index: " + index);
+        }
+        if (length < 0) {
+            throw new IndexOutOfBoundsException(
+                    "Invalid array range length: " + length);
+        }
+        if (index + length > length()) {
+            throw new IndexOutOfBoundsException(
+                    "Invalid array range: " +
+                            index + " to " + (index + length - 1));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T cast(Object x) {
+        return (T)x;
     }
 
     private boolean isAndroidVM() {
