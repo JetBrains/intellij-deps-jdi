@@ -172,8 +172,9 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
 
             } else {
                 //noinspection unchecked
-                CompletableFuture<List<Value>>[] chunks = new CompletableFuture[(length - 1) / maxChunkSize + 1];
+                CompletableFuture<List<Value>>[] chunks = new CompletableFuture[calcChunksCount(length, maxChunkSize)];
                 int chunkIdx = 0;
+
                 int already = 0;
                 while (already < length) {
                     int chunkSize = Math.min(maxChunkSize, length - already);
@@ -202,6 +203,10 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
         });
     }
 
+    private static int calcChunksCount(int length, int maxChunkSize) {
+        return (length - 1) / maxChunkSize + 1;
+    }
+
     private CompletableFuture<List<Value>> getValuesAsyncImpl(int index, int length) {
         return JDWP.ArrayReference.GetValues.processAsync(vm, this, index, length)
                 .thenApply(r -> cast(r.values));
@@ -213,10 +218,25 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
         setValues(index, Collections.singletonList(value), 0, 1);
     }
 
+    @SuppressWarnings("unused")
+    public CompletableFuture<Void> setValueAsync(int index, Value value) {
+        return setValuesAsync(index, Collections.singletonList(value), 0, 1);
+    }
+
+    @SuppressWarnings("unused")
+    public CompletableFuture<Void> setValueAsync(int index, Value value, boolean checkAssignable) {
+        return setValuesAsync(index, Collections.singletonList(value), 0, 1, checkAssignable);
+    }
+
     public void setValues(List<? extends Value> values)
             throws InvalidTypeException,
                    ClassNotLoadedException {
         setValues(0, values, 0, -1);
+    }
+
+    @SuppressWarnings("unused")
+    public CompletableFuture<Void> setValuesAsync(List<? extends Value> values) {
+        return setValuesAsync(0, values, 0, -1);
     }
 
     public void setValues(int index, List<? extends Value> values,
@@ -226,11 +246,93 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
         setValues(index, values, srcIndex, length, true);
     }
 
+    public CompletableFuture<Void> setValuesAsync(int index, List<? extends Value> values,
+                                                  int srcIndex, int length) {
+        return setValuesAsync(index, values, srcIndex, length, true);
+    }
+
     public void setValues(int index, List<? extends Value> values,
                           int srcIndex, int length, boolean checkAssignable)
             throws InvalidTypeException,
                    ClassNotLoadedException {
 
+        length = getLengthForSetValues(index, values, srcIndex, length);
+
+        int maxChunkSize = getMaxChunkSizeForSetValues();
+        int already = 0;
+        while (already < length) {
+            int chunkSize = Math.min(maxChunkSize, length - already);
+            setValuesImpl(index + already, values, srcIndex + already, chunkSize, checkAssignable);
+            already += chunkSize;
+        }
+    }
+
+    private void setValuesImpl(int index, List<? extends Value> values,
+                               int srcIndex, int length, boolean checkAssignable)
+            throws InvalidTypeException,
+                   ClassNotLoadedException {
+
+        ValueImpl[] setValues = prepareSetValues(values, srcIndex, length, checkAssignable);
+        if (setValues != null) {
+            try {
+                JDWP.ArrayReference.SetValues.
+                    process(vm, this, index, setValues);
+            } catch (JDWPException exc) {
+                throw exc.toJDIException();
+            }
+        }
+    }
+
+    public CompletableFuture<Void> setValuesAsync(int index, List<? extends Value> values,
+                                                  int srcIndex, int len, boolean checkAssignable) {
+        return lengthAsync().thenCompose(__ -> { // preload length
+            int length = getLengthForSetValues(index, values, srcIndex, len);
+
+            int maxChunkSize = getMaxChunkSizeForSetValues();
+            try {
+                if (length <= maxChunkSize) {
+                    return setValuesAsyncImpl(index, values, srcIndex, length, checkAssignable);
+
+                } else {
+                    //noinspection unchecked
+                    CompletableFuture<Void>[] chunks = new CompletableFuture[calcChunksCount(length, maxChunkSize)];
+                    int chunkIdx = 0;
+
+                    int already = 0;
+                    while (already < length) {
+                        int chunkSize = Math.min(maxChunkSize, length - already);
+                        chunks[chunkIdx++] = setValuesAsyncImpl(index + already, values, srcIndex + already, chunkSize, checkAssignable);
+                        already += chunkSize;
+                    }
+                    assert chunkIdx == chunks.length;
+
+                    return CompletableFuture.allOf(chunks);
+                }
+
+            } catch (InvalidTypeException | ClassNotLoadedException e) {
+                return CompletableFuture.failedFuture(e);
+            }
+        });
+    }
+
+    private CompletableFuture<Void> setValuesAsyncImpl(int index, List<? extends Value> values,
+                                                       int srcIndex, int length, boolean checkAssignable)
+            throws InvalidTypeException,
+            ClassNotLoadedException {
+
+        // TODO: Introduce prepareSetValuesAsync().
+        //       In case of ObjectReferences the following method evaluates types of all references synchronously,
+        ValueImpl[] setValues = prepareSetValues(values, srcIndex, length, checkAssignable);
+        if (setValues != null) {
+            return JDWP.ArrayReference.SetValues.
+                    processAsync(vm, this, index, setValues)
+                    .thenAccept(__ -> {});
+        } else {
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    private int getLengthForSetValues(int index, List<? extends Value> values, int srcIndex, int length) {
         if (length == -1) { // -1 means the rest of the array
             // shorter of, the rest of the array and rest of
             // the source values
@@ -251,29 +353,22 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
                         (srcIndex + length - 1));
         }
 
-        int maxChunkSize = getMaxChunkSizeForSetValues();
-        int already = 0;
-        while (already < length) {
-            int chunkSize = Math.min(maxChunkSize, length - already);
-            setValuesImpl(index + already, values, srcIndex + already, chunkSize, checkAssignable);
-            already += chunkSize;
-        }
+        return length;
     }
 
-    private void setValuesImpl(int index, List<? extends Value> values,
-                               int srcIndex, int length, boolean checkAssignable)
-            throws InvalidTypeException,
-                   ClassNotLoadedException {
-        boolean somethingToSet = false;
-        ValueImpl[] setValues = new ValueImpl[length];
+    private ValueImpl[] prepareSetValues(List<? extends Value> values, int srcIndex, int length, boolean checkAssignable) throws InvalidTypeException, ClassNotLoadedException {
+        ValueImpl[] setValues = null;
 
         for (int i = 0; i < length; i++) {
             ValueImpl value = (ValueImpl) values.get(srcIndex + i);
-
             try {
                 // Validate and convert if necessary
-                setValues[i] = prepareForAssignment(value, new Component(checkAssignable));
-                somethingToSet = true;
+                ValueImpl valueToSet = prepareForAssignment(value, new Component(checkAssignable));
+
+                if (setValues == null) {
+                    setValues = new ValueImpl[length];
+                }
+                setValues[i] = valueToSet;
             } catch (ClassNotLoadedException e) {
                 /*
                  * Since we got this exception,
@@ -290,14 +385,8 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
                 }
             }
         }
-        if (somethingToSet) {
-            try {
-                JDWP.ArrayReference.SetValues.
-                    process(vm, this, index, setValues);
-            } catch (JDWPException exc) {
-                throw exc.toJDIException();
-            }
-        }
+
+        return setValues;
     }
 
     /**
