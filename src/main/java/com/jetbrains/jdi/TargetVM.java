@@ -47,9 +47,7 @@ import com.sun.jdi.event.EventSet;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 public class TargetVM {
     private final Map<Integer, Packet> waitingQueue = new HashMap<>(32,0.75f);
@@ -77,11 +75,17 @@ public class TargetVM {
         this.connection = connection;
         this.readerThread = new ReaderThread();
 
-        asyncExecutor = Executors.newSingleThreadExecutor(r -> {
-            Thread thread = new Thread(vm.threadGroupForJDI(), r, "JDI Target Async Processor");
-            thread.setDaemon(true);
-            return thread;
-        });
+        asyncExecutor = new ThreadPoolExecutor(1, 1,
+                0L, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>(),
+                r -> {
+                    Thread thread = new Thread(vm.threadGroupForJDI(), r, "JDI Target Async Processor");
+                    thread.setDaemon(true);
+                    return thread;
+                },
+                (r, executor) -> {
+                    throw new VMDisconnectedException();
+                });
     }
 
     void start() {
