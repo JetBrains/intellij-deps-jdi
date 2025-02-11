@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -195,8 +195,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
 
     public String signature() {
         if (signature == null) {
-            // Does not need synchronization, since worst-case
-            // static info is fetched twice
+            // Does not need synchronization. Worst case is static info is fetched twice.
             try {
                 setSignature(JDWP.ReferenceType.Signature.process(vm, this).signature);
             } catch (JDWPException exc) {
@@ -207,9 +206,11 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     }
 
     public String genericSignature() {
+        // This gets both the signature and the generic signature
         if (!vm.canGet1_5LanguageFeatures()) {
             return null;
         }
+        // Does not need synchronization. Worst case is static info is fetched twice.
         JDWP.ReferenceType.SignatureWithGeneric result;
         try {
             result = JDWP.ReferenceType.SignatureWithGeneric.process(vm, this);
@@ -222,8 +223,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
 
     public ClassLoaderReference classLoader() {
         if (classLoader == null) {
-            // Does not need synchronization, since worst-case
-            // static info is fetched twice
+            // Does not need synchronization. Worst case is static info is fetched twice.
             try {
                 ClassLoaderReferenceImpl res = JDWP.ReferenceType.ClassLoader.process(vm, this).classLoader;
                 classLoader = notnullize(res, ClassLoaderReferenceImpl.NULL);
@@ -816,17 +816,12 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
 
     public ClassObjectReference classObject() {
         if (classObject == null) {
-            // Are classObjects unique for an Object, or
-            // created each time? Is this spec'ed?
-            synchronized(this) {
-                if (classObject == null) {
-                    try {
-                        classObject = JDWP.ReferenceType.ClassObject.
-                            process(vm, this).classObject;
-                    } catch (JDWPException exc) {
-                        throw exc.toJDIException();
-                    }
-                }
+            // Does not need synchronization. Worst case is static info is fetched twice.
+            try {
+                classObject = JDWP.ReferenceType.ClassObject.
+                    process(vm, this).classObject;
+            } catch (JDWPException exc) {
+                throw exc.toJDIException();
             }
         }
         return classObject;
@@ -835,6 +830,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     @SuppressWarnings("unused")
     public CompletableFuture<ClassObjectReference> classObjectAsync() {
         if (classObject == null) {
+            // Does not need synchronization. Worst case is static info is fetched twice.
             return JDWP.ReferenceType.ClassObject.processAsync(vm, this)
                     .thenApply(c -> {
                         classObject = c.classObject;
@@ -921,8 +917,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     String baseSourceName() throws AbsentInformationException {
         String bsn = baseSourceName;
         if (bsn == null) {
-            // Does not need synchronization, since worst-case
-            // static info is fetched twice
+            // Does not need synchronization. Worst case is static info is fetched twice.
             try {
                 bsn = JDWP.ReferenceType.SourceFile.
                     process(vm, this).sourceFile;
@@ -944,8 +939,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
     CompletableFuture<String> baseSourceNameAsync() {
         String bsn = baseSourceName;
         if (bsn == null) {
-            // Does not need synchronization, since worst-case
-            // static info is fetched twice
+            // Does not need synchronization. Worst case is static info is fetched twice.
             return JDWP.ReferenceType.SourceFile.processAsync(vm, this)
                     .exceptionally(throwable -> {
                         if (JDWPException.isOfType(throwable, JDWP.Error.ABSENT_INFORMATION)) {
@@ -1392,13 +1386,12 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
         });
     }
 
-    // Does not need synchronization, since worst-case
-    // static info is fetched twice
     void getModifiers() {
         if (modifiers != -1) {
             return;
         }
         try {
+            // Does not need synchronization. Worst case is static info is fetched twice.
             modifiers = JDWP.ReferenceType.Modifiers.
                                   process(vm, this).modBits;
         } catch (JDWPException exc) {
