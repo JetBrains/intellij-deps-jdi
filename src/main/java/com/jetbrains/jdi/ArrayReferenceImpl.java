@@ -322,6 +322,7 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
 
         // TODO: Introduce prepareSetValuesAsync().
         //       In case of ObjectReferences the following method evaluates types of all references synchronously,
+        continue here, introduce prepareSetValuesAsync
         ValueImpl[] setValues = prepareSetValues(values, srcIndex, length, checkAssignable);
         if (setValues != null) {
             return JDWP.ArrayReference.SetValues.
@@ -462,47 +463,70 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
         try {
             super.validateAssignment(destination);
         } catch (ClassNotLoadedException e) {
-            /*
-             * An array can be used extensively without the
-             * enclosing loader being recorded by the VM as an
-             * initiating loader of the array type. In addition, the
-             * load of an array class is fairly harmless as long as
-             * the component class is already loaded. So we relax the
-             * rules a bit and allow the assignment as long as the
-             * ultimate component types are assignable.
-             */
-            boolean valid = false;
-            JNITypeParser destParser = new JNITypeParser(
-                                       destination.signature());
-            JNITypeParser srcParser = new JNITypeParser(
-                                       arrayType().signature());
-            int destDims = destParser.dimensionCount();
-            if (destDims <= srcParser.dimensionCount()) {
-                /*
-                 * Remove all dimensions from the destination. Remove
-                 * the same number of dimensions from the source.
-                 * Get types for both and check to see if they are
-                 * compatible.
-                 */
-                String destComponentSignature =
-                    destParser.componentSignature(destDims);
-                Type destComponentType =
-                    destination.findType(destComponentSignature);
-                String srcComponentSignature =
-                    srcParser.componentSignature(destDims);
-                Type srcComponentType =
-                    arrayType().findType(srcComponentSignature);
-                valid = ArrayTypeImpl.isComponentAssignable(destComponentType,
-                                                          srcComponentType);
-            }
-
-            if (!valid) {
-                throw new InvalidTypeException("Cannot assign " +
-                                               arrayType().name() +
-                                               " to " +
-                                               destination.typeName());
-            }
+            validateAssignmentRelaxed(destination);
         }
+    }
+
+    private void validateAssignmentRelaxed(ValueContainer destination)
+            throws ClassNotLoadedException, InvalidTypeException {
+        /*
+         * An array can be used extensively without the
+         * enclosing loader being recorded by the VM as an
+         * initiating loader of the array type. In addition, the
+         * load of an array class is fairly harmless as long as
+         * the component class is already loaded. So we relax the
+         * rules a bit and allow the assignment as long as the
+         * ultimate component types are assignable.
+         */
+        boolean valid = false;
+        JNITypeParser destParser = new JNITypeParser(
+                                   destination.signature());
+        JNITypeParser srcParser = new JNITypeParser(
+                                   arrayType().signature());
+        int destDims = destParser.dimensionCount();
+        if (destDims <= srcParser.dimensionCount()) {
+            /*
+             * Remove all dimensions from the destination. Remove
+             * the same number of dimensions from the source.
+             * Get types for both and check to see if they are
+             * compatible.
+             */
+            String destComponentSignature =
+                destParser.componentSignature(destDims);
+            Type destComponentType =
+                destination.findType(destComponentSignature);
+            String srcComponentSignature =
+                srcParser.componentSignature(destDims);
+            Type srcComponentType =
+                arrayType().findType(srcComponentSignature);
+            valid = ArrayTypeImpl.isComponentAssignable(destComponentType,
+                                                      srcComponentType);
+        }
+
+        if (!valid) {
+            throw new InvalidTypeException("Cannot assign " +
+                                           arrayType().name() +
+                                           " to " +
+                                           destination.typeName());
+        }
+    }
+
+    @Override
+    CompletableFuture<Void> validateAssignmentAsync(ValueContainer destination) {
+        CompletableFuture<Void> res = new CompletableFuture<>();
+        super.validateAssignmentAsync(destination)
+                .whenComplete((r, e) -> {
+                    if (e instanceof ClassNotLoadedException) {
+                        try {
+                            validateAssignmentRelaxed(destination);
+                        } catch (ClassNotLoadedException | InvalidTypeException ex) {
+                            res.completeExceptionally(ex);
+                        }
+                    }
+                    // Otherwise success.
+                    res.complete(null);
+                });
+        return res;
     }
 
     /*

@@ -722,9 +722,26 @@ public class ObjectReferenceImpl extends ValueImpl
         return this;            // conversion never necessary
     }
 
+    CompletableFuture<ValueImpl> prepareForAssignmentToAsync(ValueContainer destination) {
+
+        return validateAssignmentAsync(destination)
+                .thenApply(__ -> this); // conversion never necessary
+    }
+
     void validateAssignment(ValueContainer destination)
                             throws InvalidTypeException, ClassNotLoadedException {
 
+        validateAssignmentCheckDestination(destination);
+
+        if (destination.checkAssignable()) {
+            // Validate assignment
+            ReferenceType destType = (ReferenceTypeImpl) destination.type();
+            validateAssignmentCheckMyType(destType);
+        }
+    }
+
+    private void validateAssignmentCheckDestination(ValueContainer destination)
+            throws InvalidTypeException {
         /*
          * Do these simpler checks before attempting a query of the destination's
          * type which might cause a confusing ClassNotLoadedException if
@@ -741,18 +758,43 @@ public class ObjectReferenceImpl extends ValueImpl
         if (destSig.isVoid()) {
             throw new InvalidTypeException("Can't assign object value to a void");
         }
+    }
 
-        if (destination.checkAssignable()) {
-            // Validate assignment
-            ReferenceType destType = (ReferenceTypeImpl) destination.type();
-            ReferenceTypeImpl myType = (ReferenceTypeImpl) referenceType();
-            if (!myType.isAssignableTo(destType)) {
-                JNITypeParser parser = new JNITypeParser(destType.signature());
-                String destTypeName = parser.typeName();
-                throw new InvalidTypeException("Can't assign " +
-                        type().name() +
-                        " to " + destTypeName);
+    private void validateAssignmentCheckMyType(ReferenceType destType)
+            throws InvalidTypeException {
+        ReferenceTypeImpl myType = (ReferenceTypeImpl) referenceType();
+        if (!myType.isAssignableTo(destType)) {
+            JNITypeParser parser = new JNITypeParser(destType.signature());
+            String destTypeName = parser.typeName();
+            throw new InvalidTypeException("Can't assign " +
+                    type().name() +
+                    " to " + destTypeName);
+        }
+    }
+
+    CompletableFuture<Void> validateAssignmentAsync(ValueContainer destination) {
+        try {
+            /*
+             * Do these simpler checks before attempting a query of the destination's
+             * type which might cause a confusing ClassNotLoadedException if
+             * the destination is primitive or an array.
+             */
+
+            validateAssignmentCheckDestination(destination);
+
+            if (destination.checkAssignable()) {
+                // Validate assignment
+                ReferenceType destType = (ReferenceTypeImpl) destination.type();
+                return referenceTypeAsync().thenCompose(__ -> { // preload referenceType()
+                    return AsyncUtils.toCompletableFuture(() -> {
+                        validateAssignmentCheckMyType(destType);
+                        return null;
+                    });
+                });
             }
+
+        } catch (ClassNotLoadedException | InvalidTypeException e) {
+            return CompletableFuture.failedFuture(e);
         }
     }
 

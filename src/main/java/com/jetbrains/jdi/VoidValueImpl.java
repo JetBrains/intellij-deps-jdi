@@ -43,6 +43,8 @@ import com.sun.jdi.Type;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.VoidValue;
 
+import java.util.concurrent.CompletableFuture;
+
 public class VoidValueImpl extends ValueImpl implements VoidValue {
 
     VoidValueImpl(VirtualMachine aVm) {
@@ -72,6 +74,10 @@ public class VoidValueImpl extends ValueImpl implements VoidValue {
             return this;
         }
         throw new InvalidTypeException();
+    }
+
+    CompletableFuture<ValueImpl> prepareForAssignmentToAsync(ValueContainer destination) {
+        return AsyncUtils.toCompletableFuture(() -> prepareForAssignmentTo(destination));
     }
 
     public String toString() {

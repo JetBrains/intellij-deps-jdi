@@ -45,6 +45,8 @@ import com.sun.jdi.InvalidTypeException;
 import com.sun.jdi.PrimitiveValue;
 import com.sun.jdi.VirtualMachine;
 
+import java.util.concurrent.CompletableFuture;
+
 public abstract class PrimitiveValueImpl extends ValueImpl
                                          implements PrimitiveValue
 {
@@ -144,5 +146,9 @@ public abstract class PrimitiveValueImpl extends ValueImpl
             throw new InternalException("Signature and type inconsistent for: " +
                                         destination.typeName());
         }
+    }
+
+    CompletableFuture<ValueImpl> prepareForAssignmentToAsync(ValueContainer destination) {
+        return AsyncUtils.toCompletableFuture(() -> prepareForAssignmentTo(destination));
     }
 }
