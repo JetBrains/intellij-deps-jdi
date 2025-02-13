@@ -43,6 +43,8 @@ import com.sun.jdi.InvalidTypeException;
 import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
 
+import java.util.concurrent.CompletableFuture;
+
 abstract class ValueImpl extends MirrorImpl implements Value {
 
     ValueImpl(VirtualMachine aVm) {
@@ -51,15 +53,29 @@ abstract class ValueImpl extends MirrorImpl implements Value {
 
     static ValueImpl prepareForAssignment(Value value,
                                           ValueContainer destination)
-                  throws InvalidTypeException, ClassNotLoadedException {
+            throws InvalidTypeException, ClassNotLoadedException {
         if (value == null) {
-            JNITypeParser sig = new JNITypeParser(destination.signature());
-            if (sig.isPrimitive()) {
-                throw new InvalidTypeException("Can't set a primitive type to null");
-            }
-            return null;    // no further checking or conversion necessary
+            return prepareForAssignmentNull(destination);
         } else {
             return ((ValueImpl)value).prepareForAssignmentTo(destination);
+        }
+    }
+
+    private static ValueImpl prepareForAssignmentNull(ValueContainer destination)
+            throws InvalidTypeException {
+        JNITypeParser sig = new JNITypeParser(destination.signature());
+        if (sig.isPrimitive()) {
+            throw new InvalidTypeException("Can't set a primitive type to null");
+        }
+        return null;    // no further checking or conversion necessary
+    }
+
+    static CompletableFuture<ValueImpl> prepareForAssignmentAsync(Value value,
+                                                                  ValueContainer destination) {
+        if (value == null) {
+            return AsyncUtils.toCompletableFuture(() -> prepareForAssignmentNull(destination));
+        } else {
+            return ((ValueImpl)value).prepareForAssignmentToAsync(destination);
         }
     }
 
@@ -73,6 +89,8 @@ abstract class ValueImpl extends MirrorImpl implements Value {
 
     abstract ValueImpl prepareForAssignmentTo(ValueContainer destination)
                  throws InvalidTypeException, ClassNotLoadedException;
+
+    abstract CompletableFuture<ValueImpl> prepareForAssignmentToAsync(ValueContainer destination);
 
     abstract byte typeValueKey();
 }
