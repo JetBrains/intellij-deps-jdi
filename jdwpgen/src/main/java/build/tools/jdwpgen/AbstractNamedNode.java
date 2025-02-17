@@ -97,10 +97,14 @@ abstract class AbstractNamedNode extends Node {
         writer.println();
         genJavaComment(writer, depth);
         indent(writer, depth);
+        String className = javaClassName();
+        if ("JDWP".equals(className) || "Error".equals(className)) {
+            writer.print("public ");
+        }
         if (depth != 0) {
             writer.print("static ");
         }
-        writer.print("class " + javaClassName());
+        writer.print("class " + className);
         writer.println(javaClassImplements() + " {");
         genJavaClassSpecifics(writer, depth+1);
         for (Node node : components) {

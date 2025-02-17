@@ -3639,9 +3639,9 @@ public class JDWP {
          * <p>
          * By default, all threads in the target VM are resumed while 
          * the method is being invoked if they were previously 
-         * suspended by an event or by command. 
+         * suspended by an event or by a command. 
          * This is done to prevent the deadlocks 
-         * that will occur if any of the threads own monitors 
+         * that will occur if any of the threads own resources, such as monitors, 
          * that will be needed by the invoked method. It is possible that 
          * breakpoints or other events might occur during the invocation. 
          * Note, however, that this implicit resume acts exactly like 
@@ -3789,9 +3789,9 @@ public class JDWP {
          * <p>
          * By default, all threads in the target VM are resumed while 
          * the method is being invoked if they were previously 
-         * suspended by an event or by command. 
+         * suspended by an event or by a command. 
          * This is done to prevent the deadlocks 
-         * that will occur if any of the threads own monitors 
+         * that will occur if any of the threads own resources, such as monitors, 
          * that will be needed by the invoked method. It is possible that 
          * breakpoints or other events might occur during the invocation. 
          * Note, however, that this implicit resume acts exactly like 
@@ -4016,7 +4016,7 @@ public class JDWP {
          * the method is being invoked if they were previously 
          * suspended by an event or by a command. 
          * This is done to prevent the deadlocks 
-         * that will occur if any of the threads own monitors 
+         * that will occur if any of the threads own resources, such as monitors, 
          * that will be needed by the invoked method. It is possible that 
          * breakpoints or other events might occur during the invocation. 
          * Note, however, that this implicit resume acts exactly like 
@@ -4127,7 +4127,7 @@ public class JDWP {
                 }
                 returnValue = ps.readValue();
                 if (vm.traceReceives) {
-                    vm.printReceiveTrace(4, "returnValue(ValueImpl): " + returnValue);
+                    vm.printReceiveTraceSafe(4, () -> "returnValue(ValueImpl): " + returnValue);
                 }
                 exception = ps.readTaggedObjectReference();
                 if (vm.traceReceives) {
@@ -5021,18 +5021,21 @@ public class JDWP {
 
 
             /**
-             * The monitor owner, or null if it is not currently owned.
+             * The platform thread owning this monitor, or null 
+             * if owned by a virtual thread or not owned.
              */
             final ThreadReferenceImpl owner;
 
             /**
-             * The number of times the monitor has been entered.
+             * The number of times the owning platform thread has entered the monitor, 
+             * or 0 if owned by a virtual thread or not owned.
              */
             final int entryCount;
 
             /**
-             * The number of threads that are waiting for the monitor 
-             * 0 if there is no current owner
+             * The total number of platform threads that are waiting to enter or re-enter 
+             * the monitor, or waiting to be notified by the monitor, or 0 if 
+             * only virtual threads are waiting or no threads are waiting.
              */
             final ThreadReferenceImpl[] waiters;
 
@@ -5094,7 +5097,7 @@ public class JDWP {
          * the method is being invoked if they were previously 
          * suspended by an event or by a command. 
          * This is done to prevent the deadlocks 
-         * that will occur if any of the threads own monitors 
+         * that will occur if any of the threads own resources, such as monitors, 
          * that will be needed by the invoked method. It is possible that 
          * breakpoints or other events might occur during the invocation. 
          * Note, however, that this implicit resume acts exactly like 
@@ -5212,7 +5215,7 @@ public class JDWP {
                 }
                 returnValue = ps.readValue();
                 if (vm.traceReceives) {
-                    vm.printReceiveTrace(4, "returnValue(ValueImpl): " + returnValue);
+                    vm.printReceiveTraceSafe(4, () -> "returnValue(ValueImpl): " + returnValue);
                 }
                 exception = ps.readTaggedObjectReference();
                 if (vm.traceReceives) {
@@ -6073,9 +6076,9 @@ public class JDWP {
 
         /**
          * Returns the object, if any, for which this thread is waiting. The 
-         * thread may be waiting to enter a monitor, or it may be waiting, via 
-         * the java.lang.Object.wait method, for another thread to invoke the 
-         * notify method. 
+         * thread may be waiting to enter the object's monitor, or in 
+         * java.lang.Object.wait waiting to re-enter the monitor after being 
+         * notified, interrupted, or timed-out.
          * The thread must be suspended, and the returned information is 
          * relevant only while the thread is suspended. 
          * Requires canGetCurrentContendedMonitor capability - see 
@@ -6138,10 +6141,10 @@ public class JDWP {
         /**
          * Stops the thread with an asynchronous exception. 
          * <p>
-         * The target VM may not support, or may only provide limited support, for 
-         * this command when the thread is a virtual thread. It may, for example, 
-         * only support this command when the virtual thread is suspended at a 
-         * breakpoint or singlestep event.
+         * This command may be used to send an asynchronous 
+         * exception to a virtual thread when it is suspended at an event. 
+         * An implementation may support sending an asynchronous exception 
+         * to a suspended virtual thread in other cases.
          */
         static class Stop {
             static final int COMMAND = 10;
@@ -6411,10 +6414,10 @@ public class JDWP {
          * command and resumption of thread execution, the 
          * state of the stack is undefined. 
          * <p>
-         * The target VM may not support, or may only provide limited support, for 
-         * this command when the thread is a virtual thread. It may, for example, 
-         * only support this command when the virtual thread is suspended at a 
-         * breakpoint or singlestep event.
+         * This command may be used to force a return from the current frame 
+         * of a virtual thread when it is suspended at an event. 
+         * An implementation may support forcing a return from the current frame 
+         * of a suspended virtual thread in other cases.
          * <p>
          * No further instructions are executed in the called 
          * method. Specifically, finally blocks are not executed. Note: 
@@ -6494,12 +6497,9 @@ public class JDWP {
         }
 
         /**
-         * <b>IsVirtual is a preview API of the Java platform.</b> 
-         * <em>Preview features may be removed in a future release, or upgraded to 
-         * permanent features of the Java platform.</em> Since JDWP version 19.
-         * <p>
          * Determine if a thread is a 
          * <a href=../../api/java.base/java/lang/Thread.html#virtual-threads>virtual thread</a>.
+         * <p>Since JDWP version 21.
          */
         static class IsVirtual {
             static final int COMMAND = 15;
@@ -7572,12 +7572,9 @@ public class JDWP {
                 }
 
                 /**
-                 * <b>PlatformThreadsOnly is a preview API of the Java platform.</b> 
-                 * <em>Preview features may be removed in a future release, or upgraded to 
-                 * permanent features of the Java platform.</em> Since JDWP version 19.
-                 * <p>
                  * For thread start and thread end events, restrict the 
                  * events so they are only sent for platform threads.
+                 * <p>Since JDWP version 21.
                  */
                 static class PlatformThreadsOnly extends ModifierCommon {
                     static final byte ALT_ID = 13;
@@ -7903,7 +7900,7 @@ public class JDWP {
          * <p>
          * If the thread is a virtual thread then this command can be used to set 
          * the value of local variables in the top-most frame when the thread is 
-         * suspended at a breakpoint or single step event. The target VM may support 
+         * suspended at an event. The target VM may support 
          * setting local variables in other cases.
          */
         static class SetValues {
@@ -8073,10 +8070,9 @@ public class JDWP {
          * <code>objectref</code> is added back as well. The Java virtual machine 
          * program counter is restored to the opcode of the invoke instruction.
          * <p>
-         * The target VM may not support, or may only provide limited support, for this 
-         * command when the thread is a virtual thread. It may, for example, only support 
-         * this command when the virtual thread is suspended at a breakpoint or singlestep 
-         * event.
+         * This command may be used to pop frames of a virtual thread when 
+         * it is suspended at an event. An implementation may support popping 
+         * the frames of a suspended virtual thread in other cases.
          * <p>
          * Since JDWP version 1.4. Requires canPopFrames capability - see 
          * <a href="#JDWP_VirtualMachine_CapabilitiesNew">CapabilitiesNew</a>.
@@ -8506,7 +8502,7 @@ public class JDWP {
                     }
 
                     /**
-                     * Request that generated event (or 0 if this 
+                     * Request that generated event, or 0 if this 
                      * event is automatically generated.
                      */
                     final int requestID;

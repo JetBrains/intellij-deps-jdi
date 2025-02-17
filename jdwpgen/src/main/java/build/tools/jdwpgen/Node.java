@@ -186,7 +186,11 @@ abstract class Node {
         writer.println(
           "if (vm.traceReceives) {");
         indent(writer, depth+1);
-        writer.print("vm.printReceiveTrace(" + depth + ", \"");
+        if ("returnValue".equals(readLabel)) {
+            writer.print("vm.printReceiveTraceSafe(" + depth + ", () -> \"");
+        } else {
+            writer.print("vm.printReceiveTrace(" + depth + ", \"");
+        }
         writer.print(readLabel + "(" + javaType() + "): \" + ");
         writer.println(displayValue + ");");
         indent(writer, depth);
