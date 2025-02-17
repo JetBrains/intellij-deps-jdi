@@ -56,6 +56,12 @@ public class AsyncUtils {
             return super.get(timeout, unit);
         }
 
+        @Override
+        public T join() {
+            assertNotReaderThread();
+            return super.join();
+        }
+
         private static void assertNotReaderThread() {
             if (Thread.currentThread() instanceof TargetVM.ReaderThread) {
                 throw new IllegalStateException("Should not happen in JDWP reader thread");
