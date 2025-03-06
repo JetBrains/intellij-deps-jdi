@@ -235,6 +235,11 @@ public class ArrayReferenceImpl extends ObjectReferenceImpl
         }
     }
 
+    public CompletableFuture<Void> setFirstElementToNull() {
+        return JDWP.ArrayReference.SetValues.processAsync(vm, this, 0, new ValueImpl[]{null})
+                .thenAccept(__ -> {});
+    }
+
     public void setValue(int index, Value value)
             throws InvalidTypeException,
                    ClassNotLoadedException {
