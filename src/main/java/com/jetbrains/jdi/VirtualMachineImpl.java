@@ -82,7 +82,7 @@ public class VirtualMachineImpl extends MirrorImpl
     // JDI as little as possible when not enabled.
     int traceFlags = TRACE_NONE;
 
-    private Consumer<String> debugTraceConsumer = VirtualMachineImpl::defaultPrintTrace;
+    private Consumer<List<String>> debugTraceConsumer = VirtualMachineImpl::defaultPrintTrace;
     private static boolean useSoftReferences = true;
 
     static final int TRACE_RAW_SENDS     = 0x01000000;
@@ -888,7 +888,7 @@ public class VirtualMachineImpl extends MirrorImpl
         this.traceReceives = (traceFlags & TRACE_RECEIVES) != 0;
     }
 
-    public void setDebugTraceConsumer(Consumer<String> consumer) {
+    public void setDebugTraceConsumer(Consumer<List<String>> consumer) {
         if (consumer == null) {
             debugTraceConsumer = VirtualMachineImpl::defaultPrintTrace;
         }
@@ -930,11 +930,19 @@ public class VirtualMachineImpl extends MirrorImpl
     }
 
     void printTrace(String string) {
-        debugTraceConsumer.accept(string);
+        debugTraceConsumer.accept(List.of(string));
     }
 
-    private static void defaultPrintTrace(String string) {
-        System.err.println("[JDI: " + string + "]");
+    void printTrace(List<String> strings) {
+        debugTraceConsumer.accept(strings);
+    }
+
+    private static void defaultPrintTrace(List<String> strings) {
+        StringBuilder builder = new StringBuilder();
+        for (String string : strings) {
+            builder.append("[JDI: ").append(string).append("]").append(System.lineSeparator());
+        }
+        System.err.print(builder);
     }
 
     void printReceiveTraceSafe(int depth, Supplier<String> stringSupplier) {

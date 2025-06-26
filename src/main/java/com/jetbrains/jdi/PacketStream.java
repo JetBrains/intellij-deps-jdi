@@ -53,6 +53,7 @@ class PacketStream {
     private int inCursor = 0;
     final Packet pkt;
     private final ByteArrayOutputStream dataStream = new ByteArrayOutputStream();
+    private List<String> traces = null;
     private boolean isCommitted = false;
 
     PacketStream(VirtualMachineImpl vm, int cmdSet, int cmd) {
@@ -74,6 +75,9 @@ class PacketStream {
 
     void send() {
         if (!isCommitted) {
+            if (traces != null) {
+                vm.printTrace(traces);
+            }
             pkt.data = dataStream.toByteArray();
             vm.sendToTarget(pkt);
             isCommitted = true;
@@ -682,5 +686,12 @@ class PacketStream {
                (tag == JDWP.Tag.THREAD_GROUP) ||
                (tag == JDWP.Tag.CLASS_LOADER) ||
                (tag == JDWP.Tag.CLASS_OBJECT);
+    }
+
+    void printTrace(String string) {
+        if (traces == null) {
+            traces = new ArrayList<>();
+        }
+        traces.add(string);
     }
 }

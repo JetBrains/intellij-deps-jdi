@@ -164,7 +164,7 @@ abstract class Node {
         writer.println(
           "if ((ps.vm.traceFlags & VirtualMachineImpl.TRACE_SENDS) != 0) {");
         indent(writer, depth+1);
-        writer.print("ps.vm.printTrace(\"Sending: ");
+        writer.print("ps.printTrace(\"Sending: ");
         indent(writer, depth);  // this is inside the quotes
         writer.print(writeLabel + "(" + javaType() + "): \" + ");
         writer.println(displayValue + ");");
