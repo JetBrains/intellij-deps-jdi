@@ -346,10 +346,15 @@ public abstract class MethodImpl extends TypeComponentImpl
      */
     public static void handleVarArgs(Method method, List<Value> arguments)
         throws ClassNotLoadedException, InvalidTypeException {
-        List<Type> paramTypes = method.argumentTypes();
-        ArrayType lastParamType = (ArrayType)paramTypes.get(paramTypes.size() - 1);
+        int paramCount = method.argumentTypeNames().size();
+        ArrayType lastParamType;
+        if (method instanceof MethodImpl) {
+            lastParamType = (ArrayType)((MethodImpl) method).argumentType(paramCount - 1);
+        }
+        else {
+            lastParamType = (ArrayType) method.argumentTypes().get(paramCount - 1);
+        }
         int argCount = arguments.size();
-        int paramCount = paramTypes.size();
         if (argCount < paramCount - 1) {
             // Error; will be caught later.
             return;
