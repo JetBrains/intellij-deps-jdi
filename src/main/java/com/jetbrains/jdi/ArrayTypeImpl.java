@@ -120,7 +120,7 @@ public class ArrayTypeImpl extends ReferenceTypeImpl
      * Return true if an instance of the  given reference type
      * can be assigned to a variable of this type
      */
-    boolean isAssignableTo(ReferenceType destType) {
+    public boolean isAssignableTo(ReferenceType destType) {
         if (destType instanceof ArrayType) {
             try {
                 Type destComponentType = ((ArrayType)destType).componentType();

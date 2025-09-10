@@ -158,7 +158,7 @@ public class InterfaceTypeImpl extends InvokableTypeImpl
     }
 
     @Override
-    boolean isAssignableTo(ReferenceType type) {
+    public boolean isAssignableTo(ReferenceType type) {
         if (type.name().equals("java.lang.Object")) {
             // interfaces are always assignable to j.l.Object
             return true;

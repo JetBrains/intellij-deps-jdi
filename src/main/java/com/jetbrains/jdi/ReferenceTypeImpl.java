@@ -1437,7 +1437,7 @@ public abstract class ReferenceTypeImpl extends TypeImpl implements ReferenceTyp
      * Return true if an instance of this type
      * can be assigned to a variable of the given type
      */
-    abstract boolean isAssignableTo(ReferenceType type);
+    public abstract boolean isAssignableTo(ReferenceType type);
 
     boolean isAssignableFrom(ReferenceType type) {
         return ((ReferenceTypeImpl)type).isAssignableTo(this);

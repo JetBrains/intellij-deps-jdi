@@ -186,7 +186,7 @@ abstract class InvokableTypeImpl extends ReferenceTypeImpl {
     }
 
     @Override
-    boolean isAssignableTo(ReferenceType type) {
+    public boolean isAssignableTo(ReferenceType type) {
         if (this.equals(type)) {
             return true;
         }
