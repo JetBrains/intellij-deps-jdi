@@ -212,11 +212,11 @@ public class VirtualMachineManagerImpl implements VirtualMachineManagerService {
         return createVirtualMachine(connection, null);
     }
 
-    public void addVirtualMachine(VirtualMachine vm) {
+    public synchronized void addVirtualMachine(VirtualMachine vm) {
         targets.add(vm);
     }
 
-    void disposeVirtualMachine(VirtualMachine vm) {
+    synchronized void disposeVirtualMachine(VirtualMachine vm) {
         targets.remove(vm);
     }
 
