@@ -83,6 +83,7 @@ public class VirtualMachineImpl extends MirrorImpl
     int traceFlags = TRACE_NONE;
 
     private Consumer<List<String>> debugTraceConsumer = VirtualMachineImpl::defaultPrintTrace;
+    private static volatile Consumer<String> blockingOperationChecker;
     private static boolean useSoftReferences = true;
 
     static final int TRACE_RAW_SENDS     = 0x01000000;
@@ -144,7 +145,7 @@ public class VirtualMachineImpl extends MirrorImpl
     private final VMState state = new VMState(this);
 
     private final Object initMonitor = new Object();
-    private boolean initComplete = false;
+    private volatile boolean initComplete = false;
     private boolean shutdown = false;
 
     private void notifyInitCompletion() {
@@ -897,6 +898,22 @@ public class VirtualMachineImpl extends MirrorImpl
         }
     }
 
+    /**
+     * Sets a checker that runs in the calling thread before a blocking operation.
+     * VM initialization requests do not invoke the checker.
+     * A null checker disables the checks.
+     */
+    public static void setBlockingOperationChecker(Consumer<String> checker) {
+        blockingOperationChecker = checker;
+    }
+
+    private static void checkBlockingOperation(String operation) {
+        var checker = blockingOperationChecker;
+        if (checker != null) {
+            checker.accept(operation);
+        }
+    }
+
     public void disableSoftReferences() {
         useSoftReferences = false;
     }
@@ -1317,11 +1334,17 @@ public class VirtualMachineImpl extends MirrorImpl
     }
 
     void sendToTarget(Packet packet) {
+        if (initComplete) {
+            checkBlockingOperation("Sending JDWP command " + packet.cmdSet + ":" + packet.cmd);
+        }
         sentPackets.incrementAndGet();
         target.send(packet);
     }
 
     void waitForTargetReply(Packet packet) {
+        if (initComplete && !packet.replied) {
+            checkBlockingOperation("Waiting for JDWP command " + packet.cmdSet + ":" + packet.cmd);
+        }
         waitPackets.incrementAndGet();
         target.waitForReply(packet);
         /*
