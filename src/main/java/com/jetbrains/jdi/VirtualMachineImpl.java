@@ -83,7 +83,7 @@ public class VirtualMachineImpl extends MirrorImpl
     int traceFlags = TRACE_NONE;
 
     private Consumer<List<String>> debugTraceConsumer = VirtualMachineImpl::defaultPrintTrace;
-    private static volatile Consumer<String> blockingOperationChecker;
+    private static volatile Runnable blockingOperationChecker;
     private static boolean useSoftReferences = true;
 
     static final int TRACE_RAW_SENDS     = 0x01000000;
@@ -903,14 +903,14 @@ public class VirtualMachineImpl extends MirrorImpl
      * VM initialization requests do not invoke the checker.
      * A null checker disables the checks.
      */
-    public static void setBlockingOperationChecker(Consumer<String> checker) {
+    public static void setBlockingOperationChecker(Runnable checker) {
         blockingOperationChecker = checker;
     }
 
-    private static void checkBlockingOperation(String operation) {
+    private static void checkBlockingOperation() {
         var checker = blockingOperationChecker;
         if (checker != null) {
-            checker.accept(operation);
+            checker.run();
         }
     }
 
@@ -1335,7 +1335,7 @@ public class VirtualMachineImpl extends MirrorImpl
 
     void sendToTarget(Packet packet) {
         if (initComplete) {
-            checkBlockingOperation("Sending JDWP command " + packet.cmdSet + ":" + packet.cmd);
+            checkBlockingOperation();
         }
         sentPackets.incrementAndGet();
         target.send(packet);
@@ -1343,7 +1343,7 @@ public class VirtualMachineImpl extends MirrorImpl
 
     void waitForTargetReply(Packet packet) {
         if (initComplete && !packet.replied) {
-            checkBlockingOperation("Waiting for JDWP command " + packet.cmdSet + ":" + packet.cmd);
+            checkBlockingOperation();
         }
         waitPackets.incrementAndGet();
         target.waitForReply(packet);
