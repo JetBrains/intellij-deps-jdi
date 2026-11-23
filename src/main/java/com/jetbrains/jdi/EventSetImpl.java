@@ -213,7 +213,9 @@ public class EventSetImpl extends ArrayList<Event> implements EventSet {
         }
 
         public String toString() {
-            return eventName() + "(ER=" + requestID() + ") in thread id=" + thread.uniqueID();
+            // The thread is null if a debugger system thread generated the event, see ClassPrepareEvent.thread()
+            String threadText = thread != null ? "in thread id=" + thread.uniqueID() : "in a debugger system thread";
+            return eventName() + "(ER=" + requestID() + ") " + threadText;
         }
     }
 
